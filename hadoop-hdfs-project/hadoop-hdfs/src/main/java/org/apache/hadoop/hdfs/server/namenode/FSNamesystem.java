@@ -593,7 +593,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
     if (auditLog.isInfoEnabled() && isExternalInvocation()) {
       logAuditEvent(UserGroupInformation.getCurrentUser(),
                     Server.getRemoteIp(),
@@ -631,7 +631,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
     if (auditLog.isInfoEnabled() && isExternalInvocation()) {
       logAuditEvent(UserGroupInformation.getCurrentUser(),
                     Server.getRemoteIp(),
@@ -785,7 +785,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
     if (auditLog.isInfoEnabled() && isExternalInvocation()) {
       logAuditEvent(UserGroupInformation.getLoginUser(),
                     Server.getRemoteIp(),
@@ -946,7 +946,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
     if (auditLog.isInfoEnabled() && isExternalInvocation()) {
       logAuditEvent(UserGroupInformation.getCurrentUser(),
                     Server.getRemoteIp(),
@@ -1022,7 +1022,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       writeUnlock();
     }
 
-    getEditLog().logSync();
+    //getEditLog().logSync();
     if (isFile && auditLog.isInfoEnabled() && isExternalInvocation()) {
       logAuditEvent(UserGroupInformation.getCurrentUser(),
                     Server.getRemoteIp(),
@@ -1082,7 +1082,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
     if (auditLog.isInfoEnabled() && isExternalInvocation()) {
       final HdfsFileStatus stat = dir.getFileInfo(src, false);
       logAuditEvent(UserGroupInformation.getCurrentUser(),
@@ -1368,7 +1368,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
     if (lb != null) {
       if (NameNode.stateChangeLog.isDebugEnabled()) {
         NameNode.stateChangeLog.debug("DIR* NameSystem.appendFile: file "
@@ -1617,7 +1617,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
     return success;
   }
 
@@ -1755,7 +1755,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
     if (status && auditLog.isInfoEnabled() && isExternalInvocation()) {
       logAuditEvent(UserGroupInformation.getCurrentUser(),
                     Server.getRemoteIp(),
@@ -1810,7 +1810,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
     if (auditLog.isInfoEnabled() && isExternalInvocation()) {
       StringBuilder cmd = new StringBuilder("rename options=");
       for (Rename option : options) {
@@ -1902,7 +1902,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       writeUnlock();
     }
 
-    getEditLog().logSync();
+    //getEditLog().logSync();
 
     writeLock();
     try {
@@ -1988,7 +1988,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
     if (status && auditLog.isInfoEnabled() && isExternalInvocation()) {
       final HdfsFileStatus stat = dir.getFileInfo(src, false);
       logAuditEvent(UserGroupInformation.getCurrentUser(),
@@ -2069,7 +2069,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
   }
   
   /** Persist all metadata about this file.
@@ -2091,7 +2091,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
   }
 
   /**
@@ -2372,7 +2372,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
     if (closeFile) {
       LOG.info("commitBlockSynchronization(newblock=" + lastblock
           + ", file=" + src
@@ -3328,7 +3328,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     // Ensure that any concurrent operations have been fully synced
     // before entering safe mode. This ensures that the FSImage
     // is entirely stable on disk as soon as we're in safe mode.
-    getEditLog().logSyncAll();
+    //getEditLog().logSyncAll();
     if (!isInSafeMode()) {
       safeMode = new SafeModeInfo(resourcesLow);
       return;
@@ -3337,7 +3337,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       safeMode.setResourcesLow();
     }
     safeMode.setManual();
-    getEditLog().logSyncAll();
+    //getEditLog().logSyncAll();
     NameNode.stateChangeLog.info("STATE* Safe mode is ON. " 
                                 + safeMode.getTurnOffTip());
     } finally {
@@ -3401,7 +3401,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
       LOG.info("Start checkpoint for " + bnReg.getAddress());
       NamenodeCommand cmd = getFSImage().startCheckpoint(bnReg, nnReg);
-      getEditLog().logSync();
+      //getEditLog().logSync();
       return cmd;
     } finally {
       writeUnlock();
@@ -3634,7 +3634,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           "Cannot get next generation stamp", safeMode);
     }
     long gs = generationStamp.nextStamp();
-    getEditLog().logGenerationStamp(gs);
+    //getEditLog().logGenerationStamp(gs);
     // NB: callers sync the log
     return gs;
   }
@@ -3700,7 +3700,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       writeUnlock();
     }
     // Ensure we record the new generation stamp
-    getEditLog().logSync();
+    //getEditLog().logSync();
     return locatedBlock;
   }
   
@@ -3734,7 +3734,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       writeUnlock();
     }
     if (supportAppends) {
-      getEditLog().logSync();
+      //getEditLog().logSync();
     }
     LOG.info("updatePipeline(" + oldBlock + ") successfully to " + newBlock);
   }
@@ -3886,7 +3886,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             + getFSImage().getStorage().getNamespaceID() + "; "
             + registration.getRole() +
             " node namespaceID = " + registration.getNamespaceID());
-      getEditLog().releaseBackupStream(registration);
+      //getEditLog().releaseBackupStream(registration);
     } finally {
       writeUnlock();
     }
@@ -4011,11 +4011,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       token = new Token<DelegationTokenIdentifier>(
         dtId, dtSecretManager);
       long expiryTime = dtSecretManager.getTokenExpiryTime(dtId);
-      getEditLog().logGetDelegationToken(dtId, expiryTime);
+      //getEditLog().logGetDelegationToken(dtId, expiryTime);
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
     return token;
   }
 
@@ -4044,11 +4044,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       ByteArrayInputStream buf = new ByteArrayInputStream(token.getIdentifier());
       DataInputStream in = new DataInputStream(buf);
       id.readFields(in);
-      getEditLog().logRenewDelegationToken(id, expiryTime);
+      //getEditLog().logRenewDelegationToken(id, expiryTime);
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
     return expiryTime;
   }
 
@@ -4067,11 +4067,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       String canceller = UserGroupInformation.getCurrentUser().getUserName();
       DelegationTokenIdentifier id = dtSecretManager
         .cancelToken(token, canceller);
-      getEditLog().logCancelDelegationToken(id);
+      //getEditLog().logCancelDelegationToken(id);
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
   }
   
   /**
@@ -4100,22 +4100,22 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         throw new SafeModeException(
           "Cannot log master key update in safe mode", safeMode);
       }
-      getEditLog().logUpdateMasterKey(key);
+      //getEditLog().logUpdateMasterKey(key);
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
   }
   
   private void logReassignLease(String leaseHolder, String src,
       String newHolder) throws IOException {
     writeLock();
     try {
-      getEditLog().logReassignLease(leaseHolder, src, newHolder);
+      //getEditLog().logReassignLease(leaseHolder, src, newHolder);
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+    //getEditLog().logSync();
   }
   
   /**
