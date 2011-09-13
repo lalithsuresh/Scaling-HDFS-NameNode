@@ -67,7 +67,6 @@ import org.apache.hadoop.hdfs.server.protocol.DatanodeCommand;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeProtocol;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeCommand;
-import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocol;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeRegistration;
 import org.apache.hadoop.hdfs.server.protocol.NamespaceInfo;
@@ -204,9 +203,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
     if (protocol.equals(ClientProtocol.class.getName())) {
       return ClientProtocol.versionID; 
     } else if (protocol.equals(DatanodeProtocol.class.getName())){
-      return DatanodeProtocol.versionID;
-    } else if (protocol.equals(NamenodeProtocol.class.getName())){
-      return NamenodeProtocol.versionID;
+      return DatanodeProtocol.versionID;    
     } else if (protocol.equals(RefreshAuthorizationPolicyProtocol.class.getName())){
       return RefreshAuthorizationPolicyProtocol.versionID;
     } else if (protocol.equals(RefreshUserMappingsProtocol.class.getName())){
@@ -216,62 +213,6 @@ class NameNodeRpcServer implements NamenodeProtocols {
     } else {
       throw new IOException("Unknown protocol to name node: " + protocol);
     }
-  }
-
-  /////////////////////////////////////////////////////
-  // NamenodeProtocol
-  /////////////////////////////////////////////////////
-  @Override // NamenodeProtocol
-  public BlocksWithLocations getBlocks(DatanodeInfo datanode, long size)
-  throws IOException {
-    if(size <= 0) {
-      throw new IllegalArgumentException(
-        "Unexpected not positive size: "+size);
-    }
-
-    return namesystem.getBlockManager().getBlocks(datanode, size); 
-  }
-
-  @Override // NamenodeProtocol
-  public ExportedBlockKeys getBlockKeys() throws IOException {
-    return namesystem.getBlockManager().getBlockKeys();
-  }
-
-  @Override // NamenodeProtocol
-  public void errorReport(NamenodeRegistration registration,
-                          int errorCode, 
-                          String msg) throws IOException {
-    verifyRequest(registration);
-    LOG.info("Error report from " + registration + ": " + msg);
-    if(errorCode == FATAL)
-      namesystem.releaseBackupNode(registration);
-  }
-
-  @Override // NamenodeProtocol
-  public NamenodeRegistration register(NamenodeRegistration registration)
-  throws IOException {
-    verifyVersion(registration.getVersion());
-    NamenodeRegistration myRegistration = nn.setRegistration();
-    namesystem.registerBackupNode(registration, myRegistration);
-    return myRegistration;
-  }
-
-  @Override // NamenodeProtocol
-  public NamenodeCommand startCheckpoint(NamenodeRegistration registration)
-  throws IOException {
-    verifyRequest(registration);
-    if(!nn.isRole(NamenodeRole.NAMENODE))
-      throw new IOException("Only an ACTIVE node can invoke startCheckpoint.");
-    return namesystem.startCheckpoint(registration, nn.setRegistration());
-  }
-
-  @Override // NamenodeProtocol
-  public void endCheckpoint(NamenodeRegistration registration,
-                            CheckpointSignature sig) throws IOException {
-    verifyRequest(registration);
-    if(!nn.isRole(NamenodeRole.NAMENODE))
-      throw new IOException("Only an ACTIVE node can invoke endCheckpoint.");
-    namesystem.endCheckpoint(registration, sig);
   }
 
   @Override // ClientProtocol
@@ -637,22 +578,6 @@ class NameNodeRpcServer implements NamenodeProtocols {
   public void refreshNodes() throws IOException {
     namesystem.getBlockManager().getDatanodeManager().refreshNodes(
         new HdfsConfiguration());
-  }
-
-  @Override // NamenodeProtocol
-  public long getTransactionID() {
-    return namesystem.getEditLog().getSyncTxId();
-  }
-
-  @Override // NamenodeProtocol
-  public CheckpointSignature rollEditLog() throws IOException {
-    return namesystem.rollEditLog();
-  }
-  
-  @Override
-  public RemoteEditLogManifest getEditLogManifest(long sinceTxId)
-  throws IOException {
-    return namesystem.getEditLog().getEditLogManifest(sinceTxId);
   }
     
   @Override // ClientProtocol

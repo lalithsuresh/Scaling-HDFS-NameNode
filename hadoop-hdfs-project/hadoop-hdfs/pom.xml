@@ -288,6 +288,7 @@
             <exclude>src/main/native/config/*</exclude>
             <exclude>src/main/native/m4/*</exclude>
             <exclude>src/test/empty-file</exclude>
+            <exclude>src/test/*</exclude>
             <exclude>src/test/all-tests</exclude>
             <exclude>src/test/resources/*.tgz</exclude>
             <exclude>src/test/resources/data*</exclude>

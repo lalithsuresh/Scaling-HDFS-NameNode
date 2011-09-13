@@ -732,11 +732,7 @@ public class NameNode {
         aborted = finalize(conf, true);
         System.exit(aborted ? 1 : 0);
         return null; // avoid javac warning
-      case BACKUP:
-      case CHECKPOINT:
-        NamenodeRole role = startOpt.toNodeRole();
-        DefaultMetricsSystem.initialize(role.toString().replace(" ", ""));
-        return new BackupNode(conf, role);
+      case BACKUP:      
       default:
         DefaultMetricsSystem.initialize("NameNode");
         return new NameNode(conf);

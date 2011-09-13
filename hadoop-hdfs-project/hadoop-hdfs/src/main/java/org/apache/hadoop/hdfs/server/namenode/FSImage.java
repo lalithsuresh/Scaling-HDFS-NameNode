@@ -49,9 +49,7 @@ import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.StartupOption;
 
 import org.apache.hadoop.hdfs.server.namenode.NNStorage.NameNodeDirType;
 import org.apache.hadoop.hdfs.server.namenode.NNStorage.NameNodeFile;
-import org.apache.hadoop.hdfs.server.protocol.CheckpointCommand;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeCommand;
-import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocol;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeRegistration;
 import org.apache.hadoop.hdfs.util.MD5FileUtils;
 import org.apache.hadoop.io.MD5Hash;
@@ -913,81 +911,6 @@ public class FSImage implements Closeable {
     }    
   }
 
-  CheckpointSignature rollEditLog() throws IOException {
-    getEditLog().rollEditLog();
-    // Record this log segment ID in all of the storage directories, so
-    // we won't miss this log segment on a restart if the edits directories
-    // go missing.
-    storage.writeTransactionIdFileToStorage(getEditLog().getCurSegmentTxId());
-    return new CheckpointSignature(this);
-  }
-
-  /**
-   * Start checkpoint.
-   * <p>
-   * If backup storage contains image that is newer than or incompatible with 
-   * what the active name-node has, then the backup node should shutdown.<br>
-   * If the backup image is older than the active one then it should 
-   * be discarded and downloaded from the active node.<br>
-   * If the images are the same then the backup image will be used as current.
-   * 
-   * @param bnReg the backup node registration.
-   * @param nnReg this (active) name-node registration.
-   * @return {@link NamenodeCommand} if backup node should shutdown or
-   * {@link CheckpointCommand} prescribing what backup node should 
-   *         do with its image.
-   * @throws IOException
-   */
-  NamenodeCommand startCheckpoint(NamenodeRegistration bnReg, // backup node
-                                  NamenodeRegistration nnReg) // active name-node
-  throws IOException {
-    String msg = null;
-    // Verify that checkpoint is allowed
-    if(bnReg.getNamespaceID() != storage.getNamespaceID())
-      msg = "Name node " + bnReg.getAddress()
-            + " has incompatible namespace id: " + bnReg.getNamespaceID()
-            + " expected: " + storage.getNamespaceID();
-    else if(bnReg.isRole(NamenodeRole.NAMENODE))
-      msg = "Name node " + bnReg.getAddress()
-            + " role " + bnReg.getRole() + ": checkpoint is not allowed.";
-    else if(bnReg.getLayoutVersion() < storage.getLayoutVersion()
-        || (bnReg.getLayoutVersion() == storage.getLayoutVersion()
-            && bnReg.getCTime() > storage.getCTime()))
-      // remote node has newer image age
-      msg = "Name node " + bnReg.getAddress()
-            + " has newer image layout version: LV = " +bnReg.getLayoutVersion()
-            + " cTime = " + bnReg.getCTime()
-            + ". Current version: LV = " + storage.getLayoutVersion()
-            + " cTime = " + storage.getCTime();
-    if(msg != null) {
-      LOG.error(msg);
-      return new NamenodeCommand(NamenodeProtocol.ACT_SHUTDOWN);
-    }
-    boolean needToReturnImg = true;
-    if(storage.getNumStorageDirs(NameNodeDirType.IMAGE) == 0)
-      // do not return image if there are no image directories
-      needToReturnImg = false;
-    CheckpointSignature sig = rollEditLog();
-    return new CheckpointCommand(sig, needToReturnImg);
-  }
-
-  /**
-   * End checkpoint.
-   * <p>
-   * Rename uploaded checkpoint to the new image;
-   * purge old edits file;
-   * rename edits.new to edits;
-   * redirect edit log streams to the new edits;
-   * update checkpoint time if the remote node is a checkpoint only node.
-   * 
-   * @param sig
-   * @param remoteNNRole
-   * @throws IOException
-   */
-  void endCheckpoint(CheckpointSignature sig,
-                     NamenodeRole remoteNNRole) throws IOException {
-    sig.validateStorageInfo(this);
-  }
 
   /**
    * This is called by the 2NN after having downloaded an image, and by

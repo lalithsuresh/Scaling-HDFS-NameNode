@@ -29,7 +29,6 @@ import org.apache.hadoop.tools.GetUserMappingsProtocol;
 public interface NamenodeProtocols
   extends ClientProtocol,
           DatanodeProtocol,
-          NamenodeProtocol,
           RefreshAuthorizationPolicyProtocol,
           RefreshUserMappingsProtocol,
           GetUserMappingsProtocol {

@@ -24,7 +24,6 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
 import org.apache.hadoop.hdfs.security.token.block.ExportedBlockKeys;
-import org.apache.hadoop.hdfs.server.namenode.CheckpointSignature;
 import org.apache.hadoop.ipc.VersionedProtocol;
 import org.apache.hadoop.security.KerberosInfo;
 
@@ -83,16 +82,6 @@ public interface NamenodeProtocol extends VersionedProtocol {
    */
   public long getTransactionID() throws IOException;
 
-  /**
-   * Closes the current edit log and opens a new one. The 
-   * call fails if the file system is in SafeMode.
-   * @throws IOException
-   * @return a unique token to identify this transaction.
-   * @deprecated 
-   *    See {@link org.apache.hadoop.hdfs.server.namenode.SecondaryNameNode}
-   */
-  @Deprecated
-  public CheckpointSignature rollEditLog() throws IOException;
 
   /**
    * Request name-node version and storage information.
@@ -142,18 +131,6 @@ public interface NamenodeProtocol extends VersionedProtocol {
    */
   public NamenodeCommand startCheckpoint(NamenodeRegistration registration)
   throws IOException;
-
-  /**
-   * A request to the active name-node to finalize
-   * previously started checkpoint.
-   * 
-   * @param registration the requesting node
-   * @param sig {@code CheckpointSignature} which identifies the checkpoint.
-   * @throws IOException
-   */
-  public void endCheckpoint(NamenodeRegistration registration,
-                            CheckpointSignature sig) throws IOException;
-  
   
   /**
    * Return a structure containing details about all edit logs

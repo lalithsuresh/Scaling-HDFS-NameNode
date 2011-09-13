@@ -951,68 +951,7 @@ public class FSEditLog  {
     }
   }
 
-  /**
-   * Create (or find if already exists) an edit output stream, which
-   * streams journal records (edits) to the specified backup node.<br>
-   * 
-   * The new BackupNode will start receiving edits the next time this
-   * NameNode's logs roll.
-   * 
-   * @param bnReg the backup node registration information.
-   * @param nnReg this (active) name-node registration.
-   * @throws IOException
-   */
-  synchronized void registerBackupNode(
-      NamenodeRegistration bnReg, // backup node
-      NamenodeRegistration nnReg) // active name-node
-  throws IOException {
-    if(bnReg.isRole(NamenodeRole.CHECKPOINT))
-      return; // checkpoint node does not stream edits
-    
-    JournalAndStream jas = findBackupJournalAndStream(bnReg);
-    if (jas != null) {
-      // already registered
-      LOG.info("Backup node " + bnReg + " re-registers");
-      return;
-    }
-    
-    LOG.info("Registering new backup node: " + bnReg);
-    BackupJournalManager bjm = new BackupJournalManager(bnReg, nnReg);
-    journals.add(new JournalAndStream(bjm));
-  }
-  
-  synchronized void releaseBackupStream(NamenodeRegistration registration) {
-    for (Iterator<JournalAndStream> iter = journals.iterator();
-         iter.hasNext();) {
-      JournalAndStream jas = iter.next();
-      if (jas.manager instanceof BackupJournalManager &&
-          ((BackupJournalManager)jas.manager).matchesRegistration(
-              registration)) {
-        jas.abort();        
-        LOG.info("Removing backup journal " + jas);
-        iter.remove();
-      }
-    }
-  }
-  
-  /**
-   * Find the JournalAndStream associated with this BackupNode.
-   * @return null if it cannot be found
-   */
-  private synchronized JournalAndStream findBackupJournalAndStream(
-      NamenodeRegistration bnReg) {
-    for (JournalAndStream jas : journals) {
-      if (jas.manager instanceof BackupJournalManager) {
-        BackupJournalManager bjm = (BackupJournalManager)jas.manager;
-        if (bjm.matchesRegistration(bnReg)) {
-          return jas;
-        }
-      }
-    }
-    return null;
-  }
-
-  /**
+    /**
    * Write an operation to the edit log. Do not sync to persistent
    * store yet.
    */   

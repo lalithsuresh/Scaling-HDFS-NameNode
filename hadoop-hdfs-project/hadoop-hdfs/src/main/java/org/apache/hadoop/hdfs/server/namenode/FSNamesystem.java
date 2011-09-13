@@ -409,25 +409,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   /**
-   * Create FSNamesystem for {@link BackupNode}.
-   * Should do everything that would be done for the NameNode,
-   * except for loading the image.
-   * 
-   * @param bnImage {@link BackupImage}
-   * @param conf configuration
-   * @throws IOException
-   */
-  FSNamesystem(Configuration conf, BackupImage bnImage) throws IOException {
-    try {
-      initialize(conf, bnImage);
-    } catch(IOException e) {
-      LOG.error(getClass().getSimpleName() + " initialization failed.", e);
-      close();
-      throw e;
-    }
-  }
-
-  /**
    * Initializes some of the members from configuration
    */
   private void setConfigurationParameters(Configuration conf) 
@@ -3377,51 +3358,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
   }
 
-  CheckpointSignature rollEditLog() throws IOException {
-    writeLock();
-    try {
-      if (isInSafeMode()) {
-        throw new SafeModeException("Log not rolled", safeMode);
-      }
-      LOG.info("Roll Edit Log from " + Server.getRemoteAddress());
-      return getFSImage().rollEditLog();
-    } finally {
-      writeUnlock();
-    }
-  }
-
-  NamenodeCommand startCheckpoint(
-                                NamenodeRegistration bnReg, // backup node
-                                NamenodeRegistration nnReg) // active name-node
-  throws IOException {
-    writeLock();
-    try {
-      if (isInSafeMode()) {
-        throw new SafeModeException("Checkpoint not started", safeMode);
-      }
-      LOG.info("Start checkpoint for " + bnReg.getAddress());
-      NamenodeCommand cmd = getFSImage().startCheckpoint(bnReg, nnReg);
-      //getEditLog().logSync();
-      return cmd;
-    } finally {
-      writeUnlock();
-    }
-  }
-
-  void endCheckpoint(NamenodeRegistration registration,
-                            CheckpointSignature sig) throws IOException {
-    writeLock();
-    try {
-      if (isInSafeMode()) {
-        throw new SafeModeException("Checkpoint not ended", safeMode);
-      }
-      LOG.info("End checkpoint for " + registration.getAddress());
-      getFSImage().endCheckpoint(sig, registration.getRole());
-    } finally {
-      writeUnlock();
-    }
-  }
-
   /**
    * Returns whether the given block is one pointed-to by a file.
    */
@@ -3860,8 +3796,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             + bnReg.getRole() +
             " node namespaceID = " + bnReg.getNamespaceID());
       if (bnReg.getRole() == NamenodeRole.BACKUP) {
-        getFSImage().getEditLog().registerBackupNode(
-            bnReg, nnReg);
+        
       }
     } finally {
       writeUnlock();
