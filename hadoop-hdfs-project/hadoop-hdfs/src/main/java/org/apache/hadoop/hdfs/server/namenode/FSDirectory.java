@@ -176,7 +176,6 @@ public class FSDirectory implements Closeable {
       }
       fsImage.openEditLog();
       
-      fsImage.setCheckpointDirectories(null, null);
       success = true;
     } finally {
       if (!success) {

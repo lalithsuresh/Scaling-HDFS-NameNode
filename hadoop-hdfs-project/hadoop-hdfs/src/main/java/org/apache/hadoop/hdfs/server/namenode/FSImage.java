@@ -80,13 +80,6 @@ public class FSImage implements Closeable {
    */
   protected long lastAppliedTxId = 0;
 
-  /**
-   * URIs for importing an image from a checkpoint. In the default case,
-   * URIs will represent directories. 
-   */
-  private Collection<URI> checkpointDirs;
-  private Collection<URI> checkpointEditsDirs;
-
   final private Configuration conf;
 
   private final NNStorageRetentionManager archivalManager; 
@@ -131,8 +124,6 @@ public class FSImage implements Closeable {
                     Collection<URI> imageDirs, Collection<URI> editsDirs)
       throws IOException {
     this.conf = conf;
-    setCheckpointDirectories(FSImage.getCheckpointDirs(conf, null),
-                             FSImage.getCheckpointEditsDirs(conf, null));
 
     storage = new NNStorage(conf, imageDirs, editsDirs);
     if(conf.getBoolean(DFSConfigKeys.DFS_NAMENODE_NAME_DIR_RESTORE_KEY,
@@ -157,12 +148,6 @@ public class FSImage implements Closeable {
     }
   }
  
-  void setCheckpointDirectories(Collection<URI> dirs,
-                                Collection<URI> editsDirs) {
-    checkpointDirs = dirs;
-    checkpointEditsDirs = editsDirs;
-  }
-  
   void format(String clusterId) throws IOException {
     storage.format(clusterId);
     saveFSImageInAllDirs(0);    
@@ -191,16 +176,7 @@ public class FSImage implements Closeable {
       throw new IOException(
           "All specified directories are not accessible or do not exist.");
     
-    if(startOpt == StartupOption.IMPORT 
-        && (checkpointDirs == null || checkpointDirs.isEmpty()))
-      throw new IOException("Cannot import image from a checkpoint. "
-                            + "\"dfs.namenode.checkpoint.dir\" is not set." );
 
-    if(startOpt == StartupOption.IMPORT 
-        && (checkpointEditsDirs == null || checkpointEditsDirs.isEmpty()))
-      throw new IOException("Cannot import image from a checkpoint. "
-                            + "\"dfs.namenode.checkpoint.dir\" is not set." );
-    
     // 1. For each data directory calculate its state and 
     // check whether all is consistent before transitioning.
     Map<StorageDirectory, StorageState> dataDirStates = 
