@@ -262,7 +262,7 @@ public class FSImage implements Closeable {
       doUpgrade();
       return false; // upgrade saved image already
     case IMPORT:
-      doImportCheckpoint();
+      //[Stateless] doImportCheckpoint();
       return false; // import checkpoint saved image already
     case ROLLBACK:
       doRollback();
@@ -498,35 +498,6 @@ public class FSImage implements Closeable {
     NNStorage.deleteDir(tmpDir);
     isUpgradeFinalized = true;
     LOG.info("Finalize upgrade for " + sd.getRoot()+ " is complete.");
-  }
-
-  /**
-   * Load image from a checkpoint directory and save it into the current one.
-   * @throws IOException
-   */
-  void doImportCheckpoint() throws IOException {
-    FSNamesystem fsNamesys = getFSNamesystem();
-    FSImage ckptImage = new FSImage(conf, fsNamesys,
-                                    checkpointDirs, checkpointEditsDirs);
-    // replace real image with the checkpoint image
-    FSImage realImage = fsNamesys.getFSImage();
-    assert realImage == this;
-    fsNamesys.dir.fsImage = ckptImage;
-    // load from the checkpoint dirs
-    try {
-      ckptImage.recoverTransitionRead(StartupOption.REGULAR);
-    } finally {
-      ckptImage.close();
-    }
-    // return back the real image
-    realImage.getStorage().setStorageInfo(ckptImage.getStorage());
-    realImage.getEditLog().setNextTxId(ckptImage.getEditLog().getLastWrittenTxId()+1);
-
-    fsNamesys.dir.fsImage = realImage;
-    realImage.getStorage().setBlockPoolID(ckptImage.getBlockPoolID());
-    // and save it but keep the same checkpointTime
-    saveNamespace();
-    getStorage().writeAll();
   }
 
   void finalizeUpgrade() throws IOException {
