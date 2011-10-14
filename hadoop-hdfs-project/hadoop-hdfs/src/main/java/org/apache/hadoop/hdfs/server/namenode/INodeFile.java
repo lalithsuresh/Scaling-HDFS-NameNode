@@ -91,6 +91,20 @@ public class INodeFile extends INode {
   }
 
   /**
+   * [STATELESS] get header
+   * If you need preferred block size, or other properties,
+   * select/set this value first. 
+   */
+  public long getHeader () {
+	  return header;
+  }
+  /**
+   * [STATELESS] set header
+   */
+  public void setHeader (long val) {
+	  header = val;
+  }
+  /**
    * Get preferred block size for the file
    * @return preferred block size in bytes
    */

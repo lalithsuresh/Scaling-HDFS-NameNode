@@ -17,10 +17,15 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import se.sics.clusterj.*;
+
+import java.io.DataOutput;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.hadoop.fs.UnresolvedLinkException;
 import org.apache.hadoop.fs.permission.FsAction;
@@ -29,6 +34,12 @@ import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
+import org.apache.hadoop.io.DataOutputBuffer;
+
+import com.mysql.clusterj.ClusterJHelper;
+import com.mysql.clusterj.Session;
+import com.mysql.clusterj.SessionFactory;
+import com.mysql.clusterj.Transaction;
 
 /**
  * Directory INode class.
@@ -294,6 +305,82 @@ class INodeDirectory extends INode {
     if (node.getGroupName() == null) {
       node.setGroup(getGroupName());
     }
+
+    
+    // [STATELESS]
+    Properties p = new Properties();
+    p.setProperty("com.mysql.clusterj.connectstring", "cloud3.sics.se:1186");
+    p.setProperty("com.mysql.clusterj.database", "test");
+    SessionFactory sf = ClusterJHelper.getSessionFactory(p);
+    Session s = sf.getSession();
+    Transaction tx = s.currentTransaction();
+    tx.begin();
+
+    InodeTable inode = s.find(InodeTable.class, node.getFullPathName());
+    boolean entry_exists = true;
+    if (inode == null)
+    {
+    	inode = s.newInstance(InodeTable.class);
+        inode.setName(node.getFullPathName());
+        entry_exists = false;
+    }
+    
+    inode.setModificationTime(node.modificationTime);
+    inode.setATime(node.getAccessTime());
+  
+    DataOutputBuffer permissionString = new DataOutputBuffer();
+    try {
+		node.getPermissionStatus().write(permissionString);
+	} catch (IOException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+    System.err.println("[STATELESS] Permission string: " + permissionString.toString());
+    long finalPerm = 0;
+    try {
+		permissionString.writeLong(finalPerm);
+	} catch (IOException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+    
+    inode.setPermission(finalPerm);
+    inode.setParent(node.getParent().getFullPathName());
+    
+    // TODO: Does not handle InodeDirectoryWithQuota yet
+    if (node instanceof INodeDirectory)
+    {
+    	System.err.println("[Stateless] isInodeDirectory");
+    	inode.setIsDir(true);
+    }
+    if (node instanceof INodeFile)
+    {
+    	System.err.println("[Stateless] isInodeFile");
+    	inode.setIsUnderConstruction(false);
+    	inode.setIsClosedFile(true);
+    	inode.setHeader(((INodeFile) node).getHeader());
+    }
+    if (node instanceof INodeFileUnderConstruction)
+    {
+    	System.err.println("[Stateless] isInodeFileUnderConstruction");
+    	inode.setIsUnderConstruction(true);
+    	inode.setIsClosedFile(false);
+    	inode.setClientName(((INodeFileUnderConstruction) node).getClientName());
+    	inode.setClientMachine(((INodeFileUnderConstruction) node).getClientMachine());
+    	inode.setClientNode(((INodeFileUnderConstruction) node).getClientNode().getName());
+    }
+    if (node instanceof INodeSymlink)
+    {
+    	System.err.println("[Stateless] isInodeSymlink");    	
+    }
+        
+    if (entry_exists)
+    	s.updatePersistent(inode);
+    else
+    	s.makePersistent(inode);
+    tx.commit();
+    // [STATELESS]
+    
     return node;
   }
 
@@ -319,7 +406,8 @@ class INodeDirectory extends INode {
    */
   <T extends INode> T addNode(String path, T newNode, boolean inheritPermission
       ) throws FileNotFoundException, UnresolvedLinkException  {
-    byte[][] pathComponents = getPathComponents(path);        
+    byte[][] pathComponents = getPathComponents(path);
+    
     if(addToParent(pathComponents, newNode,
                     inheritPermission, true) == null)
       return null;
@@ -344,6 +432,7 @@ class INodeDirectory extends INode {
                                        UnresolvedLinkException {
     // insert into the parent children list
     newNode.name = localname;
+    System.err.println("[Stateless] addToParent -------");
     if(parent.addChild(newNode, inheritPermission, propagateModTime) == null)
       return null;
     return parent;
@@ -391,6 +480,7 @@ class INodeDirectory extends INode {
     newNode.name = pathComponents[pathLen-1];
     // insert into the parent children list
     INodeDirectory parent = getParent(pathComponents);
+    System.err.println("[Stateless] addToParentINodeDirectory OMG -------" + " " + Thread.currentThread().getId());
     if(parent.addChild(newNode, inheritPermission, propagateModTime) == null)
       return null;
     return parent;

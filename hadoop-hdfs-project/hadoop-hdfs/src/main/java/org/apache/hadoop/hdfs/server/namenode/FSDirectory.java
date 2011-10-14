@@ -59,6 +59,8 @@ import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.StartupOption;
 import org.apache.hadoop.hdfs.util.ByteArray;
 
+import com.sun.org.apache.bcel.internal.generic.INSTANCEOF;
+
 /*************************************************
  * FSDirectory stores the filesystem directory state.
  * It handles writing/loading values to disk, and logging
@@ -244,7 +246,7 @@ public class FSDirectory implements Closeable {
     throws FileAlreadyExistsException, QuotaExceededException,
       UnresolvedLinkException {
     waitForReady();
-
+    System.err.println("[Stateless] addFileFSDirectory OMG -------");
     // Always do an implicit mkdirs for parent directory tree.
     long modTime = now();
     if (!mkdirs(new Path(path).getParent().toString(), permissions, true,
@@ -1381,6 +1383,7 @@ public class FSDirectory implements Closeable {
     if (checkQuota) {
       verifyQuota(inodes, numOfINodes, nsDelta, dsDelta, null);
     }
+    
     for(int i = 0; i < numOfINodes; i++) {
       if (inodes[i].isQuotaSet()) { // a directory with quota
         INodeDirectoryWithQuota node =(INodeDirectoryWithQuota)inodes[i]; 
@@ -1553,6 +1556,7 @@ public class FSDirectory implements Closeable {
   private <T extends INode> T addNode(String src, T child, 
         long childDiskspace, boolean inheritPermission) 
   throws QuotaExceededException, UnresolvedLinkException {
+	  System.err.println("[Stateless] addNodeFSDirectory OMG -------");
     byte[][] components = INode.getPathComponents(src);
     byte[] path = components[components.length-1];
     child.setLocalName(path);
@@ -1707,23 +1711,27 @@ public class FSDirectory implements Closeable {
     if (childDiskspace < 0) {
       childDiskspace = counts.getDsCount();
     }
+    
     updateCount(pathComponents, pos, counts.getNsCount(), childDiskspace,
         checkQuota);
     if (pathComponents[pos-1] == null) {
       throw new NullPointerException("Panic: parent does not exist");
     }
+    System.err.println("[Stateless] addChildInFSDirectory OMG ------- " + Thread.currentThread().getId());
     T addedNode = ((INodeDirectory)pathComponents[pos-1]).addChild(
         child, inheritPermission, true);
     if (addedNode == null) {
       updateCount(pathComponents, pos, -counts.getNsCount(), 
           -childDiskspace, true);
     }
+    
     return addedNode;
   }
 
   private <T extends INode> T addChild(INode[] pathComponents, int pos,
       T child, long childDiskspace, boolean inheritPermission)
       throws QuotaExceededException {
+	System.err.println("[Stateless] addToChildSmallFSDirectory OMG -------");
     return addChild(pathComponents, pos, child, childDiskspace,
         inheritPermission, true);
   }
@@ -1732,6 +1740,7 @@ public class FSDirectory implements Closeable {
       int pos, T child, long childDiskspace, boolean inheritPermission) {
     T inode = null;
     try {
+    	System.err.println("[Stateless] addChildNoQuotaCheck -------");
       inode = addChild(pathComponents, pos, child, childDiskspace,
           inheritPermission, false);
     } catch (QuotaExceededException e) {

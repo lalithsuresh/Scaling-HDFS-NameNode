@@ -1134,7 +1134,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     try {
       INode myFile = dir.getFileINode(src);
       recoverLeaseInternal(myFile, src, holder, clientMachine, false);
-
+      
       try {
         blockManager.verifyReplication(src, replication, clientMachine);
       } catch(IOException e) {
@@ -1176,6 +1176,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                                         holder,
                                         clientMachine,
                                         clientNode);
+        System.err.println("thing in the if " + Thread.currentThread().getId());
         dir.replaceNode(src, node, cons);
         leaseManager.addLease(cons.getClientName(), src);
 
@@ -1186,9 +1187,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
        // blocks associated with it.
        //
        checkFsObjectLimit();
-
+       
         // increment global generation stamp
         long genstamp = nextGenerationStamp();
+        System.err.println("thing in the else " + Thread.currentThread().getId());
         INodeFileUnderConstruction newNode = dir.addFile(src, permissions,
             replication, blockSize, holder, clientMachine, clientNode, genstamp);
         if (newNode == null) {
@@ -1621,7 +1623,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     if (!checkFileProgress(pendingFile, true)) {
       return false;
     }
-
+    
     finalizeINodeFileUnderConstruction(src, pendingFile);
 
     NameNode.stateChangeLog.info("DIR* NameSystem.completeFile: file " + src
@@ -2257,6 +2259,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     // The file is no longer pending.
     // Create permanent INode, update blocks
     INodeFile newFile = pendingFile.convertToInodeFile();
+    System.err.println("finalizeINodeFileUnderConstruction " + Thread.currentThread().getId());
     dir.replaceNode(src, pendingFile, newFile);
 
     // close file and persist block allocations for this file
