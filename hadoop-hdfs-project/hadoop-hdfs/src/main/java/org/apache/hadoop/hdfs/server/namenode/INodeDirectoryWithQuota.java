@@ -82,6 +82,13 @@ class INodeDirectoryWithQuota extends INodeDirectory {
     return dsQuota;
   }
   
+  long getNsCount() {
+	return nsCount;
+  }
+  
+  long getDsCount() {
+	  return diskspace;
+  }
   /** Set this directory's quota
    * 
    * @param nsQuota Namespace quota to be set

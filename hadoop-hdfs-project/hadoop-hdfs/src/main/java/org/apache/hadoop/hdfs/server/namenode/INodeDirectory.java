@@ -103,6 +103,62 @@ class INodeDirectory extends INode {
     int low = Collections.binarySearch(children, newChild.name);
     if (low>=0) { // an old child exists so replace by the newChild
       children.set(low, newChild);
+      
+      // [STATELESS]
+      Properties p = new Properties();
+      p.setProperty("com.mysql.clusterj.connectstring", "cloud3.sics.se:1186");
+      p.setProperty("com.mysql.clusterj.database", "test");
+      SessionFactory sf = ClusterJHelper.getSessionFactory(p);
+      Session s = sf.getSession();
+      Transaction tx = s.currentTransaction();
+      tx.begin();
+
+      InodeTable inode = s.find(InodeTable.class, newChild.getFullPathName());
+      
+      inode.setModificationTime(this.modificationTime);
+      inode.setATime(this.getAccessTime());
+    
+      DataOutputBuffer permissionString = new DataOutputBuffer();
+      try {
+    	  newChild.getPermissionStatus().write(permissionString);
+  	} catch (IOException e) {
+  		// TODO Auto-generated catch block
+  		e.printStackTrace();
+  	}
+      System.err.println("[STATELESS] Permission string: " + permissionString.toString());
+      long finalPerm = 0;
+      try {
+  		permissionString.writeLong(finalPerm);
+  	} catch (IOException e) {
+  		// TODO Auto-generated catch block
+  		e.printStackTrace();
+  	}
+      
+      inode.setPermission(finalPerm);
+      inode.setParent(newChild.getParent().getFullPathName());
+      inode.setNSQuota(newChild.getNsQuota());
+      inode.setDSQuota(newChild.getDsQuota());
+      
+      // TODO: Does not handle InodeDirectoryWithQuota yet
+      if (newChild instanceof INodeDirectory)
+      {
+      	System.err.println("[Stateless] replaceChild --isInodeDirectory");
+      	inode.setIsDir(true);
+      	inode.setIsDirWithQuota(true);
+      }
+      if (this instanceof INodeDirectoryWithQuota)
+      {
+      	System.err.println("[Stateless] replaceChild -- isInodeDirectoryWithQuota");
+      	inode.setIsDir(false);
+      	inode.setIsDirWithQuota(true);      	
+      	inode.setNSCount(((INodeDirectoryWithQuota) newChild).getNsCount());
+      	inode.setDSCount(((INodeDirectoryWithQuota) newChild).getDsCount());
+      }
+    
+      s.updatePersistent(inode);
+      
+      tx.commit();
+      // [STATELESS]
     } else {
       throw new IllegalArgumentException("No child exists to be replaced");
     }
@@ -346,12 +402,21 @@ class INodeDirectory extends INode {
     
     inode.setPermission(finalPerm);
     inode.setParent(node.getParent().getFullPathName());
+    inode.setNSQuota(node.getNsQuota());
+	inode.setDSQuota(node.getDsQuota());
     
     // TODO: Does not handle InodeDirectoryWithQuota yet
     if (node instanceof INodeDirectory)
     {
     	System.err.println("[Stateless] isInodeDirectory");
     	inode.setIsDir(true);
+    }
+    if (node instanceof INodeDirectoryWithQuota)
+    {
+    	System.err.println("[Stateless] isInodeDirectory");
+    	inode.setIsDirWithQuota(true);    	
+    	inode.setNSCount(((INodeDirectoryWithQuota) node).getNsCount());
+    	inode.setDSCount(((INodeDirectoryWithQuota) node).getDsCount());
     }
     if (node instanceof INodeFile)
     {
