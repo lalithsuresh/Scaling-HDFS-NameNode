@@ -1,12 +1,8 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
 import java.util.Properties;
-import se.sics.clusterj.*;
-
 import com.mysql.clusterj.ClusterJHelper;
-import com.mysql.clusterj.Session;
 import com.mysql.clusterj.SessionFactory;
-import com.mysql.clusterj.Transaction;
 /*
  * DB Connector with static block, to be executed
  * every time
