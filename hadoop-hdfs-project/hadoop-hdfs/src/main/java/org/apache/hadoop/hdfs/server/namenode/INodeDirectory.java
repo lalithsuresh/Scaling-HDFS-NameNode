@@ -134,7 +134,7 @@ class INodeDirectory extends INode {
   		e.printStackTrace();
   	}
       
-      inode.setPermission(finalPerm);
+   //   inode.setPermission(finalPerm);
       inode.setParent(newChild.getParent().getFullPathName());
       inode.setNSQuota(newChild.getNsQuota());
       inode.setDSQuota(newChild.getDsQuota());
@@ -363,89 +363,90 @@ class INodeDirectory extends INode {
     }
 
     
-    // [STATELESS]
-    Properties p = new Properties();
-    p.setProperty("com.mysql.clusterj.connectstring", "cloud3.sics.se:1186");
-    p.setProperty("com.mysql.clusterj.database", "test");
-    SessionFactory sf = ClusterJHelper.getSessionFactory(p);
-    Session s = sf.getSession();
-    Transaction tx = s.currentTransaction();
-    tx.begin();
-
-    InodeTable inode = s.find(InodeTable.class, node.getFullPathName());
-    boolean entry_exists = true;
-    if (inode == null)
-    {
-    	inode = s.newInstance(InodeTable.class);
-        inode.setName(node.getFullPathName());
-        entry_exists = false;
-    }
-    
-    inode.setModificationTime(node.modificationTime);
-    inode.setATime(node.getAccessTime());
-  
-    DataOutputBuffer permissionString = new DataOutputBuffer();
-    try {
-		node.getPermissionStatus().write(permissionString);
-	} catch (IOException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	}
-    System.err.println("[STATELESS] Permission string: " + permissionString.toString());
-    long finalPerm = 0;
-    try {
-		permissionString.writeLong(finalPerm);
-	} catch (IOException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	}
-    
-    inode.setPermission(finalPerm);
-    inode.setParent(node.getParent().getFullPathName());
-    inode.setNSQuota(node.getNsQuota());
-	inode.setDSQuota(node.getDsQuota());
-    
-    // TODO: Does not handle InodeDirectoryWithQuota yet
-    if (node instanceof INodeDirectory)
-    {
-    	System.err.println("[Stateless] isInodeDirectory");
-    	inode.setIsDir(true);
-    }
-    if (node instanceof INodeDirectoryWithQuota)
-    {
-    	System.err.println("[Stateless] isInodeDirectory");
-    	inode.setIsDirWithQuota(true);    	
-    	inode.setNSCount(((INodeDirectoryWithQuota) node).getNsCount());
-    	inode.setDSCount(((INodeDirectoryWithQuota) node).getDsCount());
-    }
-    if (node instanceof INodeFile)
-    {
-    	System.err.println("[Stateless] isInodeFile");
-    	inode.setIsUnderConstruction(false);
-    	inode.setIsClosedFile(true);
-    	inode.setHeader(((INodeFile) node).getHeader());
-    }
-    if (node instanceof INodeFileUnderConstruction)
-    {
-    	System.err.println("[Stateless] isInodeFileUnderConstruction");
-    	inode.setIsUnderConstruction(true);
-    	inode.setIsClosedFile(false);
-    	inode.setClientName(((INodeFileUnderConstruction) node).getClientName());
-    	inode.setClientMachine(((INodeFileUnderConstruction) node).getClientMachine());
-    	inode.setClientNode(((INodeFileUnderConstruction) node).getClientNode().getName());
-    }
-    if (node instanceof INodeSymlink)
-    {
-    	System.err.println("[Stateless] isInodeSymlink");    	
-    }
-        
-    if (entry_exists)
-    	s.updatePersistent(inode);
-    else
-    	s.makePersistent(inode);
-    tx.commit();
-    // [STATELESS]
-    
+//    // [STATELESS]
+//    Properties p = new Properties();
+//    p.setProperty("com.mysql.clusterj.connectstring", "cloud3.sics.se:1186");
+//    p.setProperty("com.mysql.clusterj.database", "test");
+//    SessionFactory sf = ClusterJHelper.getSessionFactory(p);
+//    Session s = sf.getSession();
+//    Transaction tx = s.currentTransaction();
+//    tx.begin();
+//
+//    InodeTable inode = s.find(InodeTable.class, node.getFullPathName());
+//    boolean entry_exists = true;
+//    if (inode == null)
+//    {
+//    	inode = s.newInstance(InodeTable.class);
+//        inode.setName(node.getFullPathName());
+//        entry_exists = false;
+//    }
+//    
+//    inode.setModificationTime(node.modificationTime);
+//    inode.setATime(node.getAccessTime());
+//  
+//    DataOutputBuffer permissionString = new DataOutputBuffer();
+//    try {
+//		node.getPermissionStatus().write(permissionString);
+//	} catch (IOException e) {
+//		// TODO Auto-generated catch block
+//		e.printStackTrace();
+//	}
+//    System.err.println("[STATELESS] Permission string: " + permissionString.toString());
+//    long finalPerm = 0;
+//    try {
+//		permissionString.writeLong(finalPerm);
+//	} catch (IOException e) {
+//		// TODO Auto-generated catch block
+//		e.printStackTrace();
+//	}
+//    
+//  //  inode.setPermission(finalPerm);
+//    inode.setParent(node.getParent().getFullPathName());
+//    inode.setNSQuota(node.getNsQuota());
+//	inode.setDSQuota(node.getDsQuota());
+//    
+//    // TODO: Does not handle InodeDirectoryWithQuota yet
+//    if (node instanceof INodeDirectory)
+//    {
+//    	System.err.println("[Stateless] isInodeDirectory");
+//    	inode.setIsDir(true);
+//    }
+//    if (node instanceof INodeDirectoryWithQuota)
+//    {
+//    	System.err.println("[Stateless] isInodeDirectory");
+//    	inode.setIsDirWithQuota(true);    	
+//    	inode.setNSCount(((INodeDirectoryWithQuota) node).getNsCount());
+//    	inode.setDSCount(((INodeDirectoryWithQuota) node).getDsCount());
+//    }
+//    if (node instanceof INodeFile)
+//    {
+//    	System.err.println("[Stateless] isInodeFile");
+//    	inode.setIsUnderConstruction(false);
+//    	inode.setIsClosedFile(true);
+//    	inode.setHeader(((INodeFile) node).getHeader());
+//    }
+//    if (node instanceof INodeFileUnderConstruction)
+//    {
+//    	System.err.println("[Stateless] isInodeFileUnderConstruction");
+//    	inode.setIsUnderConstruction(true);
+//    	inode.setIsClosedFile(false);
+//    	inode.setClientName(((INodeFileUnderConstruction) node).getClientName());
+//    	inode.setClientMachine(((INodeFileUnderConstruction) node).getClientMachine());
+//    	inode.setClientNode(((INodeFileUnderConstruction) node).getClientNode().getName());
+//    }
+//    if (node instanceof INodeSymlink)
+//    {
+//    	System.err.println("[Stateless] isInodeSymlink");    	
+//    }
+//        
+//    if (entry_exists)
+//    	s.updatePersistent(inode);
+//    else
+//    	s.makePersistent(inode);
+//    tx.commit();
+//    // [STATELESS]
+    InodeTableHelper ith = new InodeTableHelper();
+    ith.AddChild(node);
     return node;
   }
 
