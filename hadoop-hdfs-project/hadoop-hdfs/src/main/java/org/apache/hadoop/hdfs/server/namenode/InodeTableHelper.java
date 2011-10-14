@@ -24,7 +24,7 @@ public class InodeTableHelper {
 	 * InodeDirectory, InodeDirectoryWithQuota, etc.
 	 * TODO: InodeSymLink
 	 */
-	<T extends INode> void AddChild(T node){
+	<T extends INode> void addChild(T node){
 		Transaction tx = s.currentTransaction();
 	    tx.begin();
 	    InodeTable inode = s.find(InodeTable.class, node.getFullPathName());
@@ -38,7 +38,7 @@ public class InodeTableHelper {
 	    
 	    inode.setModificationTime(node.modificationTime);
 	    inode.setATime(node.getAccessTime());
-	  
+	    inode.setLocalName(node.getLocalName());
 	    DataOutputBuffer permissionString = new DataOutputBuffer();
 	    try {
 			node.getPermissionStatus().write(permissionString);
@@ -103,7 +103,7 @@ public class InodeTableHelper {
 	      
 	      inode.setModificationTime(thisInode.modificationTime);
 	      inode.setATime(thisInode.getAccessTime());
-	    
+	      inode.setLocalName(thisInode.getLocalName());
 	      DataOutputBuffer permissionString = new DataOutputBuffer();
 	      try {
 	    	  newChild.getPermissionStatus().write(permissionString);
