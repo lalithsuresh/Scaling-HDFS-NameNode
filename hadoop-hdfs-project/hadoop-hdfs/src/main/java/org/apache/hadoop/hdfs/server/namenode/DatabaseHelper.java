@@ -41,11 +41,6 @@ public class DatabaseHelper {
 
 	public static List<INode> getChildren(String parentDir) throws IOException {
 
-		Properties p = new Properties();
-		p.setProperty("com.mysql.clusterj.connectstring", "cloud3.sics.se:1186");
-		p.setProperty("com.mysql.clusterj.database", "test");
-		//SessionFactory sf = ClusterJHelper.getSessionFactory(p);
-		//Session s = sf.getSession();
 		Session s = DBConnector.sessionFactory.getSession();
 		Transaction tx = s.currentTransaction();
 		long t1 = System.currentTimeMillis();

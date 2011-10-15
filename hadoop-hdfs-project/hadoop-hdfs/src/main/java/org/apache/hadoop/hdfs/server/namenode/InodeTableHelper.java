@@ -63,7 +63,6 @@ public class InodeTableHelper {
 	    inode.setParent(node.getParent().getFullPathName());
 	    inode.setNSQuota(node.getNsQuota());
 		inode.setDSQuota(node.getDsQuota());
-		// TODO: Does not handle InodeDirectoryWithQuota yet
 	    if (node instanceof INodeDirectory)
 	    {
 	    	inode.setIsDir(true);
@@ -90,7 +89,7 @@ public class InodeTableHelper {
 	    }
 	    if (node instanceof INodeSymlink)
 	    {
-	    	//TODO:InodeSymlink here
+	    	inode.setSymlink(((INodeSymlink) node).getSymlink());
 	    	System.err.println("[Stateless] isInodeSymlink");    	
 	    }
 	    if (entry_exists)
