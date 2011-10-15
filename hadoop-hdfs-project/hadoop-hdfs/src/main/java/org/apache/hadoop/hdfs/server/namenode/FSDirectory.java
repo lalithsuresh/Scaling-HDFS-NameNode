@@ -132,8 +132,7 @@ public class FSDirectory implements Closeable {
     // FIXME: Seperator lolz
     rootDir.setFullPathName("/");
     // [STATELESS] Add rootDir to DBMS
-    InodeTableHelper ith = new InodeTableHelper();
-	ith.addChild(rootDir);
+	INodeTableHelper.addChild(rootDir);
     
     this.fsImage = fsImage;
     int configuredLimit = conf.getInt(

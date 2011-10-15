@@ -1,60 +1,135 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
-
-import com.mysql.clusterj.ClusterJHelper;
-import com.mysql.clusterj.Session;
-import com.mysql.clusterj.SessionFactory;
-import com.mysql.clusterj.Transaction;
-
 import java.io.IOException;
-import java.util.Date;
-import java.util.Properties;
-import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.io.DataInputBuffer;
-import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
+import org.apache.hadoop.io.DataOutputBuffer;
+
+import se.sics.clusterj.InodeTable;
+
+import com.mysql.clusterj.ClusterJDatastoreException;
 import com.mysql.clusterj.Query;
-import com.mysql.clusterj.query.Predicate;
-import com.mysql.clusterj.query.PredicateOperand;
+import com.mysql.clusterj.Session;
+
+import com.mysql.clusterj.Transaction;
 import com.mysql.clusterj.query.QueryBuilder;
 import com.mysql.clusterj.query.QueryDomainType;
-import java.util.ArrayList;
-import java.util.List;
-import se.sics.clusterj.*;
 
-/**
- * 
- * 
- *  to Run:
- * java -jar clusterj.jar -Djava.library.path=target/lib/ 
- *
- */
-public class DatabaseHelper {
-
+public class INodeTableHelper {
+	public static Session session= DBConnector.sessionFactory.getSession() ;
 	static final int MAX_DATA = 128;
 	public static FSNamesystem ns = null;
 
-	private static void initDB() {
+	
+	/*AddChild should take care of the different InodeOperations
+	 * InodeDirectory, InodeDirectoryWithQuota, etc.
+	 * TODO: InodeSymLink
+	 */
+	public static void addChild(INode node){
+		boolean entry_exists;
+		Transaction tx = session.currentTransaction();
+	    tx.begin();
+	    InodeTable inode = session.find(InodeTable.class, node.getFullPathName());
+	    entry_exists = true;
+	    if (inode == null)
+	    {
+	    	inode = session.newInstance(InodeTable.class);
+	        inode.setName(node.getFullPathName());
+	        entry_exists = false;
+	    }
+	    
+	    inode.setModificationTime(node.modificationTime);
+	    inode.setATime(node.getAccessTime());
+	    inode.setLocalName(node.getLocalName());
+	    DataOutputBuffer permissionString = new DataOutputBuffer();
+	    try {
+			node.getPermissionStatus().write(permissionString);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	    
+
+	    
+	    /* Commented by W
+	    long finalPerm = 0;
+	    try {
+			permissionString.writeLong(finalPerm);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	    */
+	    
+	    inode.setPermission(permissionString.getData());
+	    
+	    // Corner case for rootDir
+	    if (node.getParent() != null)
+	    	inode.setParent(node.getParent().getFullPathName());
+	    
+	    inode.setNSQuota(node.getNsQuota());
+		inode.setDSQuota(node.getDsQuota());
+	    if (node instanceof INodeDirectory)
+	    {
+	    	inode.setIsClosedFile(false);
+	    	inode.setIsUnderConstruction(false);
+	    	inode.setIsDirWithQuota(false);    
+	    	inode.setIsDir(true);
+	    }
+	    if (node instanceof INodeDirectoryWithQuota)
+	    {
+	    	inode.setIsClosedFile(false);
+	    	inode.setIsDir(false);	    	
+	    	inode.setIsUnderConstruction(false);
+	    	inode.setIsDirWithQuota(true);    	
+	    	inode.setNSCount(((INodeDirectoryWithQuota) node).getNsCount());
+	    	inode.setDSCount(((INodeDirectoryWithQuota) node).getDsCount());
+	    }
+	    if (node instanceof INodeFile)
+	    {
+	    	inode.setIsDir(false);
+	    	inode.setIsUnderConstruction(false);
+	    	inode.setIsDirWithQuota(false);
+	    	inode.setIsClosedFile(true);
+	    	inode.setHeader(((INodeFile) node).getHeader());
+	    }
+	    if (node instanceof INodeFileUnderConstruction)
+	    {
+	    	inode.setIsClosedFile(false);
+	    	inode.setIsDir(false);
+	    	inode.setIsDirWithQuota(false);
+	    	inode.setIsUnderConstruction(true);	    	
+	    	inode.setClientName(((INodeFileUnderConstruction) node).getClientName());
+	    	inode.setClientMachine(((INodeFileUnderConstruction) node).getClientMachine());
+	    	System.err.println("[STATELESS] Client name : " +((INodeFileUnderConstruction) node).getClientNode().getName());
+	    	inode.setClientNode(((INodeFileUnderConstruction) node).getClientNode().getName());
+	    }
+	    if (node instanceof INodeSymlink)
+	    {
+	    	inode.setSymlink(((INodeSymlink) node).getSymlink());
+	    }
+	    if (entry_exists)
+	    	session.updatePersistent(inode);
+	    else
+	    	session.makePersistent(inode);
+	    tx.commit();
+	    session.flush();
 	}
-
-
+	
+	
 	public static List<INode> getChildren(String parentDir) throws IOException {
 
-		Session s = DBConnector.sessionFactory.getSession();
-		Transaction tx = s.currentTransaction();
-		long t1 = System.currentTimeMillis();
-
-
-		QueryBuilder qb = s.getQueryBuilder();
+		QueryBuilder qb = session.getQueryBuilder();
 		QueryDomainType<InodeTable> dobj = qb.createQueryDefinition(InodeTable.class);
 
 
 		dobj.where(dobj.get("parent").equal(dobj.param("parent")));
 
-		Query<InodeTable> query = s.createQuery(dobj);
+		Query<InodeTable> query = session.createQuery(dobj);
 		query.setParameter("parent", parentDir); //W: WHERE parent = parentDir
 
 		List<InodeTable> resultList = query.getResultList();
@@ -104,7 +179,71 @@ public class DatabaseHelper {
 
 
 	}
+	
+	public static INode removeChild(INode node) throws ClusterJDatastoreException {
+		Transaction tx = session.currentTransaction();
+        tx.begin();
+        InodeTable inode = session.find(InodeTable.class, node.getFullPathName());
+        session.deletePersistent(inode);
+        tx.commit();
+        session.flush();
+        
+		return node;
+	}
+	
+	public static void replaceChild (INode thisInode, INode newChild){
+		 // [STATELESS]
+	      Transaction tx = session.currentTransaction();
+	      tx.begin();
 
+	      InodeTable inode = session.find(InodeTable.class, newChild.getFullPathName());
+	      
+	      inode.setModificationTime(thisInode.modificationTime);
+	      inode.setATime(thisInode.getAccessTime());
+	      inode.setLocalName(thisInode.getLocalName());
+	      DataOutputBuffer permissionString = new DataOutputBuffer();
+	    
+	      try {
+	    	  newChild.getPermissionStatus().write(permissionString);
+	  	} catch (IOException e) {
+	  		// TODO Auto-generated catch block
+	  		e.printStackTrace();
+	  	}
+
+	     /* long finalPerm = 0;
+	      try {
+	  		permissionString.writeLong(finalPerm);
+	  	} catch (IOException e) {
+	  		// TODO Auto-generated catch block
+	  		e.printStackTrace();
+	  	}*/
+	      
+	      inode.setPermission(permissionString.getData());
+	      inode.setParent(newChild.getParent().getFullPathName());
+	      inode.setNSQuota(newChild.getNsQuota());
+	      inode.setDSQuota(newChild.getDsQuota());
+	      
+	      // TODO: Does not handle InodeDirectoryWithQuota yet
+	      if (newChild instanceof INodeDirectory)
+	      {
+	      	inode.setIsDir(true);
+	      	inode.setIsDirWithQuota(true);
+	      }
+	      if (newChild instanceof INodeDirectoryWithQuota)
+	      {
+	      	inode.setIsDir(false);
+	      	inode.setIsDirWithQuota(true);      	
+	      	inode.setNSCount(((INodeDirectoryWithQuota) newChild).getNsCount());
+	      	inode.setDSCount(((INodeDirectoryWithQuota) newChild).getDsCount());
+	      }
+	    
+	      session.updatePersistent(inode);
+	      
+	      tx.commit();
+	      session.flush();
+		
+	}
+	
 	public static INode getChildDirectory(String parentDir, String searchDir) throws IOException {
 
 		/*W: TODO
@@ -114,22 +253,21 @@ public class DatabaseHelper {
 		 *  4. else return null;
 		 */
 
-		Session s = DBConnector.sessionFactory.getSession();
 				
 		/*
 		 * Full table scan
 		 * */
 
-		QueryBuilder qb = s.getQueryBuilder();
-		QueryDomainType dobj = qb.createQueryDefinition(InodeTable.class);
+		QueryBuilder qb = session.getQueryBuilder();
+		QueryDomainType<InodeTable> dobj = qb.createQueryDefinition(InodeTable.class);
 
 		System.err.println("Parent: " + parentDir + " search: " + searchDir);
 		dobj.where(dobj.get("parent").equal(dobj.param("parent_param")));
 
-		Query<InodeTable> query = s.createQuery(dobj);
+		Query<InodeTable> query = session.createQuery(dobj);
 		query.setParameter("parent_param", parentDir); //W: the WHERE clause of SQL
 
-		//Query query = s.createQuery(dobj);
+		//Query query = session.createQuery(dobj);
 		List<InodeTable> resultList = query.getResultList();
 
 
@@ -169,15 +307,14 @@ public class DatabaseHelper {
 	 * @throws IOException 
 	 */
 	public static INode getINodeByNameBasic (String name) throws IOException{
-		Session s = DBConnector.sessionFactory.getSession();
 		
-		QueryBuilder qb = s.getQueryBuilder();
-		QueryDomainType dobj = qb.createQueryDefinition(InodeTable.class);
+		QueryBuilder qb = session.getQueryBuilder();
+		QueryDomainType<InodeTable> dobj = qb.createQueryDefinition(InodeTable.class);
 
 
 		dobj.where(dobj.get("name").equal(dobj.param("inode_name")));
 
-		Query<InodeTable> query = s.createQuery(dobj);
+		Query<InodeTable> query = session.createQuery(dobj);
 		query.setParameter("inode_name", name); //W: the WHERE clause of SQL
 
 		List<InodeTable> resultList = query.getResultList();
@@ -240,24 +377,5 @@ public class DatabaseHelper {
 		
 		return inode;
 	}
-	
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
 
-		/*W: For testing*/
-		//Main_LW.getChildDirectory("/", "Lennon");
-		try {
-			DatabaseHelper.getChildren("/");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-	}
-
-	public static void doStupidStuff() {
-		System.out.println("I am stupid!");
-	}
 }
