@@ -1175,18 +1175,20 @@ public class FSDirectory implements Closeable {
   DirectoryListing getListing(String src, byte[] startAfter,
 			boolean needLocation) throws UnresolvedLinkException, IOException {
 		String srcs = normalizePath(src);
-		KthFsHelper.printKTH("Inside dir.getListing()");
-		
-		//FIXME: [KTHFS] read from MySQL Cluster and return the DirectoryListing object
+
+		//[KTHFS] read from MySQL Cluster and return the DirectoryListing object
 		
 		readLock();
 		try {
 			INode targetNode = rootDir.getNode2(srcs, true);
-			KthFsHelper.printKTH("targetNode: "+targetNode.getFullPathName());
+			KthFsHelper.printKTH("inside getListing() ----- targetNode.toString() -> "+targetNode.toString());
+			
 			if (targetNode == null)
 				return null;
+			
 
 			if (!targetNode.isDirectory()) {
+				KthFsHelper.printKTH(targetNode.toString()+" - NOT a DIRECTORY");
 				return new DirectoryListing(
 						new HdfsFileStatus[]{createFileStatus(HdfsFileStatus.EMPTY_NAME,
 								targetNode, needLocation)}, 0);
@@ -1194,7 +1196,7 @@ public class FSDirectory implements Closeable {
 			
 			//W: else its a directory
 			INodeDirectory dirInode = (INodeDirectory)targetNode;
-//			List<INode> contents = dirInode.getChildren(); //TODO: W: need to modify this
+			KthFsHelper.printKTH("dirInode.toString() -> "+dirInode.toString());
 			List<INode> contents = dirInode.getChildrenFromDB(); //W: modified for KTHFS
 			int startChild = dirInode.nextChild(startAfter);
 			int totalNumChildren = contents.size();
@@ -1210,38 +1212,6 @@ public class FSDirectory implements Closeable {
 			readUnlock();
 		}
 	}
-  /*
-  DirectoryListing getListing(String src, byte[] startAfter,
-      boolean needLocation) throws UnresolvedLinkException, IOException {
-    String srcs = normalizePath(src);
-
-    readLock();
-    try {
-      INode targetNode = rootDir.getNode(srcs, true);
-      if (targetNode == null)
-        return null;
-      
-      if (!targetNode.isDirectory()) {
-        return new DirectoryListing(
-            new HdfsFileStatus[]{createFileStatus(HdfsFileStatus.EMPTY_NAME,
-                targetNode, needLocation)}, 0);
-      }
-      INodeDirectory dirInode = (INodeDirectory)targetNode;
-      List<INode> contents = dirInode.getChildren();
-      int startChild = dirInode.nextChild(startAfter);
-      int totalNumChildren = contents.size();
-      int numOfListing = Math.min(totalNumChildren-startChild, this.lsLimit);
-      HdfsFileStatus listing[] = new HdfsFileStatus[numOfListing];
-      for (int i=0; i<numOfListing; i++) {
-        INode cur = contents.get(startChild+i);
-        listing[i] = createFileStatus(cur.name, cur, needLocation);
-      }
-      return new DirectoryListing(
-          listing, totalNumChildren-startChild-numOfListing);
-    } finally {
-      readUnlock();
-    }
-  }*/
 
   /** Get the file info for a specific file.
    * @param src The string representation of the path to the file
@@ -1254,7 +1224,7 @@ public class FSDirectory implements Closeable {
     String srcs = normalizePath(src);
     readLock();
     try {
-      INode targetNode = rootDir.getNode(srcs, resolveLink);
+      INode targetNode = rootDir.getNode2(srcs, resolveLink);
       if (targetNode == null) {
         return null;
       }

@@ -46,6 +46,10 @@ public class InodeTableHelper {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	    
+	    System.err.println("[STATELESS] Permission string: " + permissionString.toString());
+	    
+	    /* Commented by W
 	    long finalPerm = 0;
 	    try {
 			permissionString.writeLong(finalPerm);
@@ -53,8 +57,9 @@ public class InodeTableHelper {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	    */
 	    
-	   // inode.setPermission(finalPerm);
+	    inode.setPermission(permissionString.getData());
 	    inode.setParent(node.getParent().getFullPathName());
 	    inode.setNSQuota(node.getNsQuota());
 		inode.setDSQuota(node.getDsQuota());
@@ -105,6 +110,7 @@ public class InodeTableHelper {
 	      inode.setATime(thisInode.getAccessTime());
 	      inode.setLocalName(thisInode.getLocalName());
 	      DataOutputBuffer permissionString = new DataOutputBuffer();
+	    
 	      try {
 	    	  newChild.getPermissionStatus().write(permissionString);
 	  	} catch (IOException e) {
@@ -112,15 +118,15 @@ public class InodeTableHelper {
 	  		e.printStackTrace();
 	  	}
 	      System.err.println("[STATELESS] Permission string: " + permissionString.toString());
-	      long finalPerm = 0;
+	     /* long finalPerm = 0;
 	      try {
 	  		permissionString.writeLong(finalPerm);
 	  	} catch (IOException e) {
 	  		// TODO Auto-generated catch block
 	  		e.printStackTrace();
-	  	}
+	  	}*/
 	      
-	   //   inode.setPermission(finalPerm);
+	      inode.setPermission(permissionString.getData());
 	      inode.setParent(newChild.getParent().getFullPathName());
 	      inode.setNSQuota(newChild.getNsQuota());
 	      inode.setDSQuota(newChild.getDsQuota());

@@ -19,6 +19,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -36,605 +37,567 @@ import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
  * Directory INode class.
  */
 class INodeDirectory extends INode {
-  protected static final int DEFAULT_FILES_PER_DIRECTORY = 5;
-  final static String ROOT_NAME = "";
+	protected static final int DEFAULT_FILES_PER_DIRECTORY = 5;
+	final static String ROOT_NAME = "";
 
-  private List<INode> children;
+	private List<INode> children;
 
-  INodeDirectory(String name, PermissionStatus permissions) {
-    super(name, permissions);
-    this.children = null;
-  }
-
-  public INodeDirectory(PermissionStatus permissions, long mTime) {
-    super(permissions, mTime, 0);
-    this.children = null;
-  }
-
-  /** constructor */
-  INodeDirectory(byte[] localName, PermissionStatus permissions, long mTime) {
-    this(permissions, mTime);
-    this.name = localName;
-  }
-  
-  /** copy constructor
-   * 
-   * @param other
-   */
-  INodeDirectory(INodeDirectory other) {
-    super(other);
-    this.children = other.getChildren();
-  }
-  
-  /**
-   * Check whether it's a directory
-   */
-  public boolean isDirectory() {
-    return true;
-  }
-
-  INode removeChild(INode node) {
-    assert children != null;
-    int low = Collections.binarySearch(children, node.name);
-    if (low >= 0) {
-      return children.remove(low);
-    } else {
-      return null;
-    }
-  }
-
-  /** Replace a child that has the same name as newChild by newChild.
-   * 
-   * @param newChild Child node to be added
-   */
-  void replaceChild(INode newChild) {
-    if ( children == null ) {
-      throw new IllegalArgumentException("The directory is empty");
-    }
-    int low = Collections.binarySearch(children, newChild.name);
-    if (low>=0) { // an old child exists so replace by the newChild
-      children.set(low, newChild);
-      //[kthfs] Call to INodeTableHelper to replaceChild in the DB
-      InodeTableHelper ith = new InodeTableHelper();
-      ith.replaceChild(this, newChild);  
-    } else {
-      throw new IllegalArgumentException("No child exists to be replaced");
-    }
-  }
-  
-  INode getChild(String name) {
-    return getChildINode(DFSUtil.string2Bytes(name));
-  }
-
-  private INode getChildINode(byte[] name) {
-    if (children == null) {
-      return null;
-    }
-    int low = Collections.binarySearch(children, name);
-    if (low >= 0) {
-    	KthFsHelper.printKTH("******************************* getChildINode: "+children.get(low));
-      return children.get(low);
-    }
-    return null;
-  }
-  
-  private INode getChildINodeFromDB(byte[] name) {
-	    
-	  //FIXME: W: the fullpathname and name array has bugs - RESUME FROM HERE - FIX the two level dir listing /Lennon/somedir/anotherDir 
-	  //TODO: tell Lalith/Mariano that local name should be stored in DB also - it is required for this function
-//	  
-//	  if (children == null) {
-//	      return null;
-//	    }
-	    
-	  KthFsHelper.printKTH("fullpathname: "+this.getFullPathName() + "name byte array:"+ new String(name));
-	  String child = se.sics.clusterj.Main_LW.getChildDirectory(this.getFullPathName(), new String(name));
-	  
-	   if(child == null)
-		   return null;
-	   else return new INodeDirectory(child, this.getPermissionStatus());
-	   
-	  
-	  
-	  /*W: commented out for KTHFS
-	  int low = Collections.binarySearch(children, name);
-	    if (low >= 0) {
-	      return children.get(low);
-	    }
-	    return null;
-	    */
-	  }
-
-  /**
-   * Return the INode of the last component in components, or null if the last
-   * component does not exist.
-   */
-  private INode getNode2(byte[][] components, boolean resolveLink) 
-    throws UnresolvedLinkException {
-    INode[] inode  = new INode[1];
-    
-    //W: commented out for KTHFS because namenode init was failing
-//    getExistingPathINodes(components, inode, resolveLink);
-    getExistingPathINodes2(components, inode, resolveLink);
-    
-    
-    return inode[0];
-  }
-  
-  private INode getNode(byte[][] components, boolean resolveLink) 
-		    throws UnresolvedLinkException {
-		    INode[] inode  = new INode[1];
-		    getExistingPathINodes(components, inode, resolveLink);
-		    return inode[0];
-		  }
-
-  /**
-   * This is the external interface
-   */
-  INode getNode2(String path, boolean resolveLink) 
-    throws UnresolvedLinkException {
-    return getNode2(getPathComponents(path), resolveLink);
-  }
-
-  INode getNode(String path, boolean resolveLink) 
-		    throws UnresolvedLinkException {
-		    return getNode(getPathComponents(path), resolveLink);
-		  }
-  
-  /**
-   * Retrieve existing INodes from a path. If existing is big enough to store
-   * all path components (existing and non-existing), then existing INodes
-   * will be stored starting from the root INode into existing[0]; if
-   * existing is not big enough to store all path components, then only the
-   * last existing and non existing INodes will be stored so that
-   * existing[existing.length-1] refers to the INode of the final component.
-   * 
-   * An UnresolvedPathException is always thrown when an intermediate path 
-   * component refers to a symbolic link. If the final path component refers 
-   * to a symbolic link then an UnresolvedPathException is only thrown if
-   * resolveLink is true.  
-   * 
-   * <p>
-   * Example: <br>
-   * Given the path /c1/c2/c3 where only /c1/c2 exists, resulting in the
-   * following path components: ["","c1","c2","c3"],
-   * 
-   * <p>
-   * <code>getExistingPathINodes(["","c1","c2"], [?])</code> should fill the
-   * array with [c2] <br>
-   * <code>getExistingPathINodes(["","c1","c2","c3"], [?])</code> should fill the
-   * array with [null]
-   * 
-   * <p>
-   * <code>getExistingPathINodes(["","c1","c2"], [?,?])</code> should fill the
-   * array with [c1,c2] <br>
-   * <code>getExistingPathINodes(["","c1","c2","c3"], [?,?])</code> should fill
-   * the array with [c2,null]
-   * 
-   * <p>
-   * <code>getExistingPathINodes(["","c1","c2"], [?,?,?,?])</code> should fill
-   * the array with [rootINode,c1,c2,null], <br>
-   * <code>getExistingPathINodes(["","c1","c2","c3"], [?,?,?,?])</code> should
-   * fill the array with [rootINode,c1,c2,null]
-   * 
-   * @param components array of path component name
-   * @param existing array to fill with existing INodes
-   * @param resolveLink indicates whether UnresolvedLinkException should
-   *        be thrown when the path refers to a symbolic link.
-   * @return number of existing INodes in the path
-   */
-  int getExistingPathINodes(byte[][] components, INode[] existing, 
-      boolean resolveLink) throws UnresolvedLinkException {
-    assert compareBytes(this.name, components[0]) == 0 :
-      "Incorrect name " + getLocalName() + " expected " + 
-      DFSUtil.bytes2String(components[0]);
-
-    //FIXME: [KTHFS] make sense of this method
-    INode curNode = this;
-    int count = 0;
-    int index = existing.length - components.length;
-    if (index > 0) {
-      index = 0;
-    }
-    
-    KthFsHelper.printKTH("Before while loop components.length="+components.length +
-    					" resolveLink="+resolveLink+
-    					" this.name="+new String(this.name));
-    while (count < components.length && curNode != null) {
-      final boolean lastComp = (count == components.length - 1);      
-      if (index >= 0) {
-        existing[index] = curNode;
-      }
-      if (curNode.isLink() && (!lastComp || (lastComp && resolveLink))) {
-        if(NameNode.stateChangeLog.isDebugEnabled()) {
-          NameNode.stateChangeLog.debug("UnresolvedPathException " +
-              " count: " + count +
-              " componenent: " + DFSUtil.bytes2String(components[count]) +
-              " full path: " + constructPath(components, 0) +
-              " remaining path: " + constructPath(components, count+1) +
-              " symlink: " + ((INodeSymlink)curNode).getLinkValue());
-        }
-        final String linkTarget = ((INodeSymlink)curNode).getLinkValue();
-        throw new UnresolvedPathException(constructPath(components, 0),
-                                          constructPath(components, count+1),
-                                          linkTarget);
-      }
-      KthFsHelper.printKTH("inside while loop currNode:"+curNode.getFullPathName());
-    
-      if (lastComp || !curNode.isDirectory()) {
-        break;
-      }
-      
-      
-      INodeDirectory parentDir = (INodeDirectory)curNode; //W: will always return / in the first iteration
-     
-      //KTHFS: fetch stuff from MYSQL here, comment the below line and do the magic here
-      curNode = parentDir.getChildINode(components[count + 1]); //W: iterating through the path
-      //curNode = parentDir.getChildINodeFromDB(components[count + 1]); 
-      count++;
-      index++;
-
-    }
-    
-    KthFsHelper.printKTH("about to return count="+count);
-    return count;
-  }
-  
-  int getExistingPathINodes2(byte[][] components, INode[] existing, 
-	      boolean resolveLink) throws UnresolvedLinkException {
-	    assert compareBytes(this.name, components[0]) == 0 :
-	      "Incorrect name " + getLocalName() + " expected " + 
-	      DFSUtil.bytes2String(components[0]);
-
-	    //FIXME: [KTHFS] make sense of this method
-	    INode curNode = this;
-	    int count = 0;
-	    int index = existing.length - components.length;
-	    if (index > 0) {
-	      index = 0;
-	    }
-	    
-	    KthFsHelper.printKTH("Before while loop components.length="+components.length +
-	    					" resolveLink="+resolveLink+
-	    					" this.name="+new String(this.name));
-	    while (count < components.length && curNode != null) {
-	      final boolean lastComp = (count == components.length - 1);      
-	      if (index >= 0) {
-	        existing[index] = curNode;
-	      }
-	      if (curNode.isLink() && (!lastComp || (lastComp && resolveLink))) {
-	        if(NameNode.stateChangeLog.isDebugEnabled()) {
-	          NameNode.stateChangeLog.debug("UnresolvedPathException " +
-	              " count: " + count +
-	              " componenent: " + DFSUtil.bytes2String(components[count]) +
-	              " full path: " + constructPath(components, 0) +
-	              " remaining path: " + constructPath(components, count+1) +
-	              " symlink: " + ((INodeSymlink)curNode).getLinkValue());
-	        }
-	        final String linkTarget = ((INodeSymlink)curNode).getLinkValue();
-	        throw new UnresolvedPathException(constructPath(components, 0),
-	                                          constructPath(components, count+1),
-	                                          linkTarget);
-	      }
-	      KthFsHelper.printKTH("inside while loop currNode:"+curNode.getFullPathName());
-	    
-	      if (lastComp || !curNode.isDirectory()) {
-	        break;
-	      }
-	      
-	      
-	      INodeDirectory parentDir = (INodeDirectory)curNode; //W: will always return / in the first iteration
-	     
-	      //KTHFS: fetch stuff from MYSQL here, comment the below line and do the magic here
-	      //curNode = parentDir.getChildINode(components[count + 1]); //W: iterating through the path
-	      curNode = parentDir.getChildINodeFromDB(components[count + 1]); 
-	      count++;
-	      index++;
-
-	    }
-	    
-	    KthFsHelper.printKTH("about to return count="+count);
-	    return count;
-	  }
-
-  /**
-   * Retrieve the existing INodes along the given path. The first INode
-   * always exist and is this INode.
-   * 
-   * @param path the path to explore
-   * @param resolveLink indicates whether UnresolvedLinkException should 
-   *        be thrown when the path refers to a symbolic link.
-   * @return INodes array containing the existing INodes in the order they
-   *         appear when following the path from the root INode to the
-   *         deepest INodes. The array size will be the number of expected
-   *         components in the path, and non existing components will be
-   *         filled with null
-   *         
-   * @see #getExistingPathINodes(byte[][], INode[])
-   */
-  INode[] getExistingPathINodes(String path, boolean resolveLink) 
-    throws UnresolvedLinkException {
-    byte[][] components = getPathComponents(path);
-    INode[] inodes = new INode[components.length];
-
-    this.getExistingPathINodes(components, inodes, resolveLink);
-    
-    try {
-		System.err.println("[KTHFS] (Inside getExisitingPathINodes) inodes.length:"+inodes.length);
-		for (int i = 0; i < inodes.length; i++) {
-			System.err.println("[KTHFS] fullPathName: "+inodes[i].getFullPathName());
-		}
-	} catch (NullPointerException e) {
-		// TODO Auto-generated catch block
-		System.err.println("[KTHFS] NullPointerException in getExistingPathINodes");
+	INodeDirectory(String name, PermissionStatus permissions) {
+		super(name, permissions);
+		this.children = null;
 	}
-    
-    return inodes;
-  }
 
-  /**
-   * Given a child's name, return the index of the next child
-   *
-   * @param name a child's name
-   * @return the index of the next child
-   */
-  int nextChild(byte[] name) {
-    if (name.length == 0) { // empty name
-      return 0;
-    }
-    int nextPos = Collections.binarySearch(children, name) + 1;
-    if (nextPos >= 0) {
-      return nextPos;
-    }
-    return -nextPos;
-  }
+	public INodeDirectory(PermissionStatus permissions, long mTime) {
+		super(permissions, mTime, 0);
+		this.children = null;
+	}
 
-  /**
-   * Add a child inode to the directory.
-   * 
-   * @param node INode to insert
-   * @param inheritPermission inherit permission from parent?
-   * @param setModTime set modification time for the parent node
-   *                   not needed when replaying the addition and 
-   *                   the parent already has the proper mod time
-   * @return  null if the child with this name already exists; 
-   *          node, otherwise
-   */
-  <T extends INode> T addChild(final T node, boolean inheritPermission,
-                                              boolean setModTime) {
-    if (inheritPermission) {
-      FsPermission p = getFsPermission();
-      //make sure the  permission has wx for the user
-      if (!p.getUserAction().implies(FsAction.WRITE_EXECUTE)) {
-        p = new FsPermission(p.getUserAction().or(FsAction.WRITE_EXECUTE),
-            p.getGroupAction(), p.getOtherAction());
-      }
-      node.setPermission(p);
-    }
+	/** constructor */
+	INodeDirectory(byte[] localName, PermissionStatus permissions, long mTime) {
+		this(permissions, mTime);
+		this.name = localName;
+	}
 
-    if (children == null) {
-      children = new ArrayList<INode>(DEFAULT_FILES_PER_DIRECTORY);
-    }
-    int low = Collections.binarySearch(children, node.name);
-    if(low >= 0)
-      return null;
-    node.parent = this;
-    children.add(-low - 1, node);
-    // update modification time of the parent directory
-    if (setModTime)
-      setModificationTime(node.getModificationTime());
-    if (node.getGroupName() == null) {
-      node.setGroup(getGroupName());
-    }
-    // [STATELESS]
-    InodeTableHelper ith = new InodeTableHelper();
-    ith.addChild(node);
-    return node;
-  }
+	/** copy constructor
+	 * 
+	 * @param other
+	 */
+	INodeDirectory(INodeDirectory other) {
+		super(other);
+		this.children = other.getChildren();
+	}
 
-  /**
-   * Equivalent to addNode(path, newNode, false).
-   * @see #addNode(String, INode, boolean)
-   */
-  <T extends INode> T addNode(String path, T newNode) 
-    throws FileNotFoundException, UnresolvedLinkException {
-    return addNode(path, newNode, false);
-  }
-  /**
-   * Add new INode to the file tree.
-   * Find the parent and insert 
-   * 
-   * @param path file path
-   * @param newNode INode to be added
-   * @param inheritPermission If true, copy the parent's permission to newNode.
-   * @return null if the node already exists; inserted INode, otherwise
-   * @throws FileNotFoundException if parent does not exist or 
-   * @throws UnresolvedLinkException if any path component is a symbolic link
-   * is not a directory.
-   */
-  <T extends INode> T addNode(String path, T newNode, boolean inheritPermission
-      ) throws FileNotFoundException, UnresolvedLinkException  {
-    byte[][] pathComponents = getPathComponents(path);
-    
-    if(addToParent(pathComponents, newNode,
-                    inheritPermission, true) == null)
-      return null;
-    return newNode;
-  }
+	/**
+	 * Check whether it's a directory
+	 */
+	public boolean isDirectory() {
+		return true;
+	}
 
-  /**
-   * Add new inode to the parent if specified.
-   * Optimized version of addNode() if parent is not null.
-   * 
-   * @return  parent INode if new inode is inserted
-   *          or null if it already exists.
-   * @throws  FileNotFoundException if parent does not exist or 
-   *          is not a directory.
-   */
-  INodeDirectory addToParent( byte[] localname,
-                              INode newNode,
-                              INodeDirectory parent,
-                              boolean inheritPermission,
-                              boolean propagateModTime
-                              ) throws FileNotFoundException, 
-                                       UnresolvedLinkException {
-    // insert into the parent children list
-    newNode.name = localname;
-    System.err.println("[Stateless] addToParent -------");
-    if(parent.addChild(newNode, inheritPermission, propagateModTime) == null)
-      return null;
-    return parent;
-  }
-
-  INodeDirectory getParent(byte[][] pathComponents)
-  throws FileNotFoundException, UnresolvedLinkException {
-    int pathLen = pathComponents.length;
-    if (pathLen < 2)  // add root
-      return null;
-    // Gets the parent INode
-    INode[] inodes  = new INode[2];
-    getExistingPathINodes(pathComponents, inodes, false);
-    INode inode = inodes[0];
-    if (inode == null) {
-      throw new FileNotFoundException("Parent path does not exist: "+
-          DFSUtil.byteArray2String(pathComponents));
-    }
-    if (!inode.isDirectory()) {
-      throw new FileNotFoundException("Parent path is not a directory: "+
-          DFSUtil.byteArray2String(pathComponents));
-    }
-    return (INodeDirectory)inode;
-  }
-  
-  /**
-   * Add new inode 
-   * Optimized version of addNode()
-   * 
-   * @return  parent INode if new inode is inserted
-   *          or null if it already exists.
-   * @throws  FileNotFoundException if parent does not exist or 
-   *          is not a directory.
-   */
-  INodeDirectory addToParent( byte[][] pathComponents,
-                              INode newNode,
-                              boolean inheritPermission,
-                              boolean propagateModTime
-                            ) throws FileNotFoundException, 
-                                     UnresolvedLinkException {
-              
-    int pathLen = pathComponents.length;
-    if (pathLen < 2)  // add root
-      return null;
-    newNode.name = pathComponents[pathLen-1];
-    // insert into the parent children list
-    INodeDirectory parent = getParent(pathComponents);
-    System.err.println("[Stateless] addToParentINodeDirectory OMG -------" + " " + Thread.currentThread().getId());
-    if(parent.addChild(newNode, inheritPermission, propagateModTime) == null)
-      return null;
-    return parent;
-  }
-
-  /** {@inheritDoc} */
-  DirCounts spaceConsumedInTree(DirCounts counts) {
-    counts.nsCount += 1;
-    if (children != null) {
-      for (INode child : children) {
-        child.spaceConsumedInTree(counts);
-      }
-    }
-    return counts;    
-  }
-
-  /** {@inheritDoc} */
-  long[] computeContentSummary(long[] summary) {
-    // Walk through the children of this node, using a new summary array
-    // for the (sub)tree rooted at this node
-    assert 4 == summary.length;
-    long[] subtreeSummary = new long[]{0,0,0,0};
-    if (children != null) {
-      for (INode child : children) {
-        child.computeContentSummary(subtreeSummary);
-      }
-    }
-    if (this instanceof INodeDirectoryWithQuota) {
-      // Warn if the cached and computed diskspace values differ
-      INodeDirectoryWithQuota node = (INodeDirectoryWithQuota)this;
-      long space = node.diskspaceConsumed();
-      assert -1 == node.getDsQuota() || space == subtreeSummary[3];
-      if (-1 != node.getDsQuota() && space != subtreeSummary[3]) {
-        NameNode.LOG.warn("Inconsistent diskspace for directory "
-            +getLocalName()+". Cached: "+space+" Computed: "+subtreeSummary[3]);
-      }
-    }
-
-    // update the passed summary array with the values for this node's subtree
-    for (int i = 0; i < summary.length; i++) {
-      summary[i] += subtreeSummary[i];
-    }
-
-    summary[2]++;
-    return summary;
-  }
-
-  /**
-   */
-  List<INode> getChildren() {
-    return children==null ? new ArrayList<INode>() : children;
-  }
-  
-  /*W: added for KTHFS*/
-  List<INode> getChildrenFromDB() {
-	  
-	  //For reference
-//		  INode node = INode.newINode(permissions, 
-//									  blocks, 
-//									  symlink, 
-//									  replication, 
-//									  DEFAULT_FILES_PER_DIRECTORY,
-//									  atime,
-//									  nsQuota,
-//									  dsQuota,
-//									  preferredBlockSize);
-	  
-	  List<String> childrenFromDB  = se.sics.clusterj.Main_LW.getChildren(this.getFullPathName());
-	  List<INode> childrenNodes = new ArrayList<INode>();
-	  
-	  if(childrenFromDB.size() > 0) {
-		  for (int i = 0; i < childrenFromDB.size(); i++) {
-			  INode node = INode.newINode(this.getPermissionStatus(),
-					  						null, //TODO: W: blocks to be read from DB also
-					  						"",
-					  						(short)1,
-					  						DEFAULT_FILES_PER_DIRECTORY,
-					  						new Date().getTime(), //TODO: W: these values should be read from DB
-					  						-1,
-					  						-1,
-					  						-1);
-			  node.setLocalName(childrenFromDB.get(i));
-			  childrenNodes.add(node);
+	INode removeChild(INode node) {
+		assert children != null;
+		int low = Collections.binarySearch(children, node.name);
+		if (low >= 0) {
+			return children.remove(low);
+		} else {
+			return null;
 		}
-		  
-		  return childrenNodes;
-	  }
-	  else return new ArrayList<INode>();
-	  
-	  }
-  
-  
-  List<INode> getChildrenRaw() {
-    return children;
-  }
+	}
 
-  int collectSubtreeBlocksAndClear(List<Block> v) {
-    int total = 1;
-    if (children == null) {
-      return total;
-    }
-    for (INode child : children) {
-      total += child.collectSubtreeBlocksAndClear(v);
-    }
-    parent = null;
-    children = null;
-    return total;
-  }
+	/** Replace a child that has the same name as newChild by newChild.
+	 * 
+	 * @param newChild Child node to be added
+	 */
+	void replaceChild(INode newChild) {
+		if ( children == null ) {
+			throw new IllegalArgumentException("The directory is empty");
+		}
+		int low = Collections.binarySearch(children, newChild.name);
+		if (low>=0) { // an old child exists so replace by the newChild
+			children.set(low, newChild);
+			//[kthfs] Call to INodeTableHelper to replaceChild in the DB
+			InodeTableHelper ith = new InodeTableHelper();
+			ith.replaceChild(this, newChild);  
+		} else {
+			throw new IllegalArgumentException("No child exists to be replaced");
+		}
+	}
+
+	INode getChild(String name) {
+		return getChildINode(DFSUtil.string2Bytes(name));
+	}
+
+	private INode getChildINode(byte[] name) {
+		if (children == null) {
+			return null;
+		}
+		int low = Collections.binarySearch(children, name);
+		if (low >= 0) {
+			KthFsHelper.printKTH("******************************* getChildINode: "+children.get(low));
+			return children.get(low);
+		}
+		return null;
+	}
+
+	private INode getChildINodeFromDB(byte[] name) {
+
+		KthFsHelper.printKTH("fullpathname: "+this.getFullPathName() + " name:"+ new String(name));
+
+		INode child;
+		try {
+			child = DatabaseHelper.getChildDirectory(this.getFullPathName(), new String(name));
+			return child;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+
+	
+
+	}
+
+	/**
+	 * Return the INode of the last component in components, or null if the last
+	 * component does not exist.
+	 */
+	private INode getNode2(byte[][] components, boolean resolveLink) 
+			throws UnresolvedLinkException {
+		INode[] inode  = new INode[1];
+
+		//W: commented out for KTHFS because namenode init was failing
+		//    getExistingPathINodes(components, inode, resolveLink);
+		getExistingPathINodes2(components, inode, resolveLink);
+
+
+		return inode[0];
+	}
+
+	private INode getNode(byte[][] components, boolean resolveLink) 
+			throws UnresolvedLinkException {
+		INode[] inode  = new INode[1];
+		getExistingPathINodes(components, inode, resolveLink);
+		return inode[0];
+	}
+
+	/**
+	 * This is the external interface
+	 */
+	INode getNode2(String path, boolean resolveLink) 
+			throws UnresolvedLinkException {
+		return getNode2(getPathComponents(path), resolveLink);
+	}
+
+	INode getNode(String path, boolean resolveLink) 
+			throws UnresolvedLinkException {
+		return getNode(getPathComponents(path), resolveLink);
+	}
+
+	/**
+	 * Retrieve existing INodes from a path. If existing is big enough to store
+	 * all path components (existing and non-existing), then existing INodes
+	 * will be stored starting from the root INode into existing[0]; if
+	 * existing is not big enough to store all path components, then only the
+	 * last existing and non existing INodes will be stored so that
+	 * existing[existing.length-1] refers to the INode of the final component.
+	 * 
+	 * An UnresolvedPathException is always thrown when an intermediate path 
+	 * component refers to a symbolic link. If the final path component refers 
+	 * to a symbolic link then an UnresolvedPathException is only thrown if
+	 * resolveLink is true.  
+	 * 
+	 * <p>
+	 * Example: <br>
+	 * Given the path /c1/c2/c3 where only /c1/c2 exists, resulting in the
+	 * following path components: ["","c1","c2","c3"],
+	 * 
+	 * <p>
+	 * <code>getExistingPathINodes(["","c1","c2"], [?])</code> should fill the
+	 * array with [c2] <br>
+	 * <code>getExistingPathINodes(["","c1","c2","c3"], [?])</code> should fill the
+	 * array with [null]
+	 * 
+	 * <p>
+	 * <code>getExistingPathINodes(["","c1","c2"], [?,?])</code> should fill the
+	 * array with [c1,c2] <br>
+	 * <code>getExistingPathINodes(["","c1","c2","c3"], [?,?])</code> should fill
+	 * the array with [c2,null]
+	 * 
+	 * <p>
+	 * <code>getExistingPathINodes(["","c1","c2"], [?,?,?,?])</code> should fill
+	 * the array with [rootINode,c1,c2,null], <br>
+	 * <code>getExistingPathINodes(["","c1","c2","c3"], [?,?,?,?])</code> should
+	 * fill the array with [rootINode,c1,c2,null]
+	 * 
+	 * @param components array of path component name
+	 * @param existing array to fill with existing INodes
+	 * @param resolveLink indicates whether UnresolvedLinkException should
+	 *        be thrown when the path refers to a symbolic link.
+	 * @return number of existing INodes in the path
+	 */
+	int getExistingPathINodes(byte[][] components, INode[] existing, 
+			boolean resolveLink) throws UnresolvedLinkException {
+		assert compareBytes(this.name, components[0]) == 0 :
+			"Incorrect name " + getLocalName() + " expected " + 
+			DFSUtil.bytes2String(components[0]);
+
+		//FIXME: [KTHFS] make sense of this method
+		INode curNode = this;
+		int count = 0;
+		int index = existing.length - components.length;
+		if (index > 0) {
+			index = 0;
+		}
+
+		KthFsHelper.printKTH("Before while loop components.length="+components.length +
+				" resolveLink="+resolveLink+
+				" this.name="+new String(this.name));
+		while (count < components.length && curNode != null) {
+			final boolean lastComp = (count == components.length - 1);      
+			if (index >= 0) {
+				existing[index] = curNode;
+			}
+			if (curNode.isLink() && (!lastComp || (lastComp && resolveLink))) {
+				if(NameNode.stateChangeLog.isDebugEnabled()) {
+					NameNode.stateChangeLog.debug("UnresolvedPathException " +
+							" count: " + count +
+							" componenent: " + DFSUtil.bytes2String(components[count]) +
+							" full path: " + constructPath(components, 0) +
+							" remaining path: " + constructPath(components, count+1) +
+							" symlink: " + ((INodeSymlink)curNode).getLinkValue());
+				}
+				final String linkTarget = ((INodeSymlink)curNode).getLinkValue();
+				throw new UnresolvedPathException(constructPath(components, 0),
+						constructPath(components, count+1),
+						linkTarget);
+			}
+			KthFsHelper.printKTH("inside while loop currNode:"+curNode.getFullPathName());
+
+			if (lastComp || !curNode.isDirectory()) {
+				break;
+			}
+
+
+			INodeDirectory parentDir = (INodeDirectory)curNode; //W: will always return / in the first iteration
+
+			//KTHFS: fetch stuff from MYSQL here, comment the below line and do the magic here
+			curNode = parentDir.getChildINode(components[count + 1]); //W: iterating through the path
+			//curNode = parentDir.getChildINodeFromDB(components[count + 1]); 
+			count++;
+			index++;
+
+		}
+
+		KthFsHelper.printKTH("about to return count="+count);
+		return count;
+	}
+
+	int getExistingPathINodes2(byte[][] components, INode[] existing, 
+			boolean resolveLink) throws UnresolvedLinkException {
+		assert compareBytes(this.name, components[0]) == 0 :
+			"Incorrect name " + getLocalName() + " expected " + 
+			DFSUtil.bytes2String(components[0]);
+
+		INode curNode = this;
+		int count = 0;
+		int index = existing.length - components.length;
+		if (index > 0) {
+			index = 0;
+		}
+
+		
+		while (count < components.length && curNode != null) {
+			//KthFsHelper.printKTH("inside while loop currNode:"+curNode.getLocalName());
+			final boolean lastComp = (count == components.length - 1);      
+			if (index >= 0) {
+				existing[index] = curNode;
+			}
+			if (curNode.isLink() && (!lastComp || (lastComp && resolveLink))) {
+				if(NameNode.stateChangeLog.isDebugEnabled()) {
+					NameNode.stateChangeLog.debug("UnresolvedPathException " +
+							" count: " + count +
+							" componenent: " + DFSUtil.bytes2String(components[count]) +
+							" full path: " + constructPath(components, 0) +
+							" remaining path: " + constructPath(components, count+1) +
+							" symlink: " + ((INodeSymlink)curNode).getLinkValue());
+				}
+				final String linkTarget = ((INodeSymlink)curNode).getLinkValue();
+				throw new UnresolvedPathException(constructPath(components, 0),
+						constructPath(components, count+1),
+						linkTarget);
+			}
+			
+			if (lastComp || !curNode.isDirectory()) {
+				break;
+			}
+
+			INodeDirectory parentDir = (INodeDirectory)curNode; //W: will always return / in the first iteration
+			//curNode = parentDir.getChildINode(components[count + 1]); //W: iterating through the path
+			curNode = parentDir.getChildINodeFromDB(components[count + 1]);
+			count++;
+			index++;
+
+		}
+
+		KthFsHelper.printKTH("about to return count="+count + " and curNode is "+(curNode==null?"null":"not null"));
+		return count;
+	}
+
+	/**
+	 * Retrieve the existing INodes along the given path. The first INode
+	 * always exist and is this INode.
+	 * 
+	 * @param path the path to explore
+	 * @param resolveLink indicates whether UnresolvedLinkException should 
+	 *        be thrown when the path refers to a symbolic link.
+	 * @return INodes array containing the existing INodes in the order they
+	 *         appear when following the path from the root INode to the
+	 *         deepest INodes. The array size will be the number of expected
+	 *         components in the path, and non existing components will be
+	 *         filled with null
+	 *         
+	 * @see #getExistingPathINodes(byte[][], INode[])
+	 */
+	INode[] getExistingPathINodes(String path, boolean resolveLink) 
+			throws UnresolvedLinkException {
+		byte[][] components = getPathComponents(path);
+		INode[] inodes = new INode[components.length];
+
+		this.getExistingPathINodes(components, inodes, resolveLink);
+
+		try {
+			System.err.println("[KTHFS] (Inside getExisitingPathINodes) inodes.length:"+inodes.length);
+			for (int i = 0; i < inodes.length; i++) {
+				System.err.println("[KTHFS] fullPathName: "+inodes[i].getFullPathName());
+			}
+		} catch (NullPointerException e) {
+			// TODO Auto-generated catch block
+			System.err.println("[KTHFS] NullPointerException in getExistingPathINodes");
+		}
+
+		return inodes;
+	}
+
+	/**
+	 * Given a child's name, return the index of the next child
+	 *
+	 * @param name a child's name
+	 * @return the index of the next child
+	 */
+	int nextChild(byte[] name) {
+		if (name.length == 0) { // empty name
+			return 0;
+		}
+		int nextPos = Collections.binarySearch(children, name) + 1;
+		if (nextPos >= 0) {
+			return nextPos;
+		}
+		return -nextPos;
+	}
+
+	/**
+	 * Add a child inode to the directory.
+	 * 
+	 * @param node INode to insert
+	 * @param inheritPermission inherit permission from parent?
+	 * @param setModTime set modification time for the parent node
+	 *                   not needed when replaying the addition and 
+	 *                   the parent already has the proper mod time
+	 * @return  null if the child with this name already exists; 
+	 *          node, otherwise
+	 */
+	<T extends INode> T addChild(final T node, boolean inheritPermission,
+			boolean setModTime) {
+		if (inheritPermission) {
+			FsPermission p = getFsPermission();
+			//make sure the  permission has wx for the user
+			if (!p.getUserAction().implies(FsAction.WRITE_EXECUTE)) {
+				p = new FsPermission(p.getUserAction().or(FsAction.WRITE_EXECUTE),
+						p.getGroupAction(), p.getOtherAction());
+			}
+			node.setPermission(p);
+		}
+
+		if (children == null) {
+			children = new ArrayList<INode>(DEFAULT_FILES_PER_DIRECTORY);
+		}
+		int low = Collections.binarySearch(children, node.name);
+		if(low >= 0)
+			return null;
+		node.parent = this;
+		children.add(-low - 1, node);
+		// update modification time of the parent directory
+		if (setModTime)
+			setModificationTime(node.getModificationTime());
+		if (node.getGroupName() == null) {
+			node.setGroup(getGroupName());
+		}
+		// [STATELESS]
+		InodeTableHelper ith = new InodeTableHelper();
+		ith.addChild(node);
+		return node;
+	}
+
+	/**
+	 * Equivalent to addNode(path, newNode, false).
+	 * @see #addNode(String, INode, boolean)
+	 */
+	<T extends INode> T addNode(String path, T newNode) 
+			throws FileNotFoundException, UnresolvedLinkException {
+		return addNode(path, newNode, false);
+	}
+	/**
+	 * Add new INode to the file tree.
+	 * Find the parent and insert 
+	 * 
+	 * @param path file path
+	 * @param newNode INode to be added
+	 * @param inheritPermission If true, copy the parent's permission to newNode.
+	 * @return null if the node already exists; inserted INode, otherwise
+	 * @throws FileNotFoundException if parent does not exist or 
+	 * @throws UnresolvedLinkException if any path component is a symbolic link
+	 * is not a directory.
+	 */
+	<T extends INode> T addNode(String path, T newNode, boolean inheritPermission
+			) throws FileNotFoundException, UnresolvedLinkException  {
+		byte[][] pathComponents = getPathComponents(path);
+
+		if(addToParent(pathComponents, newNode,
+				inheritPermission, true) == null)
+			return null;
+		return newNode;
+	}
+
+	/**
+	 * Add new inode to the parent if specified.
+	 * Optimized version of addNode() if parent is not null.
+	 * 
+	 * @return  parent INode if new inode is inserted
+	 *          or null if it already exists.
+	 * @throws  FileNotFoundException if parent does not exist or 
+	 *          is not a directory.
+	 */
+	INodeDirectory addToParent( byte[] localname,
+			INode newNode,
+			INodeDirectory parent,
+			boolean inheritPermission,
+			boolean propagateModTime
+			) throws FileNotFoundException, 
+			UnresolvedLinkException {
+		// insert into the parent children list
+		newNode.name = localname;
+		System.err.println("[Stateless] addToParent -------");
+		if(parent.addChild(newNode, inheritPermission, propagateModTime) == null)
+			return null;
+		return parent;
+	}
+
+	INodeDirectory getParent(byte[][] pathComponents)
+			throws FileNotFoundException, UnresolvedLinkException {
+		int pathLen = pathComponents.length;
+		if (pathLen < 2)  // add root
+			return null;
+		// Gets the parent INode
+		INode[] inodes  = new INode[2];
+		getExistingPathINodes(pathComponents, inodes, false);
+		INode inode = inodes[0];
+		if (inode == null) {
+			throw new FileNotFoundException("Parent path does not exist: "+
+					DFSUtil.byteArray2String(pathComponents));
+		}
+		if (!inode.isDirectory()) {
+			throw new FileNotFoundException("Parent path is not a directory: "+
+					DFSUtil.byteArray2String(pathComponents));
+		}
+		return (INodeDirectory)inode;
+	}
+
+	/**
+	 * Add new inode 
+	 * Optimized version of addNode()
+	 * 
+	 * @return  parent INode if new inode is inserted
+	 *          or null if it already exists.
+	 * @throws  FileNotFoundException if parent does not exist or 
+	 *          is not a directory.
+	 */
+	INodeDirectory addToParent( byte[][] pathComponents,
+			INode newNode,
+			boolean inheritPermission,
+			boolean propagateModTime
+			) throws FileNotFoundException, 
+			UnresolvedLinkException {
+
+		int pathLen = pathComponents.length;
+		if (pathLen < 2)  // add root
+			return null;
+		newNode.name = pathComponents[pathLen-1];
+		// insert into the parent children list
+		INodeDirectory parent = getParent(pathComponents);
+		System.err.println("[Stateless] addToParentINodeDirectory OMG -------" + " " + Thread.currentThread().getId());
+		if(parent.addChild(newNode, inheritPermission, propagateModTime) == null)
+			return null;
+		return parent;
+	}
+
+	/** {@inheritDoc} */
+	DirCounts spaceConsumedInTree(DirCounts counts) {
+		counts.nsCount += 1;
+		if (children != null) {
+			for (INode child : children) {
+				child.spaceConsumedInTree(counts);
+			}
+		}
+		return counts;    
+	}
+
+	/** {@inheritDoc} */
+	long[] computeContentSummary(long[] summary) {
+		// Walk through the children of this node, using a new summary array
+		// for the (sub)tree rooted at this node
+		assert 4 == summary.length;
+		long[] subtreeSummary = new long[]{0,0,0,0};
+		if (children != null) {
+			for (INode child : children) {
+				child.computeContentSummary(subtreeSummary);
+			}
+		}
+		if (this instanceof INodeDirectoryWithQuota) {
+			// Warn if the cached and computed diskspace values differ
+			INodeDirectoryWithQuota node = (INodeDirectoryWithQuota)this;
+			long space = node.diskspaceConsumed();
+			assert -1 == node.getDsQuota() || space == subtreeSummary[3];
+			if (-1 != node.getDsQuota() && space != subtreeSummary[3]) {
+				NameNode.LOG.warn("Inconsistent diskspace for directory "
+						+getLocalName()+". Cached: "+space+" Computed: "+subtreeSummary[3]);
+			}
+		}
+
+		// update the passed summary array with the values for this node's subtree
+		for (int i = 0; i < summary.length; i++) {
+			summary[i] += subtreeSummary[i];
+		}
+
+		summary[2]++;
+		return summary;
+	}
+
+	/**
+	 */
+	List<INode> getChildren() {
+		return children==null ? new ArrayList<INode>() : children;
+	}
+
+	/*W: added for KTHFS*/
+	List<INode> getChildrenFromDB() {
+		
+		//List<INode> childrenFromDB = new ArrayList<INode>();
+		try {
+			List<INode> childrenFromDB = DatabaseHelper.getChildren(this.getFullPathName());
+			if(childrenFromDB != null) 
+				return childrenFromDB;
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return new ArrayList<INode>();
+	}
+
+
+	List<INode> getChildrenRaw() {
+		return children;
+	}
+
+	int collectSubtreeBlocksAndClear(List<Block> v) {
+		int total = 1;
+		if (children == null) {
+			return total;
+		}
+		for (INode child : children) {
+			total += child.collectSubtreeBlocksAndClear(v);
+		}
+		parent = null;
+		children = null;
+		return total;
+	}
 }

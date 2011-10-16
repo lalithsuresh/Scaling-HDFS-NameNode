@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package se.sics.clusterj;
+package org.apache.hadoop.hdfs.server.namenode.kthfs.clusterj;
 
 import com.mysql.clusterj.annotation.Column;
 import com.mysql.clusterj.annotation.PersistenceCapable;

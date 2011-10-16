@@ -793,11 +793,7 @@ public class NameNode {
   public static void main(String argv[]) throws Exception {
     try {
     	
-    	System.err.println("HELLO");
-    	System.err.println("HELLO");
-    	System.err.println("HELLO");
-    	System.err.println("HELLO");
-    	System.err.println("HELLO");
+   
     	
       StringUtils.startupShutdownMessage(NameNode.class, argv, LOG);
       NameNode namenode = createNameNode(argv, null);
