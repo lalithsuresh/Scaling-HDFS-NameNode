@@ -440,6 +440,8 @@ public abstract class INode implements Comparable<byte[]>, FSInodeInfo {
     return len1 - len2;
   }
   
+  
+  
   /**
    * Create an INode; the inode's name is not set yet
    * 

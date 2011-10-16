@@ -50,6 +50,7 @@ import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.ServicePlugin;
 import org.apache.hadoop.util.StringUtils;
+import se.sics.clusterj.*;
 
 /**********************************************************
  * NameNode serves as both directory namespace manager and
@@ -446,6 +447,23 @@ public class NameNode {
 
   protected NameNode(Configuration conf, NamenodeRole role) 
       throws IOException { 
+	  
+	  	System.err.println("HELLO3");
+    	System.err.println("HELLO3");
+    	System.err.println("HELLO3");
+    	System.err.println("HELLO3");
+    	System.err.println("HELLO3");
+    	
+    	System.out.println("HELLO2");
+    	System.out.println("HELLO2");
+    	System.out.println("HELLO2");
+    	System.out.println("HELLO2");
+    	
+
+    	//Main_LW.insertINodeFile("/home/bother", "nn", "nnm", 556688);
+    	
+    	
+	  
     this.role = role;
     try {
       initializeGenericKeys(conf);
@@ -778,6 +796,13 @@ public class NameNode {
    */
   public static void main(String argv[]) throws Exception {
     try {
+    	
+    	System.err.println("HELLO");
+    	System.err.println("HELLO");
+    	System.err.println("HELLO");
+    	System.err.println("HELLO");
+    	System.err.println("HELLO");
+    	
       StringUtils.startupShutdownMessage(NameNode.class, argv, LOG);
       NameNode namenode = createNameNode(argv, null);
       if (namenode != null)
