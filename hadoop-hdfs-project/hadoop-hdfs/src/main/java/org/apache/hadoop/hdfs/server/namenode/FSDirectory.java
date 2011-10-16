@@ -72,6 +72,7 @@ import com.sun.org.apache.bcel.internal.generic.INSTANCEOF;
  *************************************************/
 public class FSDirectory implements Closeable {
 
+
   INodeDirectoryWithQuota rootDir;
   FSImage fsImage;  
   private volatile boolean ready = false;
@@ -1172,6 +1173,45 @@ public class FSDirectory implements Closeable {
    * @return a partial listing starting after startAfter
    */
   DirectoryListing getListing(String src, byte[] startAfter,
+			boolean needLocation) throws UnresolvedLinkException, IOException {
+		String srcs = normalizePath(src);
+		KthFsHelper.printKTH("Inside dir.getListing()");
+		
+		//FIXME: [KTHFS] read from MySQL Cluster and return the DirectoryListing object
+		
+		readLock();
+		try {
+			INode targetNode = rootDir.getNode2(srcs, true);
+			KthFsHelper.printKTH("targetNode: "+targetNode.getFullPathName());
+			if (targetNode == null)
+				return null;
+
+			if (!targetNode.isDirectory()) {
+				return new DirectoryListing(
+						new HdfsFileStatus[]{createFileStatus(HdfsFileStatus.EMPTY_NAME,
+								targetNode, needLocation)}, 0);
+			}
+			
+			//W: else its a directory
+			INodeDirectory dirInode = (INodeDirectory)targetNode;
+//			List<INode> contents = dirInode.getChildren(); //TODO: W: need to modify this
+			List<INode> contents = dirInode.getChildrenFromDB(); //W: modified for KTHFS
+			int startChild = dirInode.nextChild(startAfter);
+			int totalNumChildren = contents.size();
+			int numOfListing = Math.min(totalNumChildren-startChild, this.lsLimit);
+			HdfsFileStatus listing[] = new HdfsFileStatus[numOfListing];
+			for (int i=0; i<numOfListing; i++) {
+				INode cur = contents.get(startChild+i);
+				listing[i] = createFileStatus(cur.name, cur, needLocation);
+			}
+			return new DirectoryListing(
+					listing, totalNumChildren-startChild-numOfListing);
+		} finally {
+			readUnlock();
+		}
+	}
+  /*
+  DirectoryListing getListing(String src, byte[] startAfter,
       boolean needLocation) throws UnresolvedLinkException, IOException {
     String srcs = normalizePath(src);
 
@@ -1201,7 +1241,7 @@ public class FSDirectory implements Closeable {
     } finally {
       readUnlock();
     }
-  }
+  }*/
 
   /** Get the file info for a specific file.
    * @param src The string representation of the path to the file

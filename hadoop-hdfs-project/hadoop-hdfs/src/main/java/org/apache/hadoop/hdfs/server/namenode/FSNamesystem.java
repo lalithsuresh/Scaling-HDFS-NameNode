@@ -79,6 +79,7 @@ import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
 import org.apache.hadoop.hdfs.protocol.DirectoryListing;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
+import org.apache.hadoop.hdfs.protocol.HdfsLocatedFileStatus;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.DatanodeReportType;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.UpgradeAction;
@@ -1060,6 +1061,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     try {
       startFileInternal(src, permissions, holder, clientMachine, flag,
           createParent, replication, blockSize);
+      
+      
+      /*W: testing clusterj*/
+      //se.sics.clusterj.Main_LW.insertINodeFile(src, holder, clientMachine, 123);
+      
+      
     } finally {
       writeUnlock();
     }
@@ -1944,12 +1951,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     throws AccessControlException, UnresolvedLinkException {
     readLock();
     try {
-      if (!DFSUtil.isValidName(src)) {
+      
+    	/*FIXME: W: Commented out for the time being
+    	 * if (!DFSUtil.isValidName(src)) {
         throw new InvalidPathException("Invalid file name: " + src);
       }
       if (isPermissionEnabled) {
         checkTraverse(src);
-      }
+      }*/
+    	KthFsHelper.printKTH("getFileInfo called for "+ src);
       return dir.getFileInfo(src, resolveLink);
     } finally {
       readUnlock();
@@ -2384,6 +2394,32 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
   }
 
+  DirectoryListing getListing2(String src, byte[] startAfter,
+	      boolean needLocation) {
+	  
+	  //should have used INode.newNode(); Remember for future.
+	  INodeDirectory node = new INodeDirectory("my_first_dir", this.defaultPermission);
+	  
+	  byte[] path = new String("/my_first_dir").getBytes();
+	  
+	  HdfsLocatedFileStatus[] hfs = new HdfsLocatedFileStatus[1];
+	  
+	  hfs[0] =  new HdfsLocatedFileStatus(
+				0, 
+				true,
+				0,  
+				0,
+				node.getModificationTime(),
+				node.getAccessTime(),
+				node.getFsPermission(),
+				node.getUserName(),
+				node.getGroupName(),
+				null,
+						path,
+						null);
+	  
+	  return new DirectoryListing(hfs, 0);
+  }
   /**
    * Get a partial listing of the indicated directory
    *
@@ -2396,30 +2432,49 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @throws UnresolvedLinkException if symbolic link is encountered
    * @throws IOException if other I/O error occurred
    */
+  
   DirectoryListing getListing(String src, byte[] startAfter,
       boolean needLocation) 
     throws AccessControlException, UnresolvedLinkException, IOException {
     DirectoryListing dl;
     readLock();
     try {
-      if (isPermissionEnabled) {
+      
+    	/** W: Commenting this out for the time being. 
+    	if (isPermissionEnabled) {
+    	  printKTH(" Permission is Enabled");
         if (dir.isDir(src)) {
           checkPathAccess(src, FsAction.READ_EXECUTE);
         } else {
           checkTraverse(src);
         }
       }
+      */
+
+    	//W: Not required at the moment
       if (auditLog.isInfoEnabled() && isExternalInvocation()) {
         logAuditEvent(UserGroupInformation.getCurrentUser(),
                       Server.getRemoteIp(),
                       "listStatus", src, null, null);
       }
-      dl = dir.getListing(src, startAfter, needLocation);
+      
+      
+      KthFsHelper.printKTH("about to call dir.getListing()");
+      dl = dir.getListing(src, startAfter, needLocation); 
+     
     } finally {
       readUnlock();
     }
+    
+    for (int i = 0; i < dl.getPartialListing().length; i++) {
+		HdfsFileStatus hfs = dl.getPartialListing()[i];
+		KthFsHelper.printKTH("localName:"+hfs.getLocalName());
+	}
+    
     return dl;
   }
+  
+
 
   /////////////////////////////////////////////////////////
   //
@@ -3426,7 +3481,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       FsAction subAccess) throws AccessControlException, UnresolvedLinkException {
     FSPermissionChecker pc = new FSPermissionChecker(
         fsOwner.getShortUserName(), supergroup);
-    if (!pc.isSuper) {
+    if (!pc.isSuper) { /*FIXME: [KTHFS] used for checking if the user is a super user*/
       dir.waitForReady();
       readLock();
       try {

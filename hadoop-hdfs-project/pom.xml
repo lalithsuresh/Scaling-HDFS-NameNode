@@ -31,8 +31,45 @@
     <module>hadoop-hdfs</module>
   </modules>
 
+ <dependencies>
+<!--
+<dependency>
+    <artifactId>clusterj</artifactId>
+    <version>1.0-SNAPSHOT</version>       
+ </dependency>
+-->
+    </dependencies>
+
   <build>
     <plugins>
+  <!--  
+    <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unpack</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>se.sics.ndb</groupId>
+                                    <artifactId>clusterj-linux32</artifactId>
+                                    <version>7.1.15a</version>
+                                    <classifier>${build.type}</classifier>
+                                    <type>jar</type>
+                                    <overWrite>false</overWrite>
+                                    <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+-->    
       <plugin>
         <artifactId>maven-deploy-plugin</artifactId>
         <configuration>
@@ -50,5 +87,13 @@
       </plugin>
     </plugins>
   </build>
+
+ <repositories>
+        <repository>
+            <id>sics-release</id>
+            <name>SICS Release Repository</name>
+            <url>http://kompics.sics.se/maven/repository</url>
+        </repository>
+    </repositories>
 
 </project>

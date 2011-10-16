@@ -40,6 +40,15 @@
       <name>${distMgmtSnapshotsName}</name>
       <url>${distMgmtSnapshotsUrl}</url>
     </repository>
+
+<!--
+<repository>
+            <id>sics-release</id>
+            <name>SICS Release Repository</name>
+            <url>http://kompics.sics.se/maven/repository</url>
+        </repository>
+
+-->
   </repositories>
 
   <licenses>
@@ -111,7 +120,11 @@
         <artifactId>hadoop-auth</artifactId>
         <version>${project.version}</version>
       </dependency>
-
+<dependency>
+<groupId>se.sics.dight</groupId>
+    <artifactId>clusterj</artifactId>
+    <version>1.0-SNAPSHOT</version>
+      </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
