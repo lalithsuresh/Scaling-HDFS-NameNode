@@ -22,7 +22,7 @@ import com.mysql.clusterj.query.QueryBuilder;
 import com.mysql.clusterj.query.QueryDomainType;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.hadoop.hdfs.server.namenode.kthfs.clusterj.InodeTable;
+import se.sics.clusterj.*;
 
 /**
  * 
