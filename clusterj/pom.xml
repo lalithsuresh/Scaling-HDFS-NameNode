@@ -21,11 +21,6 @@
             <artifactId>clusterj-linux32</artifactId>
             <version>7.1.15a</version>
         </dependency>
-        <dependency>
-            <groupId>org.eclipse.persistence</groupId>
-            <artifactId>eclipselink</artifactId>
-            <version>2.2.0</version>
-        </dependency>
     </dependencies>
 
 
