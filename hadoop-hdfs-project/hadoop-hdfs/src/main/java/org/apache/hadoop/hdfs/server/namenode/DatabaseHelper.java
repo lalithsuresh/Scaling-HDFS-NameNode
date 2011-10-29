@@ -13,6 +13,7 @@ import java.util.Random;
 
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.io.DataInputBuffer;
 import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 import com.mysql.clusterj.Query;
@@ -34,6 +35,7 @@ import se.sics.clusterj.*;
 public class DatabaseHelper {
 
 	static final int MAX_DATA = 128;
+	public static FSNamesystem ns = null;
 
 	private static void initDB() {
 	}
@@ -68,7 +70,7 @@ public class DatabaseHelper {
 				PermissionStatus ps = PermissionStatus.read(buffer);
 				KthFsHelper.printKTH("PermissionStatus: "+ps.getGroupName() + ps.getUserName() + " " + ps.getPermission().toString());
 				
-
+/*
 				INode node = INode.newINode(
 						ps,//this.getPermissionStatus(),
 						null, //TODO: W: blocks to be read from DB also - null for directories
@@ -80,7 +82,19 @@ public class DatabaseHelper {
 						result.getDSQuota(),
 						-1);
 				node.setLocalName(result.getLocalName());
-				children.add(node);
+				children.add(node);*/
+				
+				
+				if(result.getIsDir()) {
+                    INodeDirectory dir =  new INodeDirectory(result.getName(), ps);
+                    dir.setLocalName(result.getLocalName());
+                    children.add(dir);
+				}
+				else {
+                    INodeFile inf = new INodeFile(ps,0,(short)1,result.getModificationTime(), result.getATime(), 64); //FIXME: change this when we store blockinfo
+                    inf.setLocalName(result.getName());
+                    children.add(inf);
+                }
 		}
 
 		if (children.size() > 0 )
@@ -100,14 +114,8 @@ public class DatabaseHelper {
 		 *  4. else return null;
 		 */
 
-		Properties p = new Properties();
-		p.setProperty("com.mysql.clusterj.connectstring", "cloud3.sics.se:1186");
-		p.setProperty("com.mysql.clusterj.database", "test");
-		SessionFactory sf = ClusterJHelper.getSessionFactory(p);
-		Session s = sf.getSession();
-		Transaction tx = s.currentTransaction();
-		long t1 = System.currentTimeMillis();
-
+		Session s = DBConnector.sessionFactory.getSession();
+				
 		/*
 		 * Full table scan
 		 * */
@@ -116,10 +124,10 @@ public class DatabaseHelper {
 		QueryDomainType dobj = qb.createQueryDefinition(InodeTable.class);
 
 
-		dobj.where(dobj.get("parent").equal(dobj.param("parent")));
+		dobj.where(dobj.get("parent").equal(dobj.param("parent_param")));
 
 		Query<InodeTable> query = s.createQuery(dobj);
-		query.setParameter("parent", parentDir); //W: the WHERE clause of SQL
+		query.setParameter("parent_param", parentDir); //W: the WHERE clause of SQL
 
 		//Query query = s.createQuery(dobj);
 		List<InodeTable> resultList = query.getResultList();
@@ -132,24 +140,14 @@ public class DatabaseHelper {
 				String str = result.getName();
 				str = str.substring(str.lastIndexOf("/")+1);
 				if(str.equals(searchDir) ) {
-					System.out.println("FOUND - " + searchDir + " in "+parentDir);
-					System.out.println(result.getName() + " " + result.getClientName());
-					
-					DataInputBuffer buffer = new DataInputBuffer();
-					buffer.reset(result.getPermission(), result.getPermission().length);
-					PermissionStatus ps = PermissionStatus.read(buffer);
+					INode inode = getINodeByNameBasic (result.getName ());
 
-					if(result.getIsDir()) {
-						KthFsHelper.printKTH("About to return a directory: "+result.getName());
-						return new INodeDirectory(result.getName(), ps);
-					}
-					else {
-						INodeFile inf = new INodeFile(ps,0,(short)1,result.getModificationTime(), result.getATime(), 64); //FIXME: change this when we store blockinfo
-						inf.setLocalName(result.getName());
-						return  inf;
-						//KthFsHelper.printKTH("Returning a file: "+node.toString());
-					}
-
+					System.err.println("[STATELESS] retrieving parent " + result.getParent() + " " + result.getName());
+					// Attach a parent to the Inode we just retrieved
+					INodeDirectory inodeParent = (INodeDirectory) getINodeByNameBasic(result.getParent());
+					System.err.println("[STATELESS] NAME IS: " + result.getName() + " " + result.getParent());
+					inode.setParent(inodeParent);
+					return inode;
 				}
 			//}
 		}
@@ -158,6 +156,89 @@ public class DatabaseHelper {
 		return null;
 	}
 
+	
+	/**
+	 * Use this method to retrieve an INode from the
+	 * database by its name. This method will not
+	 * attach a reference to the parent of the INode
+	 * being returned.
+	 * 
+	 * @param name Inode name to be retrieved
+	 * @return INode corresponding to 'name'
+	 * @throws IOException 
+	 */
+	public static INode getINodeByNameBasic (String name) throws IOException{
+		Session s = DBConnector.sessionFactory.getSession();
+		
+		QueryBuilder qb = s.getQueryBuilder();
+		QueryDomainType dobj = qb.createQueryDefinition(InodeTable.class);
+
+
+		dobj.where(dobj.get("name").equal(dobj.param("inode_name")));
+
+		Query<InodeTable> query = s.createQuery(dobj);
+		query.setParameter("inode_name", name); //W: the WHERE clause of SQL
+
+		List<InodeTable> resultList = query.getResultList();
+
+		assert (resultList.size() == 1) : "More than one Inode exists with name " + name;
+				
+		for (InodeTable result: resultList) {
+			if (result.getName().equals(name))
+			{
+				return convertINodeTableToINode (result);
+			}
+		}
+		
+		// Silence compiler
+		return null;
+	}
+	
+	public static INode convertINodeTableToINode (InodeTable inodetable) throws IOException
+	{
+
+		DataInputBuffer buffer = new DataInputBuffer();
+		buffer.reset(inodetable.getPermission(), inodetable.getPermission().length);
+		PermissionStatus ps = PermissionStatus.read(buffer);
+		
+		INode inode = null;
+		
+		if (inodetable.getIsDir()){
+			inode = new INodeDirectory(inodetable.getName(), ps);
+		}
+		if (inodetable.getIsDirWithQuota()) {
+			inode = new INodeDirectoryWithQuota(inodetable.getName(), ps, inodetable.getNSCount(), inodetable.getDSQuota());
+		}
+		if (inodetable.getIsUnderConstruction()) {
+			/* FIXME: Handle blocks */
+			/* FIXME: Double check numbers later */
+			BlockInfo [] blocks = new BlockInfo [1];
+			blocks[0] = new BlockInfo(3);
+			inode = new INodeFileUnderConstruction(inodetable.getName().getBytes(),
+													(short) 1,
+													inodetable.getModificationTime(),
+													64,
+													blocks,
+													ps,
+													inodetable.getClientName(),
+													inodetable.getClientMachine(),
+													ns.getBlockManager().getDatanodeManager().getDatanodeByHost(inodetable.getClientNode()));
+		}
+		if (inodetable.getIsClosedFile()) {
+			/* FIXME: Double check numbers later */
+			inode = new INodeFile(ps,
+									0,
+									(short)1,
+									inodetable.getModificationTime(),
+									inodetable.getATime(), 64);	
+		}
+		
+		/* FIXME: Call getLocalName() */
+		inode.setLocalName(inodetable.getLocalName());
+		
+		return inode;
+	}
+	
 	/**
 	 * @param args
 	 */

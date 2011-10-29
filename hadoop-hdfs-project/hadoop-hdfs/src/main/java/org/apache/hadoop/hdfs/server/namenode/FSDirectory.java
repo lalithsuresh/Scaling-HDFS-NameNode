@@ -128,6 +128,11 @@ public class FSDirectory implements Closeable {
     rootDir = new INodeDirectoryWithQuota(INodeDirectory.ROOT_NAME,
         ns.createFsOwnerPermissions(new FsPermission((short)0755)),
         Integer.MAX_VALUE, UNKNOWN_DISK_SPACE);
+
+    // [STATELESS] Add rootDir to DBMS
+    InodeTableHelper ith = new InodeTableHelper();
+	ith.addChild(rootDir);
+    
     this.fsImage = fsImage;
     int configuredLimit = conf.getInt(
         DFSConfigKeys.DFS_LIST_LIMIT, DFSConfigKeys.DFS_LIST_LIMIT_DEFAULT);
@@ -1262,7 +1267,7 @@ public class FSDirectory implements Closeable {
   INodeFile getFileINode(String src) throws UnresolvedLinkException {
     readLock();
     try {
-      INode inode = rootDir.getNode(src, true);
+      INode inode = rootDir.getNode2(src, true);
       if (inode == null || inode.isDirectory())
         return null;
       assert !inode.isLink();      
@@ -1494,7 +1499,7 @@ public class FSDirectory implements Closeable {
 
     writeLock();
     try {
-      rootDir.getExistingPathINodes(components, inodes, false);
+      rootDir.getExistingPathINodes2(components, inodes, false);
 
       // find the index of the first null in inodes[]
       StringBuilder pathbuilder = new StringBuilder();
@@ -1574,7 +1579,7 @@ public class FSDirectory implements Closeable {
     INode[] inodes = new INode[components.length];
     writeLock();
     try {
-      rootDir.getExistingPathINodes(components, inodes, false);
+      rootDir.getExistingPathINodes2(components, inodes, false);
       return addChild(inodes, inodes.length-1, child, childDiskspace,
                       inheritPermission);
     } finally {

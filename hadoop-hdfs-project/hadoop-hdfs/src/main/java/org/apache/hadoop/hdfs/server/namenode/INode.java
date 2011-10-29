@@ -183,6 +183,10 @@ public abstract class INode implements Comparable<byte[]>, FSInodeInfo {
    */
   public abstract boolean isDirectory();
 
+  public void setParent(INodeDirectory p) {
+	  this.parent = p;
+  }
+  
   /**
    * Collect all the blocks in all children of this INode.
    * Count and return the number of files in the sub tree.

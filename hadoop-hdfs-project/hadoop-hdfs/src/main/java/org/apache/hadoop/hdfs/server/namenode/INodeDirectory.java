@@ -33,6 +33,12 @@ import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 
+import se.sics.clusterj.InodeTable;
+
+import com.mysql.clusterj.ClusterJDatastoreException;
+import com.mysql.clusterj.Session;
+import com.mysql.clusterj.Transaction;
+
 /**
  * Directory INode class.
  */
@@ -75,11 +81,21 @@ class INodeDirectory extends INode {
 	}
 
 	INode removeChild(INode node) {
-		assert children != null;
+		assert getChildrenFromDB() != null;
+		/*
 		int low = Collections.binarySearch(children, node.name);
 		if (low >= 0) {
 			return children.remove(low);
 		} else {
+			return null;
+		}*/
+		InodeTableHelper ith = new InodeTableHelper();
+		try {
+			ith.removeChild(node);
+			return node;
+		} catch (ClusterJDatastoreException e)
+		{
+			System.err.println("[stateless] Couldn't find " + node.name + " in DBMS, returning null");
 			return null;
 		}
 	}
@@ -352,7 +368,7 @@ class INodeDirectory extends INode {
 			}
 		} catch (NullPointerException e) {
 			// TODO Auto-generated catch block
-			System.err.println("[KTHFS] NullPointerException in getExistingPathINodes");
+			e.printStackTrace();
 		}
 
 		return inodes;
@@ -397,24 +413,41 @@ class INodeDirectory extends INode {
 			}
 			node.setPermission(p);
 		}
-
-		if (children == null) {
+				
+		/*
+		if (childrenTemp == null) {
 			children = new ArrayList<INode>(DEFAULT_FILES_PER_DIRECTORY);
-		}
-		int low = Collections.binarySearch(children, node.name);
-		if(low >= 0)
+		}*/
+		
+		
+		
+		int low = Collections.binarySearch(getChildrenFromDB(), node.name);
+		if(low >= 0){
+			System.err.println("[Stateless] i'm returning null " + node.getFullPathName());
 			return null;
+		}
 		node.parent = this;
-		children.add(-low - 1, node);
+		// children.add(-low - 1, node);
+		
 		// update modification time of the parent directory
-		if (setModTime)
-			setModificationTime(node.getModificationTime());
+		Session session = DBConnector.sessionFactory.getSession();		
+		Transaction tx = session.currentTransaction();
+		tx.begin();
+		InodeTable inode = session.find(InodeTable.class, this.getFullPathName());
+		assert inode != null : "this Inode doesn't exist in DB";
+		System.err.println("[STATELESS] SOme junk " + inode.getName() + " " + node.getModificationTime());
+		inode.setModificationTime(node.getModificationTime());
+		session.updatePersistent(inode);
+		tx.commit();
+		//if (setModTime)
+		//	setModificationTime(node.getModificationTime());
 		if (node.getGroupName() == null) {
 			node.setGroup(getGroupName());
 		}
 		// [STATELESS]
 		InodeTableHelper ith = new InodeTableHelper();
 		ith.addChild(node);
+		
 		return node;
 	}
 
@@ -479,7 +512,7 @@ class INodeDirectory extends INode {
 			return null;
 		// Gets the parent INode
 		INode[] inodes  = new INode[2];
-		getExistingPathINodes(pathComponents, inodes, false);
+		getExistingPathINodes2(pathComponents, inodes, false);
 		INode inode = inodes[0];
 		if (inode == null) {
 			throw new FileNotFoundException("Parent path does not exist: "+
