@@ -221,6 +221,7 @@ public class BlockInfoUnderConstruction extends BlockInfo {
     blockUCState = BlockUCState.COMMITTED;
     this.set(getBlockId(), block.getNumBytes(), block.getGenerationStamp());
   }
+  
 
   /**
    * Initialize lease recovery for this block.

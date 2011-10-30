@@ -129,6 +129,12 @@ public class LightWeightGSet<K, E extends K> implements GSet<K, E> {
     //element not found
     return null;
   }
+  
+  
+  public E getFromDB(final K key) {
+	  //TODO: use functions from BlocksHelper
+	    return null;
+	  }
 
   @Override
   public boolean contains(final K key) {
@@ -162,6 +168,13 @@ public class LightWeightGSet<K, E extends K> implements GSet<K, E> {
 
     return existing;
   }
+  
+  public E putIntoDB(final E element) {
+	  
+	  //TODO: use functions from BlocksHelper
+	  return null;
+	    	  }
+  
 
   /**
    * Remove the element corresponding to the key,

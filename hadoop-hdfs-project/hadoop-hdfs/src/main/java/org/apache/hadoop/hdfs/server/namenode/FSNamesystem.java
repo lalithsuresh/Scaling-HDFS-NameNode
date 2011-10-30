@@ -728,7 +728,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       try {
         long now = now();
-        INodeFile inode = dir.getFileINode(src);
+        INodeFile inode = dir.getFileINode(src); //TODO: W: needs to be changed for KTHFS
         if (inode == null) {
           throw new FileNotFoundException("File does not exist: " + src);
         }
@@ -741,10 +741,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
               continue;
             }
           }
-          dir.setTimes(src, inode, -1, now, false);
+          dir.setTimes(src, inode, -1, now, false); //TODO: KTHFS W: change the setTime method of INodes
         }
-        return blockManager.createLocatedBlocks(inode.getBlocks(),
-            inode.computeFileSize(false), inode.isUnderConstruction(),
+        return blockManager.createLocatedBlocks(inode.getBlocks() /*W: start storing Blocks when iNodes are created*/,
+            inode.computeFileSize(false), /*W: make sure this method works fine after blocks are stored in the DB*/
+            inode.isUnderConstruction(),
             offset, length, needBlockToken);
       } finally {
         if (attempt == 0) {
@@ -2383,7 +2384,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           // Otherwise fsck will report these blocks as MISSING, especially if the
           // blocksReceived from Datanodes take a long time to arrive.
           for (int i = 0; i < descriptors.length; i++) {
-            descriptors[i].addBlock(storedBlock);
+            descriptors[i].addBlock(storedBlock); //FIXME: KTHFS  Blocks!!!
           }
         }
         // add pipeline locations into the INodeUnderConstruction

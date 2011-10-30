@@ -20,6 +20,7 @@ package org.apache.hadoop.hdfs.server.blockmanagement;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
+import org.apache.hadoop.hdfs.server.namenode.KthFsHelper;
 import org.apache.hadoop.hdfs.util.LightWeightGSet;
 
 /**
@@ -39,6 +40,11 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
    * to the previous and the next blocks, respectively, in the 
    * list of blocks belonging to this data-node.
    */
+  
+  /*
+   * [DatanodeDescriptor] [previous_block] [next_block] [DatanodeDescriptor] [previous_block] [next_block] [DatanodeDescriptor] [previous_block] [next_block]
+   * 
+   * */
   private Object[] triplets;
 
   /**
@@ -54,6 +60,15 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
     super(blk);
     this.triplets = new Object[3*replication];
     this.inode = null;
+    
+    
+    KthFsHelper.printKTH(
+    		"BlockInfo: filename: "+ this.getINode().getFullPathName() +
+    		"blockId: "+this.getBlockId() + 
+    		" blockName:"+this.getBlockName() + 
+    		" numBytes:"+ this.getNumBytes() + 
+    		" genstamp:" + this.getGenerationStamp()
+    		);
   }
 
   /**
