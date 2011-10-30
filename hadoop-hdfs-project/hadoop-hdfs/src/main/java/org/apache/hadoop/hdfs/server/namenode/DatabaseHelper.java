@@ -68,7 +68,7 @@ public class DatabaseHelper {
 				DataInputBuffer buffer = new DataInputBuffer();
 				buffer.reset(result.getPermission(), result.getPermission().length);
 				PermissionStatus ps = PermissionStatus.read(buffer);
-				KthFsHelper.printKTH("PermissionStatus: "+ps.getGroupName() + ps.getUserName() + " " + ps.getPermission().toString());
+				//KthFsHelper.printKTH("PermissionStatus: "+ps.getGroupName() + ps.getUserName() + " " + ps.getPermission().toString());
 				
 /*
 				INode node = INode.newINode(
@@ -123,7 +123,7 @@ public class DatabaseHelper {
 		QueryBuilder qb = s.getQueryBuilder();
 		QueryDomainType dobj = qb.createQueryDefinition(InodeTable.class);
 
-
+		System.err.println("Parent: " + parentDir + " search: " + searchDir);
 		dobj.where(dobj.get("parent").equal(dobj.param("parent_param")));
 
 		Query<InodeTable> query = s.createQuery(dobj);
@@ -139,13 +139,14 @@ public class DatabaseHelper {
 			//if(result.getIsDir()) {
 				String str = result.getName();
 				str = str.substring(str.lastIndexOf("/")+1);
+				System.err.println("Comparing " + str + " against " + searchDir);
 				if(str.equals(searchDir) ) {
 					INode inode = getINodeByNameBasic (result.getName ());
 
-					System.err.println("[STATELESS] retrieving parent " + result.getParent() + " " + result.getName());
+					//System.err.println("[STATELESS] retrieving parent " + result.getParent() + " " + result.getName());
 					// Attach a parent to the Inode we just retrieved
 					INodeDirectory inodeParent = (INodeDirectory) getINodeByNameBasic(result.getParent());
-					System.err.println("[STATELESS] NAME IS: " + result.getName() + " " + result.getParent());
+					System.err.println("[STATELESS] NAME IS: " + inode.getFullPathName());
 					inode.setParent(inodeParent);
 					return inode;
 				}
@@ -202,7 +203,7 @@ public class DatabaseHelper {
 		PermissionStatus ps = PermissionStatus.read(buffer);
 		
 		INode inode = null;
-		
+				
 		if (inodetable.getIsDir()){
 			inode = new INodeDirectory(inodetable.getName(), ps);
 		}
@@ -234,6 +235,7 @@ public class DatabaseHelper {
 		}
 		
 		/* FIXME: Call getLocalName() */
+		inode.setFullPathName(inodetable.getName());
 		inode.setLocalName(inodetable.getLocalName());
 		
 		return inode;

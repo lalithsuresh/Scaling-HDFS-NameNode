@@ -129,6 +129,8 @@ public class FSDirectory implements Closeable {
         ns.createFsOwnerPermissions(new FsPermission((short)0755)),
         Integer.MAX_VALUE, UNKNOWN_DISK_SPACE);
 
+    // FIXME: Seperator lolz
+    rootDir.setFullPathName("/");
     // [STATELESS] Add rootDir to DBMS
     InodeTableHelper ith = new InodeTableHelper();
 	ith.addChild(rootDir);
@@ -252,7 +254,7 @@ public class FSDirectory implements Closeable {
     throws FileAlreadyExistsException, QuotaExceededException,
       UnresolvedLinkException {
     waitForReady();
-    System.err.println("[Stateless] addFileFSDirectory OMG -------");
+
     // Always do an implicit mkdirs for parent directory tree.
     long modTime = now();
     if (!mkdirs(new Path(path).getParent().toString(), permissions, true,
@@ -1186,14 +1188,14 @@ public class FSDirectory implements Closeable {
 		readLock();
 		try {
 			INode targetNode = rootDir.getNode2(srcs, true);
-			KthFsHelper.printKTH("inside getListing() ----- targetNode.toString() -> "+targetNode.toString());
+			//KthFsHelper.printKTH("inside getListing() ----- targetNode.toString() -> "+targetNode.toString());
 			
 			if (targetNode == null)
 				return null;
 			
 
 			if (!targetNode.isDirectory()) {
-				KthFsHelper.printKTH(targetNode.toString()+" - NOT a DIRECTORY");
+				//KthFsHelper.printKTH(targetNode.toString()+" - NOT a DIRECTORY");
 				return new DirectoryListing(
 						new HdfsFileStatus[]{createFileStatus(HdfsFileStatus.EMPTY_NAME,
 								targetNode, needLocation)}, 0);
@@ -1201,7 +1203,7 @@ public class FSDirectory implements Closeable {
 			
 			//W: else its a directory
 			INodeDirectory dirInode = (INodeDirectory)targetNode;
-			KthFsHelper.printKTH("dirInode.toString() -> "+dirInode.toString());
+			//KthFsHelper.printKTH("dirInode.toString() -> "+dirInode.toString());
 			List<INode> contents = dirInode.getChildrenFromDB(); //W: modified for KTHFS
 			int startChild = dirInode.nextChild(startAfter);
 			int totalNumChildren = contents.size();
@@ -1457,6 +1459,7 @@ public class FSDirectory implements Closeable {
 
   /** Return the full path name of the specified inode */
   static String getFullPathName(INode inode) {
+	
     // calculate the depth of this inode from root
     int depth = 0;
     for (INode i = inode; i != null; i = i.parent) {
@@ -1571,7 +1574,7 @@ public class FSDirectory implements Closeable {
   private <T extends INode> T addNode(String src, T child, 
         long childDiskspace, boolean inheritPermission) 
   throws QuotaExceededException, UnresolvedLinkException {
-	  System.err.println("[Stateless] addNodeFSDirectory OMG -------");
+	  
     byte[][] components = INode.getPathComponents(src);
     byte[] path = components[components.length-1];
     child.setLocalName(path);
@@ -1732,7 +1735,7 @@ public class FSDirectory implements Closeable {
     if (pathComponents[pos-1] == null) {
       throw new NullPointerException("Panic: parent does not exist");
     }
-    System.err.println("[Stateless] addChildInFSDirectory OMG ------- " + Thread.currentThread().getId());
+    
     T addedNode = ((INodeDirectory)pathComponents[pos-1]).addChild(
         child, inheritPermission, true);
     if (addedNode == null) {
@@ -1746,7 +1749,7 @@ public class FSDirectory implements Closeable {
   private <T extends INode> T addChild(INode[] pathComponents, int pos,
       T child, long childDiskspace, boolean inheritPermission)
       throws QuotaExceededException {
-	System.err.println("[Stateless] addToChildSmallFSDirectory OMG -------");
+	
     return addChild(pathComponents, pos, child, childDiskspace,
         inheritPermission, true);
   }
@@ -1755,7 +1758,7 @@ public class FSDirectory implements Closeable {
       int pos, T child, long childDiskspace, boolean inheritPermission) {
     T inode = null;
     try {
-    	System.err.println("[Stateless] addChildNoQuotaCheck -------");
+
       inode = addChild(pathComponents, pos, child, childDiskspace,
           inheritPermission, false);
     } catch (QuotaExceededException e) {
@@ -1770,8 +1773,9 @@ public class FSDirectory implements Closeable {
    * Return the removed node; null if the removal fails.
    */
   private INode removeChild(INode[] pathComponents, int pos) {
-    INode removedNode = 
-      ((INodeDirectory)pathComponents[pos-1]).removeChild(pathComponents[pos]);
+	INodeDirectory dir = ((INodeDirectory)pathComponents[pos-1]);
+	System.err.println("[STATLESS] DIR NAME IS HAHAHA: " + pathComponents[pos].getFullPathName());
+    INode removedNode = dir.removeChild(pathComponents[pos]);
     if (removedNode != null) {
       INode.DirCounts counts = new INode.DirCounts();
       removedNode.spaceConsumedInTree(counts);

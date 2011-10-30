@@ -129,15 +129,13 @@ class INodeDirectory extends INode {
 		}
 		int low = Collections.binarySearch(children, name);
 		if (low >= 0) {
-			KthFsHelper.printKTH("******************************* getChildINode: "+children.get(low));
+			//KthFsHelper.printKTH("******************************* getChildINode: "+children.get(low));
 			return children.get(low);
 		}
 		return null;
 	}
 
 	private INode getChildINodeFromDB(byte[] name) {
-
-		KthFsHelper.printKTH("fullpathname: "+this.getFullPathName() + " name:"+ new String(name));
 
 		INode child;
 		try {
@@ -245,9 +243,9 @@ class INodeDirectory extends INode {
 			index = 0;
 		}
 
-		KthFsHelper.printKTH("Before while loop components.length="+components.length +
-				" resolveLink="+resolveLink+
-				" this.name="+new String(this.name));
+		//KthFsHelper.printKTH("Before while loop components.length="+components.length +
+		//		" resolveLink="+resolveLink+
+		//		" this.name="+new String(this.name));
 		while (count < components.length && curNode != null) {
 			final boolean lastComp = (count == components.length - 1);      
 			if (index >= 0) {
@@ -267,7 +265,7 @@ class INodeDirectory extends INode {
 						constructPath(components, count+1),
 						linkTarget);
 			}
-			KthFsHelper.printKTH("inside while loop currNode:"+curNode.getFullPathName());
+			//KthFsHelper.printKTH("inside while loop currNode:"+curNode.getFullPathName());
 
 			if (lastComp || !curNode.isDirectory()) {
 				break;
@@ -284,7 +282,7 @@ class INodeDirectory extends INode {
 
 		}
 
-		KthFsHelper.printKTH("about to return count="+count);
+		//KthFsHelper.printKTH("about to return count="+count);
 		return count;
 	}
 
@@ -335,7 +333,7 @@ class INodeDirectory extends INode {
 
 		}
 
-		KthFsHelper.printKTH("about to return count="+count + " and curNode is "+(curNode==null?"null":"not null"));
+		//KthFsHelper.printKTH("about to return count="+count + " and curNode is "+(curNode==null?"null":"not null"));
 		return count;
 	}
 
@@ -359,7 +357,7 @@ class INodeDirectory extends INode {
 		byte[][] components = getPathComponents(path);
 		INode[] inodes = new INode[components.length];
 
-		this.getExistingPathINodes(components, inodes, resolveLink);
+		this.getExistingPathINodes2(components, inodes, resolveLink);
 
 		try {
 			System.err.println("[KTHFS] (Inside getExisitingPathINodes) inodes.length:"+inodes.length);
@@ -419,7 +417,7 @@ class INodeDirectory extends INode {
 			children = new ArrayList<INode>(DEFAULT_FILES_PER_DIRECTORY);
 		}*/
 		
-		
+		System.err.println("[STATELESS] INodeDirectory.addChild() called for : " + node.name);
 		
 		int low = Collections.binarySearch(getChildrenFromDB(), node.name);
 		if(low >= 0){
@@ -435,7 +433,7 @@ class INodeDirectory extends INode {
 		tx.begin();
 		InodeTable inode = session.find(InodeTable.class, this.getFullPathName());
 		assert inode != null : "this Inode doesn't exist in DB";
-		System.err.println("[STATELESS] SOme junk " + inode.getName() + " " + node.getModificationTime());
+
 		inode.setModificationTime(node.getModificationTime());
 		session.updatePersistent(inode);
 		tx.commit();
@@ -444,6 +442,17 @@ class INodeDirectory extends INode {
 		if (node.getGroupName() == null) {
 			node.setGroup(getGroupName());
 		}
+		
+		// FIXME: Do separator lolz
+		// Assumption: If this piece of code is being executed, it already
+		// is in the DB, and has a fullpathname ready for its Inode instance.
+		if (this.getFullPathName().equals("/")){
+			node.setFullPathName(this.getFullPathName() + node.getLocalName());
+		}
+		else{
+			node.setFullPathName(this.getFullPathName() + "/" + node.getLocalName());
+		}
+		
 		// [STATELESS]
 		InodeTableHelper ith = new InodeTableHelper();
 		ith.addChild(node);
@@ -499,7 +508,7 @@ class INodeDirectory extends INode {
 			UnresolvedLinkException {
 		// insert into the parent children list
 		newNode.name = localname;
-		System.err.println("[Stateless] addToParent -------");
+
 		if(parent.addChild(newNode, inheritPermission, propagateModTime) == null)
 			return null;
 		return parent;
@@ -547,7 +556,7 @@ class INodeDirectory extends INode {
 		newNode.name = pathComponents[pathLen-1];
 		// insert into the parent children list
 		INodeDirectory parent = getParent(pathComponents);
-		System.err.println("[Stateless] addToParentINodeDirectory OMG -------" + " " + Thread.currentThread().getId());
+
 		if(parent.addChild(newNode, inheritPermission, propagateModTime) == null)
 			return null;
 		return parent;

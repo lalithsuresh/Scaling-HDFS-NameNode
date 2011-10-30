@@ -184,11 +184,11 @@ class FSImageFormat {
         LOG.info("Number of files = " + numFiles);
         if (LayoutVersion.supports(Feature.FSIMAGE_NAME_OPTIMIZATION,
             imgVersion)) {
-        	System.err.println("[KTHFS] LayoutVersion.supports(Feature.FSIMAGE_NAME_OPTIMIZATION");
+        	//System.err.println("[KTHFS] LayoutVersion.supports(Feature.FSIMAGE_NAME_OPTIMIZATION");
         	loadLocalNameINodes(numFiles, in);
           
         } else {
-        	System.err.println("[KTHFS] fullNameInodes");
+        	//System.err.println("[KTHFS] fullNameInodes");
         	loadFullNameINodes(numFiles, in);
         }
 
@@ -267,7 +267,7 @@ class FSImageFormat {
    private int loadDirectory(DataInputStream in) throws IOException {
 	   //FIXME: [KTHFS] Change this function to read files from MySQL Cluster
      String parentPath = FSImageSerialization.readString(in); 
-     System.err.println("[KTHFS] parentPath: "+parentPath);
+     //System.err.println("[KTHFS] parentPath: "+parentPath);
      FSDirectory fsDir = namesystem.dir;
      INode parent = fsDir.rootDir.getNode(parentPath, true);
      if (parent == null || !parent.isDirectory()) {
@@ -285,7 +285,7 @@ class FSImageFormat {
        namesystem.dir.addToParent(localName, (INodeDirectory)parent, newNode, false);
        
        //FIXME: KTHFS 
-       System.err.format("[KTHFS] parentPath:%s, localName:%s, fullPathName:%s \n",parentPath, newNode.getLocalName() , newNode.getFullPathName());
+       //System.err.format("[KTHFS] parentPath:%s, localName:%s, fullPathName:%s \n",parentPath, newNode.getLocalName() , newNode.getFullPathName());
      }
      return numChildren;
    }

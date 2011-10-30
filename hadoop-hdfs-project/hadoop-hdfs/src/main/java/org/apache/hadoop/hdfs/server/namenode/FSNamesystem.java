@@ -1998,7 +1998,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       if (isPermissionEnabled) {
         checkTraverse(src);
       }*/
-    	KthFsHelper.printKTH("getFileInfo called for "+ src);
+    	//KthFsHelper.printKTH("getFileInfo called for "+ src);
       return dir.getFileInfo(src, resolveLink);
     } finally {
       readUnlock();

@@ -48,7 +48,7 @@ public class InodeTableHelper {
 			e.printStackTrace();
 		}
 	    
-	    System.err.println("[STATELESS] Permission string: " + permissionString.toString());
+
 	    
 	    /* Commented by W
 	    long finalPerm = 0;
@@ -100,12 +100,12 @@ public class InodeTableHelper {
 	    	inode.setIsUnderConstruction(true);	    	
 	    	inode.setClientName(((INodeFileUnderConstruction) node).getClientName());
 	    	inode.setClientMachine(((INodeFileUnderConstruction) node).getClientMachine());
+	    	System.err.println("[STATELESS] Client name : " +((INodeFileUnderConstruction) node).getClientNode().getName());
 	    	inode.setClientNode(((INodeFileUnderConstruction) node).getClientNode().getName());
 	    }
 	    if (node instanceof INodeSymlink)
 	    {
 	    	inode.setSymlink(((INodeSymlink) node).getSymlink());
-	    	System.err.println("[Stateless] isInodeSymlink");    	
 	    }
 	    if (entry_exists)
 	    	s.updatePersistent(inode);
@@ -143,7 +143,7 @@ public class InodeTableHelper {
 	  		// TODO Auto-generated catch block
 	  		e.printStackTrace();
 	  	}
-	      System.err.println("[STATELESS] Permission string: " + permissionString.toString());
+
 	     /* long finalPerm = 0;
 	      try {
 	  		permissionString.writeLong(finalPerm);
@@ -160,13 +160,11 @@ public class InodeTableHelper {
 	      // TODO: Does not handle InodeDirectoryWithQuota yet
 	      if (newChild instanceof INodeDirectory)
 	      {
-	      	System.err.println("[Stateless] replaceChild --isInodeDirectory");
 	      	inode.setIsDir(true);
 	      	inode.setIsDirWithQuota(true);
 	      }
 	      if (newChild instanceof INodeDirectoryWithQuota)
 	      {
-	      	System.err.println("[Stateless] replaceChild -- isInodeDirectoryWithQuota");
 	      	inode.setIsDir(false);
 	      	inode.setIsDirWithQuota(true);      	
 	      	inode.setNSCount(((INodeDirectoryWithQuota) newChild).getNsCount());
