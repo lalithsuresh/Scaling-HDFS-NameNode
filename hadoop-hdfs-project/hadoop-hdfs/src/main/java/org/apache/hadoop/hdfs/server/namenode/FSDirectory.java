@@ -132,8 +132,7 @@ public class FSDirectory implements Closeable {
     // FIXME: Seperator lolz
     rootDir.setFullPathName("/");
     // [STATELESS] Add rootDir to DBMS
-    InodeTableHelper ith = new InodeTableHelper();
-	ith.addChild(rootDir);
+	INodeTableHelper.addChild(rootDir);
     
     this.fsImage = fsImage;
     int configuredLimit = conf.getInt(
@@ -1123,6 +1122,19 @@ public class FSDirectory implements Closeable {
       return 0;
     }
     int pos = inodes.length - 1;
+    
+    // [Stateless] when removing an INode from the database,
+    // we lose information of the node's children as well.
+    // So we retrieve the list of children beforehand, and
+    // then perform garbage collection from that point onwards.
+    // NOTE: Only INodeDirectory* types have children
+    
+    List<INode> tempChildren = null;
+    if (targetNode instanceof INodeDirectory || targetNode instanceof INodeDirectoryWithQuota)
+    {		
+    	tempChildren = ((INodeDirectory) targetNode).getChildrenFromDB();
+    }
+    
     // Remove the node from the namespace
     targetNode = removeChild(inodes, pos);
     if (targetNode == null) {
@@ -1130,7 +1142,20 @@ public class FSDirectory implements Closeable {
     }
     // set the parent's modification time
     inodes[pos-1].setModificationTime(mtime);
-    int filesRemoved = targetNode.collectSubtreeBlocksAndClear(collectedBlocks);
+    
+    // If INodeDirectory, then we've already cleared it from
+    // the DB, so iterate through its children and clear the
+    // associated blocks
+    int filesRemoved = 0;
+    if (targetNode instanceof INodeDirectory || targetNode instanceof INodeDirectoryWithQuota){
+    	for (INode child: tempChildren) {
+    		filesRemoved += child.collectSubtreeBlocksAndClear(collectedBlocks);
+    	}
+    }    
+    else{
+    	filesRemoved = targetNode.collectSubtreeBlocksAndClear(collectedBlocks);
+    }
+    
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* FSDirectory.unprotectedDelete: "
           +src+" is removed");
@@ -1773,8 +1798,7 @@ public class FSDirectory implements Closeable {
    * Return the removed node; null if the removal fails.
    */
   private INode removeChild(INode[] pathComponents, int pos) {
-	INodeDirectory dir = ((INodeDirectory)pathComponents[pos-1]);
-	System.err.println("[STATLESS] DIR NAME IS HAHAHA: " + pathComponents[pos].getFullPathName());
+	INodeDirectory dir = ((INodeDirectory)pathComponents[pos-1]);	
     INode removedNode = dir.removeChild(pathComponents[pos]);
     if (removedNode != null) {
       INode.DirCounts counts = new INode.DirCounts();

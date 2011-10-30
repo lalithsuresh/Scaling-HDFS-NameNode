@@ -179,6 +179,9 @@ public class INodeFile extends INode {
       }
     }
     blocks = null;
+    
+	// [Stateless] Remove me from DB
+    INodeTableHelper.removeChild(this);
     return 1;
   }
 

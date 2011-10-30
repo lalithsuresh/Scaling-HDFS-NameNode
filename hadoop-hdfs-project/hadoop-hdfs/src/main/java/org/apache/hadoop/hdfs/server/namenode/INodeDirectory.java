@@ -89,9 +89,8 @@ class INodeDirectory extends INode {
 		} else {
 			return null;
 		}*/
-		InodeTableHelper ith = new InodeTableHelper();
 		try {
-			ith.removeChild(node);
+			INodeTableHelper.removeChild(node);
 			return node;
 		} catch (ClusterJDatastoreException e)
 		{
@@ -112,8 +111,7 @@ class INodeDirectory extends INode {
 		if (low>=0) { // an old child exists so replace by the newChild
 			children.set(low, newChild);
 			//[kthfs] Call to INodeTableHelper to replaceChild in the DB
-			InodeTableHelper ith = new InodeTableHelper();
-			ith.replaceChild(this, newChild);  
+			INodeTableHelper.replaceChild(this, newChild);
 		} else {
 			throw new IllegalArgumentException("No child exists to be replaced");
 		}
@@ -139,7 +137,7 @@ class INodeDirectory extends INode {
 
 		INode child;
 		try {
-			child = DatabaseHelper.getChildDirectory(this.getFullPathName(), new String(name));
+			child = INodeTableHelper.getChildDirectory(this.getFullPathName(), new String(name));
 			return child;
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -453,8 +451,7 @@ class INodeDirectory extends INode {
 		}
 		
 		// [STATELESS]
-		InodeTableHelper ith = new InodeTableHelper();
-		ith.addChild(node);
+		INodeTableHelper.addChild(node);
 		
 		return node;
 	}
@@ -614,7 +611,7 @@ class INodeDirectory extends INode {
 		
 		//List<INode> childrenFromDB = new ArrayList<INode>();
 		try {
-			List<INode> childrenFromDB = DatabaseHelper.getChildren(this.getFullPathName());
+			List<INode> childrenFromDB = INodeTableHelper.getChildren(this.getFullPathName());
 			if(childrenFromDB != null) 
 				return childrenFromDB;
 			
@@ -631,12 +628,17 @@ class INodeDirectory extends INode {
 
 	int collectSubtreeBlocksAndClear(List<Block> v) {
 		int total = 1;
-		if (children == null) {
+		List<INode> childrenTemp = getChildrenFromDB();
+		if (childrenTemp == null) {
 			return total;
 		}
-		for (INode child : children) {
+		for (INode child : childrenTemp) {
 			total += child.collectSubtreeBlocksAndClear(v);
 		}
+		
+		// [Stateless] Remove me from the DB when done
+		INodeTableHelper.removeChild(this);
+		
 		parent = null;
 		children = null;
 		return total;
