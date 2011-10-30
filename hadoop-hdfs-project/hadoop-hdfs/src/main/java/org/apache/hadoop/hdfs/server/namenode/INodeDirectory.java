@@ -70,7 +70,7 @@ class INodeDirectory extends INode {
 	 */
 	INodeDirectory(INodeDirectory other) {
 		super(other);
-		this.children = other.getChildren();
+		this.children = other.getChildrenFromDB();
 	}
 
 	/**
@@ -602,9 +602,11 @@ class INodeDirectory extends INode {
 	}
 
 	/**
+	 * TODO: We need only getChildren() or getChildrenFromDB(), not both.
 	 */
 	List<INode> getChildren() {
-		return children==null ? new ArrayList<INode>() : children;
+		//return children==null ? new ArrayList<INode>() : children;
+		return getChildrenFromDB();
 	}
 
 	/*W: added for KTHFS*/
@@ -624,7 +626,20 @@ class INodeDirectory extends INode {
 
 
 	List<INode> getChildrenRaw() {
-		return children;
+
+		List<INode> childrenFromDB = null;
+		
+		try {
+			childrenFromDB = INodeTableHelper.getChildren(this.getFullPathName());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		//silence compiler
+		return childrenFromDB;
+		
+		// return children;
 	}
 
 	int collectSubtreeBlocksAndClear(List<Block> v) {
