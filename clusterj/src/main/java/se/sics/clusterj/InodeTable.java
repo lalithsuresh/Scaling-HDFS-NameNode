@@ -26,6 +26,7 @@ clientNode       varchar(45)
 isClosedFile     tinyint(1)
 header           bigint(20) // Stores replication factor, preferredBlocks
 Parent           varchar(45)
+symlink			 blob
 
  *
  * @author Lalith Suresh<suresh.lalith@gmail.com>
@@ -126,6 +127,10 @@ public interface InodeTable {
     @Column(name = "localName")
     String getLocalName ();
     void setLocalName (String localName);
-
+    
+    //INodeSymlink
+    @Column (name = "symlink")
+    byte[] getSymlink ();
+    void setSymlink(byte[] symlink);
    
 }

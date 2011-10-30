@@ -33,6 +33,12 @@ import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 
+import se.sics.clusterj.InodeTable;
+
+import com.mysql.clusterj.ClusterJDatastoreException;
+import com.mysql.clusterj.Session;
+import com.mysql.clusterj.Transaction;
+
 /**
  * Directory INode class.
  */
@@ -75,11 +81,21 @@ class INodeDirectory extends INode {
 	}
 
 	INode removeChild(INode node) {
-		assert children != null;
+		assert getChildrenFromDB() != null;
+		/*
 		int low = Collections.binarySearch(children, node.name);
 		if (low >= 0) {
 			return children.remove(low);
 		} else {
+			return null;
+		}*/
+		InodeTableHelper ith = new InodeTableHelper();
+		try {
+			ith.removeChild(node);
+			return node;
+		} catch (ClusterJDatastoreException e)
+		{
+			System.err.println("[stateless] Couldn't find " + node.name + " in DBMS, returning null");
 			return null;
 		}
 	}
@@ -113,15 +129,13 @@ class INodeDirectory extends INode {
 		}
 		int low = Collections.binarySearch(children, name);
 		if (low >= 0) {
-			KthFsHelper.printKTH("******************************* getChildINode: "+children.get(low));
+			//KthFsHelper.printKTH("******************************* getChildINode: "+children.get(low));
 			return children.get(low);
 		}
 		return null;
 	}
 
 	private INode getChildINodeFromDB(byte[] name) {
-
-		KthFsHelper.printKTH("fullpathname: "+this.getFullPathName() + " name:"+ new String(name));
 
 		INode child;
 		try {
@@ -228,9 +242,9 @@ class INodeDirectory extends INode {
 			index = 0;
 		}
 
-		KthFsHelper.printKTH("Before while loop components.length="+components.length +
-				" resolveLink="+resolveLink+
-				" this.name="+new String(this.name));
+		//KthFsHelper.printKTH("Before while loop components.length="+components.length +
+		//		" resolveLink="+resolveLink+
+		//		" this.name="+new String(this.name));
 		while (count < components.length && curNode != null) {
 			final boolean lastComp = (count == components.length - 1);      
 			if (index >= 0) {
@@ -250,7 +264,7 @@ class INodeDirectory extends INode {
 						constructPath(components, count+1),
 						linkTarget);
 			}
-			KthFsHelper.printKTH("inside while loop currNode:"+curNode.getFullPathName());
+			//KthFsHelper.printKTH("inside while loop currNode:"+curNode.getFullPathName());
 
 			if (lastComp || !curNode.isDirectory()) {
 				break;
@@ -267,7 +281,7 @@ class INodeDirectory extends INode {
 
 		}
 
-		KthFsHelper.printKTH("about to return count="+count);
+		//KthFsHelper.printKTH("about to return count="+count);
 		return count;
 	}
 
@@ -318,7 +332,7 @@ class INodeDirectory extends INode {
 
 		}
 
-		KthFsHelper.printKTH("about to return count="+count + " and curNode is "+(curNode==null?"null":"not null"));
+		//KthFsHelper.printKTH("about to return count="+count + " and curNode is "+(curNode==null?"null":"not null"));
 		return count;
 	}
 
@@ -342,7 +356,7 @@ class INodeDirectory extends INode {
 		byte[][] components = getPathComponents(path);
 		INode[] inodes = new INode[components.length];
 
-		this.getExistingPathINodes(components, inodes, resolveLink);
+		this.getExistingPathINodes2(components, inodes, resolveLink);
 
 		try {
 			System.err.println("[KTHFS] (Inside getExisitingPathINodes) inodes.length:"+inodes.length);
@@ -351,7 +365,7 @@ class INodeDirectory extends INode {
 			}
 		} catch (NullPointerException e) {
 			// TODO Auto-generated catch block
-			System.err.println("[KTHFS] NullPointerException in getExistingPathINodes");
+			e.printStackTrace();
 		}
 
 		return inodes;
@@ -396,24 +410,52 @@ class INodeDirectory extends INode {
 			}
 			node.setPermission(p);
 		}
-
-		if (children == null) {
+				
+		/*
+		if (childrenTemp == null) {
 			children = new ArrayList<INode>(DEFAULT_FILES_PER_DIRECTORY);
-		}
-		int low = Collections.binarySearch(children, node.name);
-		if(low >= 0)
+		}*/
+		
+		System.err.println("[STATELESS] INodeDirectory.addChild() called for : " + node.name);
+		
+		int low = Collections.binarySearch(getChildrenFromDB(), node.name);
+		if(low >= 0){
+			System.err.println("[Stateless] i'm returning null " + node.getFullPathName());
 			return null;
+		}
 		node.parent = this;
-		children.add(-low - 1, node);
+		// children.add(-low - 1, node);
+		
 		// update modification time of the parent directory
-		if (setModTime)
-			setModificationTime(node.getModificationTime());
+		Session session = DBConnector.sessionFactory.getSession();		
+		Transaction tx = session.currentTransaction();
+		tx.begin();
+		InodeTable inode = session.find(InodeTable.class, this.getFullPathName());
+		assert inode != null : "this Inode doesn't exist in DB";
+
+		inode.setModificationTime(node.getModificationTime());
+		session.updatePersistent(inode);
+		tx.commit();
+		//if (setModTime)
+		//	setModificationTime(node.getModificationTime());
 		if (node.getGroupName() == null) {
 			node.setGroup(getGroupName());
 		}
+		
+		// FIXME: Do separator lolz
+		// Assumption: If this piece of code is being executed, it already
+		// is in the DB, and has a fullpathname ready for its Inode instance.
+		if (this.getFullPathName().equals("/")){
+			node.setFullPathName(this.getFullPathName() + node.getLocalName());
+		}
+		else{
+			node.setFullPathName(this.getFullPathName() + "/" + node.getLocalName());
+		}
+		
 		// [STATELESS]
 		InodeTableHelper ith = new InodeTableHelper();
 		ith.addChild(node);
+		
 		return node;
 	}
 
@@ -465,7 +507,7 @@ class INodeDirectory extends INode {
 			UnresolvedLinkException {
 		// insert into the parent children list
 		newNode.name = localname;
-		System.err.println("[Stateless] addToParent -------");
+
 		if(parent.addChild(newNode, inheritPermission, propagateModTime) == null)
 			return null;
 		return parent;
@@ -478,7 +520,7 @@ class INodeDirectory extends INode {
 			return null;
 		// Gets the parent INode
 		INode[] inodes  = new INode[2];
-		getExistingPathINodes(pathComponents, inodes, false);
+		getExistingPathINodes2(pathComponents, inodes, false);
 		INode inode = inodes[0];
 		if (inode == null) {
 			throw new FileNotFoundException("Parent path does not exist: "+
@@ -513,7 +555,7 @@ class INodeDirectory extends INode {
 		newNode.name = pathComponents[pathLen-1];
 		// insert into the parent children list
 		INodeDirectory parent = getParent(pathComponents);
-		System.err.println("[Stateless] addToParentINodeDirectory OMG -------" + " " + Thread.currentThread().getId());
+
 		if(parent.addChild(newNode, inheritPermission, propagateModTime) == null)
 			return null;
 		return parent;

@@ -43,9 +43,11 @@ public abstract class INode implements Comparable<byte[]>, FSInodeInfo {
    *  side should change accordingly.
    */
   protected byte[] name;
+  protected String fullPathName; // Required for Stateless lolz
   protected INodeDirectory parent;
   protected long modificationTime;
   protected long accessTime;
+  
 
   /** Simple wrapper for two counters : 
    *  nsCount (namespace consumed) and dsCount (diskspace consumed).
@@ -183,6 +185,10 @@ public abstract class INode implements Comparable<byte[]>, FSInodeInfo {
    */
   public abstract boolean isDirectory();
 
+  public void setParent(INodeDirectory p) {
+	  this.parent = p;
+  }
+  
   /**
    * Collect all the blocks in all children of this INode.
    * Count and return the number of files in the sub tree.
@@ -264,7 +270,12 @@ public abstract class INode implements Comparable<byte[]>, FSInodeInfo {
   /** {@inheritDoc} */
   public String getFullPathName() {
     // Get the full path name of this inode.
-    return FSDirectory.getFullPathName(this);
+	return fullPathName;
+    //return FSDirectory.getFullPathName(this);
+  }
+  
+  public void setFullPathName(String name) {
+	  fullPathName = name;
   }
 
   /** {@inheritDoc} */

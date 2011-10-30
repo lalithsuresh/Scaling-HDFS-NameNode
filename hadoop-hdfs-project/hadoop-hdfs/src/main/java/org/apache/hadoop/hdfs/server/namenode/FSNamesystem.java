@@ -337,6 +337,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       this.dir = new FSDirectory(fsImage, this, conf);
     }
     this.safeMode = new SafeModeInfo(conf);
+    DatabaseHelper.ns = this;
   }
 
   void activateSecretManager() throws IOException {
@@ -1598,6 +1599,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     assert hasReadOrWriteLock();
     INodeFile file = dir.getFileINode(src);
     checkLease(src, holder, file);
+    
     return (INodeFileUnderConstruction)file;
   }
 
@@ -1612,6 +1614,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                                        "Holder " + holder + 
                                        " does not have any open files."));
     }
+    
     if (!file.isUnderConstruction()) {
       Lease lease = leaseManager.getLease(holder);
       throw new LeaseExpiredException("No lease on " + src + 
@@ -1996,7 +1999,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       if (isPermissionEnabled) {
         checkTraverse(src);
       }*/
-    	KthFsHelper.printKTH("getFileInfo called for "+ src);
+    	//KthFsHelper.printKTH("getFileInfo called for "+ src);
       return dir.getFileInfo(src, resolveLink);
     } finally {
       readUnlock();

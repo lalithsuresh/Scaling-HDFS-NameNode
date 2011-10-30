@@ -7,6 +7,7 @@ import org.apache.hadoop.io.DataOutputBuffer;
 
 import se.sics.clusterj.InodeTable;
 
+import com.mysql.clusterj.ClusterJDatastoreException;
 import com.mysql.clusterj.ClusterJHelper;
 import com.mysql.clusterj.Session;
 import com.mysql.clusterj.SessionFactory;
@@ -47,7 +48,7 @@ public class InodeTableHelper {
 			e.printStackTrace();
 		}
 	    
-	    System.err.println("[STATELESS] Permission string: " + permissionString.toString());
+
 	    
 	    /* Commented by W
 	    long finalPerm = 0;
@@ -60,38 +61,51 @@ public class InodeTableHelper {
 	    */
 	    
 	    inode.setPermission(permissionString.getData());
-	    inode.setParent(node.getParent().getFullPathName());
+	    
+	    // Corner case for rootDir
+	    if (node.getParent() != null)
+	    	inode.setParent(node.getParent().getFullPathName());
+	    
 	    inode.setNSQuota(node.getNsQuota());
 		inode.setDSQuota(node.getDsQuota());
-		// TODO: Does not handle InodeDirectoryWithQuota yet
 	    if (node instanceof INodeDirectory)
 	    {
+	    	inode.setIsClosedFile(false);
+	    	inode.setIsUnderConstruction(false);
+	    	inode.setIsDirWithQuota(false);    
 	    	inode.setIsDir(true);
 	    }
 	    if (node instanceof INodeDirectoryWithQuota)
 	    {
+	    	inode.setIsClosedFile(false);
+	    	inode.setIsDir(false);	    	
+	    	inode.setIsUnderConstruction(false);
 	    	inode.setIsDirWithQuota(true);    	
 	    	inode.setNSCount(((INodeDirectoryWithQuota) node).getNsCount());
 	    	inode.setDSCount(((INodeDirectoryWithQuota) node).getDsCount());
 	    }
 	    if (node instanceof INodeFile)
 	    {
+	    	inode.setIsDir(false);
 	    	inode.setIsUnderConstruction(false);
+	    	inode.setIsDirWithQuota(false);
 	    	inode.setIsClosedFile(true);
 	    	inode.setHeader(((INodeFile) node).getHeader());
 	    }
 	    if (node instanceof INodeFileUnderConstruction)
 	    {
-	    	inode.setIsUnderConstruction(true);
 	    	inode.setIsClosedFile(false);
+	    	inode.setIsDir(false);
+	    	inode.setIsDirWithQuota(false);
+	    	inode.setIsUnderConstruction(true);	    	
 	    	inode.setClientName(((INodeFileUnderConstruction) node).getClientName());
 	    	inode.setClientMachine(((INodeFileUnderConstruction) node).getClientMachine());
+	    	System.err.println("[STATELESS] Client name : " +((INodeFileUnderConstruction) node).getClientNode().getName());
 	    	inode.setClientNode(((INodeFileUnderConstruction) node).getClientNode().getName());
 	    }
 	    if (node instanceof INodeSymlink)
 	    {
-	    	//TODO:InodeSymlink here
-	    	System.err.println("[Stateless] isInodeSymlink");    	
+	    	inode.setSymlink(((INodeSymlink) node).getSymlink());
 	    }
 	    if (entry_exists)
 	    	s.updatePersistent(inode);
@@ -99,7 +113,19 @@ public class InodeTableHelper {
 	    	s.makePersistent(inode);
 	    tx.commit();
 	}
-	 void replaceChild (INode thisInode,INode newChild){
+	
+	
+	INode removeChild(INode node) throws ClusterJDatastoreException {
+		Transaction tx = s.currentTransaction();
+        tx.begin();
+        InodeTable inode = s.find(InodeTable.class, node.getFullPathName());
+        s.deletePersistent(inode);
+        tx.commit();
+        
+		return node;
+	}
+	
+	void replaceChild (INode thisInode, INode newChild){
 		 // [STATELESS]
 	      Transaction tx = s.currentTransaction();
 	      tx.begin();
@@ -117,7 +143,7 @@ public class InodeTableHelper {
 	  		// TODO Auto-generated catch block
 	  		e.printStackTrace();
 	  	}
-	      System.err.println("[STATELESS] Permission string: " + permissionString.toString());
+
 	     /* long finalPerm = 0;
 	      try {
 	  		permissionString.writeLong(finalPerm);
@@ -134,13 +160,11 @@ public class InodeTableHelper {
 	      // TODO: Does not handle InodeDirectoryWithQuota yet
 	      if (newChild instanceof INodeDirectory)
 	      {
-	      	System.err.println("[Stateless] replaceChild --isInodeDirectory");
 	      	inode.setIsDir(true);
 	      	inode.setIsDirWithQuota(true);
 	      }
 	      if (newChild instanceof INodeDirectoryWithQuota)
 	      {
-	      	System.err.println("[Stateless] replaceChild -- isInodeDirectoryWithQuota");
 	      	inode.setIsDir(false);
 	      	inode.setIsDirWithQuota(true);      	
 	      	inode.setNSCount(((INodeDirectoryWithQuota) newChild).getNsCount());
