@@ -139,37 +139,47 @@ public class INodeTableHelper {
 
 		for (InodeTable result : resultList) {
 		
-				//create a directory object
-				DataInputBuffer buffer = new DataInputBuffer();
-				buffer.reset(result.getPermission(), result.getPermission().length);
-				PermissionStatus ps = PermissionStatus.read(buffer);
-				//KthFsHelper.printKTH("PermissionStatus: "+ps.getGroupName() + ps.getUserName() + " " + ps.getPermission().toString());
-				
-/*
-				INode node = INode.newINode(
-						ps,//this.getPermissionStatus(),
-						null, //TODO: W: blocks to be read from DB also - null for directories
-						"", //symlink name
-						(short)1, //replication factor
-						result.getModificationTime(), 
-						result.getATime(),
-						result.getNSQuota(),
-						result.getDSQuota(),
-						-1);
-				node.setLocalName(result.getLocalName());
-				children.add(node);*/
-				
-				
-				if(result.getIsDir()) {
-                    INodeDirectory dir =  new INodeDirectory(result.getName(), ps);
-                    dir.setLocalName(result.getLocalName());
-                    children.add(dir);
-				}
-				else {
-                    INodeFile inf = new INodeFile(ps,0,(short)1,result.getModificationTime(), result.getATime(), 64); //FIXME: change this when we store blockinfo
-                    inf.setLocalName(result.getName());
-                    children.add(inf);
-                }
+//				//create a directory object
+//				DataInputBuffer buffer = new DataInputBuffer();
+//				buffer.reset(result.getPermission(), result.getPermission().length);
+//				PermissionStatus ps = PermissionStatus.read(buffer);
+//				//KthFsHelper.printKTH("PermissionStatus: "+ps.getGroupName() + ps.getUserName() + " " + ps.getPermission().toString());
+//				
+///*
+//				INode node = INode.newINode(
+//						ps,//this.getPermissionStatus(),
+//						null, //TODO: W: blocks to be read from DB also - null for directories
+//						"", //symlink name
+//						(short)1, //replication factor
+//						result.getModificationTime(), 
+//						result.getATime(),
+//						result.getNSQuota(),
+//						result.getDSQuota(),
+//						-1);
+//				node.setLocalName(result.getLocalName());
+//				children.add(node);*/
+//				
+//				
+//				if(result.getIsDir()) {
+//                    INodeDirectory dir =  new INodeDirectory(result.getName(), ps);
+//                    dir.setLocalName(result.getLocalName());
+//                    children.add(dir);
+//				}
+//				else {
+//                    INodeFile inf = new INodeFile(ps,0,(short)1,result.getModificationTime(), result.getATime(), 64); //FIXME: change this when we store blockinfo
+//                    inf.setLocalName(result.getName());
+//                    children.add(inf);
+//                }
+			
+			INode inode = getINodeByNameBasic (result.getName ());
+
+			//System.err.println("[STATELESS] retrieving parent " + result.getParent() + " " + result.getName());
+			// Attach a parent to the Inode we just retrieved
+			//INodeDirectory inodeParent = (INodeDirectory) getINodeByNameBasic(result.getParent());
+			//System.err.println("[STATELESS] NAME IS: " + inode.getFullPathName());
+			//inode.setParent(inodeParent);
+			children.add(inode);
+			
 		}
 
 		if (children.size() > 0 )
@@ -181,6 +191,7 @@ public class INodeTableHelper {
 	}
 	
 	public static INode removeChild(INode node) throws ClusterJDatastoreException {
+		System.err.println("[Stateless] Inode to be deleted: " + node.getFullPathName());
 		Transaction tx = session.currentTransaction();
         tx.begin();
         InodeTable inode = session.find(InodeTable.class, node.getFullPathName());

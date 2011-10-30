@@ -629,12 +629,17 @@ class INodeDirectory extends INode {
 
 	int collectSubtreeBlocksAndClear(List<Block> v) {
 		int total = 1;
-		if (children == null) {
+		List<INode> childrenTemp = getChildrenFromDB();
+		if (childrenTemp == null) {
 			return total;
 		}
-		for (INode child : children) {
+		for (INode child : childrenTemp) {
 			total += child.collectSubtreeBlocksAndClear(v);
 		}
+		
+		// [Stateless] Remove me from the DB when done
+		INodeTableHelper.removeChild(this);
+		
 		parent = null;
 		children = null;
 		return total;
