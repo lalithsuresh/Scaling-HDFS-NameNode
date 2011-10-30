@@ -213,7 +213,7 @@ public class DatanodeManager {
   }
 
   /** @return the datanode descriptor for the host. */
-  public DatanodeDescriptor getDatanodeByHost(final String host) {
+  public DatanodeDescriptor getDatanodeByHost(final String host) { //TODO: KTHFS needs this!
     return host2DatanodeMap.getDatanodeByHost(host);
   }
 

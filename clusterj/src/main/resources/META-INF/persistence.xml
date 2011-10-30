@@ -3,6 +3,7 @@
   <persistence-unit name="se.sics.dight_clusterj_jar_1.0-SNAPSHOTPU" transaction-type="RESOURCE_LOCAL">
     <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
     <class>se.sics.clusterj.INodeFile</class>
+    <class>se.sics.clusterj.BlockInfo</class>
     <properties>
       <property name="javax.persistence.jdbc.url" value="jdbc:mysql://cloud3.sics.se:3307/w_schema"/>
       <property name="javax.persistence.jdbc.password" value="wasif"/>

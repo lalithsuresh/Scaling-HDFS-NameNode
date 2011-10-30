@@ -66,26 +66,42 @@ public class DatabaseHelper {
 		List<INode> children = new ArrayList<INode>();
 
 		for (InodeTable result : resultList) {
-		
-				//create a directory object
-				DataInputBuffer buffer = new DataInputBuffer();
-				buffer.reset(result.getPermission(), result.getPermission().length);
-				PermissionStatus ps = PermissionStatus.read(buffer);
-				KthFsHelper.printKTH("PermissionStatus: "+ps.getGroupName() + ps.getUserName() + " " + ps.getPermission().toString());
-				
 
-				INode node = INode.newINode(
-						ps,//this.getPermissionStatus(),
-						null, //TODO: W: blocks to be read from DB also - null for directories
-						"", //symlink name
-						(short)1, //replication factor
-						result.getModificationTime(), 
-						result.getATime(),
-						result.getNSQuota(),
-						result.getDSQuota(),
-						-1);
-				node.setLocalName(result.getLocalName());
-				children.add(node);
+			//create a directory object
+			DataInputBuffer buffer = new DataInputBuffer();
+			buffer.reset(result.getPermission(), result.getPermission().length);
+			PermissionStatus ps = PermissionStatus.read(buffer);
+			KthFsHelper.printKTH("PermissionStatus: "+ps.getGroupName() + ps.getUserName() + " " + ps.getPermission().toString());
+
+
+			/*
+			INode node = INode.newINode(
+					ps,//this.getPermissionStatus(),
+					null, //TODO: W: blocks to be read from DB also - null for directories
+					"", //symlink name
+					(short)1, //replication factor
+					result.getModificationTime(), 
+					result.getATime(),
+					result.getNSQuota(),
+					result.getDSQuota(),
+					-1);
+			node.setLocalName(result.getLocalName());
+			children.add(node);
+
+		*/
+			
+			if(result.getIsDir()) {
+				INodeDirectory dir =  new INodeDirectory(result.getName(), ps);
+				dir.setLocalName(result.getLocalName());
+				children.add(dir);
+			}
+			else {
+				INodeFile inf = new INodeFile(ps,0,(short)1,result.getModificationTime(), result.getATime(), 64); //FIXME: change this when we store blockinfo
+				inf.setLocalName(result.getName());
+				children.add(inf);
+				
+			}
+
 		}
 
 		if (children.size() > 0 )
@@ -134,28 +150,28 @@ public class DatabaseHelper {
 
 		for (InodeTable result : resultList) {
 			//if(result.getIsDir()) {
-				String str = result.getName();
-				str = str.substring(str.lastIndexOf("/")+1);
-				if(str.equals(searchDir) ) {
-					System.out.println("FOUND - " + searchDir + " in "+parentDir);
-					System.out.println(result.getName() + " " + result.getClientName());
-					
-					DataInputBuffer buffer = new DataInputBuffer();
-					buffer.reset(result.getPermission(), result.getPermission().length);
-					PermissionStatus ps = PermissionStatus.read(buffer);
+			String str = result.getName();
+			str = str.substring(str.lastIndexOf("/")+1);
+			if(str.equals(searchDir) ) {
+				System.out.println("FOUND - " + searchDir + " in "+parentDir);
+				System.out.println(result.getName() + " " + result.getClientName());
 
-					if(result.getIsDir()) {
-						KthFsHelper.printKTH("About to return a directory: "+result.getName());
-						return new INodeDirectory(result.getName(), ps);
-					}
-					else {
-						INodeFile inf = new INodeFile(ps,0,(short)1,result.getModificationTime(), result.getATime(), 64); //FIXME: change this when we store blockinfo
-						inf.setLocalName(result.getName());
-						return  inf;
-						//KthFsHelper.printKTH("Returning a file: "+node.toString());
-					}
+				DataInputBuffer buffer = new DataInputBuffer();
+				buffer.reset(result.getPermission(), result.getPermission().length);
+				PermissionStatus ps = PermissionStatus.read(buffer);
 
+				if(result.getIsDir()) {
+					KthFsHelper.printKTH("About to return a directory: "+result.getName());
+					return new INodeDirectory(result.getName(), ps);
 				}
+				else {
+					INodeFile inf = new INodeFile(ps,0,(short)1,result.getModificationTime(), result.getATime(), 64); //FIXME: change this when we store blockinfo
+					inf.setLocalName(result.getName());
+					return  inf;
+					//KthFsHelper.printKTH("Returning a file: "+node.toString());
+				}
+
+			}
 			//}
 		}
 

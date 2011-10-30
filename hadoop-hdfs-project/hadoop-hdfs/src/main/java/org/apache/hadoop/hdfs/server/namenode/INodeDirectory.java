@@ -128,7 +128,6 @@ class INodeDirectory extends INode {
 			child = DatabaseHelper.getChildDirectory(this.getFullPathName(), new String(name));
 			return child;
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return null;
 		}
