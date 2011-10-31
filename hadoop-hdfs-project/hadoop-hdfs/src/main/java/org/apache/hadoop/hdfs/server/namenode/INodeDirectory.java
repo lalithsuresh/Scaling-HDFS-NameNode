@@ -160,7 +160,6 @@ class INodeDirectory extends INode {
 		//    getExistingPathINodes(components, inode, resolveLink);
 		getExistingPathINodes2(components, inode, resolveLink);
 
-
 		return inode[0];
 	}
 
