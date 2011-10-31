@@ -202,6 +202,57 @@ public class INodeTableHelper {
 		return node;
 	}
 	
+	/*
+	 * This method is to be used in case an INodeDirectory is
+	 * renamed (typically from the mv operation). When dealing
+	 * with the DB, such an operation would isolate the sub-tree
+	 * from the parent that was moved, and thus all nodes in the
+	 * sub-tree need to have their fullpath and parent fields updated
+	 *  
+	 */
+	public static void updateParentAcrossSubTree (String oldFullPathOfParent, String newFullPathOfParent) {
+		
+		QueryBuilder qb = session.getQueryBuilder();
+		QueryDomainType<InodeTable> dobj = qb.createQueryDefinition(InodeTable.class);
+
+		// FIXME: DB will be indexed by parent in the future.
+		dobj.where(dobj.get("name").like(dobj.param("name_param")));
+
+		Query<InodeTable> query = session.createQuery(dobj);
+		
+		// If fullPathOfParent is "/a/b", then find all
+		// nodes which have a full pathname of "/a/b/"
+		query.setParameter("name_param", oldFullPathOfParent + "/%");
+		
+		List<InodeTable> resultList = query.getResultList();
+
+		Transaction tx = session.currentTransaction();
+		tx.begin();
+		
+		for (InodeTable result: resultList) {
+			session.deletePersistent(result);
+			
+			//result.setName(newFullPathOfParent + result.getName().substring(oldFullPathOfParent.length() - 1));
+			String subPath = result.getName().substring(oldFullPathOfParent.length());
+			String updatedFullPath = newFullPathOfParent + subPath;
+			//System.err.println("[Stateless] new:" + newFullPathOfParent + " subtree:" + sub);
+			//System.err.println("[Stateless] concated version: " + (newFullPathOfParent + sub));
+			
+			result.setName(updatedFullPath);
+			
+			if (updatedFullPath.length() == 1) // root
+				result.setParent("/");
+			else
+				result.setParent (updatedFullPath.substring(0, updatedFullPath.lastIndexOf("/")));
+
+			session.makePersistent(result);
+		}
+		
+		tx.commit();
+		session.flush();
+	}
+
+	
 	public static void replaceChild (INode thisInode, INode newChild){
 		 // [STATELESS]
 	      Transaction tx = session.currentTransaction();

@@ -575,7 +575,7 @@ public class FSDirectory implements Closeable {
     
     byte[][] dstComponents = INode.getPathComponents(dst);
     INode[] dstInodes = new INode[dstComponents.length];
-    rootDir.getExistingPathINodes(dstComponents, dstInodes, false);
+    rootDir.getExistingPathINodes2(dstComponents, dstInodes, false);
     if (dstInodes[dstInodes.length-1] != null) {
       NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
                                    +"failed to rename "+src+" to "+dst+ 
@@ -583,7 +583,7 @@ public class FSDirectory implements Closeable {
       return false;
     }
     if (dstInodes[dstInodes.length-2] == null) {
-      NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+      NameNode.stateChangeLog.warn("DIRsession.savePersistent(result);* FSDirectory.unprotectedRenameTo: "
           +"failed to rename "+src+" to "+dst+ 
           " because destination's parent does not exist");
       return false;
@@ -619,6 +619,9 @@ public class FSDirectory implements Closeable {
         // update modification time of dst and the parent of src
         srcInodes[srcInodes.length-2].setModificationTime(timestamp);
         dstInodes[dstInodes.length-2].setModificationTime(timestamp);
+        
+        // [Stateless] Update fullpath and parents for all subtrees
+        INodeTableHelper.updateParentAcrossSubTree(src, dst);
         return true;
       }
     } finally {
