@@ -695,7 +695,7 @@ public class FSDirectory implements Closeable {
     }
     final byte[][] dstComponents = INode.getPathComponents(dst);
     final INode[] dstInodes = new INode[dstComponents.length];
-    rootDir.getExistingPathINodes(dstComponents, dstInodes, false);
+    rootDir.getExistingPathINodes2(dstComponents, dstInodes, false);
     INode dstInode = dstInodes[dstInodes.length - 1];
     if (dstInodes.length == 1) {
       error = "rename destination cannot be the root";
