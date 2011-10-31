@@ -46,6 +46,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
    * 
    * */
   private Object[] triplets;
+  private Object[] tripletsKTH; //[DD] [prevBlockID] [nextBlockID]
 
   /**
    * Construct an entry for blocksmap
@@ -332,4 +333,13 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   public void setNext(LightWeightGSet.LinkedElement next) {
     this.nextLinkedElement = next;
   }
+  /*added for KTHFS*/
+  public void setTripletsKTH(Object[] trips) {
+	  this.tripletsKTH = trips;
+  }
+  /*added for KTHFS*/
+  public Object[] getTripletsKTH() {
+	  return this.tripletsKTH;
+  }
+  
 }

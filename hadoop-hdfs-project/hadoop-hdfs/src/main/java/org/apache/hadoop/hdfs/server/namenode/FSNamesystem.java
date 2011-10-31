@@ -338,6 +338,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
     this.safeMode = new SafeModeInfo(conf);
     INodeTableHelper.ns = this;
+    BlocksHelper.ns = this;
   }
 
   void activateSecretManager() throws IOException {
