@@ -230,29 +230,52 @@ public class INodeTableHelper {
 		tx.begin();
 		
 		for (InodeTable result: resultList) {
+			InodeTable newINode = INodeTableHelper.setInodeTableFromInodeTable(result);
 			session.deletePersistent(result);
-			
 			//result.setName(newFullPathOfParent + result.getName().substring(oldFullPathOfParent.length() - 1));
 			String subPath = result.getName().substring(oldFullPathOfParent.length());
 			String updatedFullPath = newFullPathOfParent + subPath;
 			//System.err.println("[Stateless] new:" + newFullPathOfParent + " subtree:" + sub);
 			//System.err.println("[Stateless] concated version: " + (newFullPathOfParent + sub));
 			
-			result.setName(updatedFullPath);
+			newINode.setName(updatedFullPath);
 			
 			if (updatedFullPath.length() == 1) // root
-				result.setParent("/");
+				newINode.setParent("/");
 			else
-				result.setParent (updatedFullPath.substring(0, updatedFullPath.lastIndexOf("/")));
+				newINode.setParent (updatedFullPath.substring(0, updatedFullPath.lastIndexOf("/")));
 
-			session.makePersistent(result);
+			session.makePersistent(newINode);
 		}
 		
 		tx.commit();
 		session.flush();
 	}
+	/*FIXME: This method should be removed as soon as InodeTable has
+	 * another indexing field, that's not the fullPathname
+	 * Probably should be moved to InodeTable class
+	 */
+	public static InodeTable setInodeTableFromInodeTable( InodeTable inode){
+		
+		inode.setModificationTime(inode.getModificationTime());
+	    inode.setATime(inode.getATime());
+	    inode.setLocalName(inode.getLocalName());
+	    inode.setPermission(inode.getPermission());
+	    inode.setParent(inode.getParent());
+	    inode.setNSQuota(inode.getNSQuota());
+		inode.setDSQuota(inode.getDSQuota());
+		inode.setIsClosedFile(inode.getIsClosedFile());
+	   	inode.setIsUnderConstruction(inode.getIsUnderConstruction());
+	   	inode.setIsDirWithQuota(inode.getIsDirWithQuota());    
+	   	inode.setIsDir(inode.getIsDir());
+	   	inode.setIsDirWithQuota(inode.getIsDirWithQuota());    	
+    	inode.setNSCount(inode.getNSCount());
+    	inode.setDSCount(inode.getDSCount());
+	   	inode.setHeader(inode.getHeader());
+	   	inode.setSymlink(inode.getSymlink());
+		return inode;
 
-	
+	}
 	public static void replaceChild (INode thisInode, INode newChild){
 		 // [STATELESS]
 	      Transaction tx = session.currentTransaction();
