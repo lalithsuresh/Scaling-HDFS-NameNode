@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.io.DataInputBuffer;
@@ -261,22 +262,23 @@ public class INodeTableHelper {
 		tx.begin();
 		
 		for (InodeTable result: resultList) {
-			InodeTable newINode = INodeTableHelper.setInodeTableFromInodeTable(result);
-			session.deletePersistent(result);
+			//InodeTable newINode = INodeTableHelper.setInodeTableFromInodeTable(result);
+			//session.deletePersistent(result);
+			
 			//result.setName(newFullPathOfParent + result.getName().substring(oldFullPathOfParent.length() - 1));
 			String subPath = result.getName().substring(oldFullPathOfParent.length());
 			String updatedFullPath = newFullPathOfParent + subPath;
 			//System.err.println("[Stateless] new:" + newFullPathOfParent + " subtree:" + sub);
 			//System.err.println("[Stateless] concated version: " + (newFullPathOfParent + sub));
 			
-			newINode.setName(updatedFullPath);
+			result.setName(updatedFullPath);
 			
 			if (updatedFullPath.length() == 1) // root
-				newINode.setParent("/");
+				result.setParent(Path.SEPARATOR);
 			else
-				newINode.setParent (updatedFullPath.substring(0, updatedFullPath.lastIndexOf("/")));
+				result.setParent (updatedFullPath.substring(0, updatedFullPath.lastIndexOf(Path.SEPARATOR)));
 
-			session.makePersistent(newINode);
+			session.updatePersistent(result);
 		}
 		
 		tx.commit();
