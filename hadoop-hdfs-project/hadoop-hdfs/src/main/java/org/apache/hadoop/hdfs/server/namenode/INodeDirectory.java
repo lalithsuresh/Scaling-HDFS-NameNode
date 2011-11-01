@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.UnresolvedLinkException;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -36,8 +37,11 @@ import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import se.sics.clusterj.InodeTable;
 
 import com.mysql.clusterj.ClusterJDatastoreException;
+import com.mysql.clusterj.Query;
 import com.mysql.clusterj.Session;
 import com.mysql.clusterj.Transaction;
+import com.mysql.clusterj.query.QueryBuilder;
+import com.mysql.clusterj.query.QueryDomainType;
 
 /**
  * Directory INode class.
@@ -427,9 +431,25 @@ class INodeDirectory extends INode {
 		Session session = DBConnector.sessionFactory.getSession();		
 		Transaction tx = session.currentTransaction();
 		tx.begin();
+		
+		/*
 		InodeTable inode = session.find(InodeTable.class, this.getFullPathName());
 		assert inode != null : "this Inode doesn't exist in DB";
+		*/
+		
+		//[KTHFS] This could be later become a method in InodeTableHelper
+	    QueryBuilder builder = session.getQueryBuilder();
+	    QueryDomainType<InodeTable> domain =
+	    builder.createQueryDefinition(InodeTable.class);
+	    domain.where(domain.get("name").equal(domain.param(
+	    "name")));
+	    Query<InodeTable> query = session.createQuery(domain);
+	    query.setParameter("name",this.getFullPathName());
 
+	    List<InodeTable> results = query.getResultList();
+	    assert ! results.isEmpty(): "[KTHFS] This Inode doesn't exist in DB";
+		InodeTable inode = results.get(0);
+		
 		inode.setModificationTime(node.getModificationTime());
 		session.updatePersistent(inode);
 		tx.commit();
@@ -439,14 +459,13 @@ class INodeDirectory extends INode {
 			node.setGroup(getGroupName());
 		}
 		
-		// FIXME: Do separator lolz
 		// Assumption: If this piece of code is being executed, it already
 		// is in the DB, and has a fullpathname ready for its Inode instance.
-		if (this.getFullPathName().equals("/")){
+		if (this.getFullPathName().equals(Path.SEPARATOR)){
 			node.setFullPathName(this.getFullPathName() + node.getLocalName());
 		}
 		else{
-			node.setFullPathName(this.getFullPathName() + "/" + node.getLocalName());
+			node.setFullPathName(this.getFullPathName() + Path.SEPARATOR + node.getLocalName());
 		}
 		
 		// [STATELESS]

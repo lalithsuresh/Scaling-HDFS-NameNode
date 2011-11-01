@@ -33,15 +33,32 @@ public class INodeTableHelper {
 		boolean entry_exists;
 		Transaction tx = session.currentTransaction();
 	    tx.begin();
-	    InodeTable inode = session.find(InodeTable.class, node.getFullPathName());
+	    
+	    QueryBuilder builder = session.getQueryBuilder();
+	    QueryDomainType<InodeTable> domain =
+	    builder.createQueryDefinition(InodeTable.class);
+	    
+	    domain.where(domain.get("name").equal(domain.param(
+	    "name")));
+	    Query<InodeTable> query = session.createQuery(domain);
+	    query.setParameter("name",node.getFullPathName());
+	    
+	    List<InodeTable> results = query.getResultList();
+	    System.err.println("[KTHFS] Try to reach DB with "+node.getFullPathName() + "is it empty" + results.isEmpty());
+	    InodeTable inode;
+	    //InodeTable inode = session.find(InodeTable.class, node.getFullPathName());
 	    entry_exists = true;
-	    if (inode == null)
+	    if (results.isEmpty())
 	    {
 	    	inode = session.newInstance(InodeTable.class);
+	    	inode.setId(System.currentTimeMillis());
+	        System.err.println("[KTHFS] Fullpath for new row" + node.getFullPathName());
 	        inode.setName(node.getFullPathName());
 	        entry_exists = false;
 	    }
-	    
+	    else{
+	    	inode = results.get(0);
+	    }
 	    inode.setModificationTime(node.modificationTime);
 	    inode.setATime(node.getAccessTime());
 	    inode.setLocalName(node.getLocalName());
@@ -62,7 +79,7 @@ public class INodeTableHelper {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}	
 	    */
 	    
 	    inode.setPermission(permissionString.getData());
@@ -109,13 +126,16 @@ public class INodeTableHelper {
 	    	inode.setClientNode(((INodeFileUnderConstruction) node).getClientNode().getName());
 	    }
 	    if (node instanceof INodeSymlink)
-	    {
-	    	inode.setSymlink(((INodeSymlink) node).getSymlink());
-	    }
-	    if (entry_exists)
+	       	inode.setSymlink(((INodeSymlink) node).getSymlink());
+	    
+	    if (entry_exists){
 	    	session.updatePersistent(inode);
+	    }
 	    else
+	    {
+	    	System.err.println("[KTHFS] Entry is new: "+ inode.getName());
 	    	session.makePersistent(inode);
+	    }
 	    tx.commit();
 	    session.flush();
 	}
@@ -194,8 +214,19 @@ public class INodeTableHelper {
 		System.err.println("[Stateless] Inode to be deleted: " + node.getFullPathName());
 		Transaction tx = session.currentTransaction();
         tx.begin();
-        InodeTable inode = session.find(InodeTable.class, node.getFullPathName());
-        session.deletePersistent(inode);
+        QueryBuilder builder = session.getQueryBuilder();
+	    QueryDomainType<InodeTable> domain =
+	    builder.createQueryDefinition(InodeTable.class);
+	    
+	    domain.where(domain.get("name").equal(domain.param(
+	    "name")));
+	    Query<InodeTable> query = session.createQuery(domain);
+	    query.setParameter("name",node.getFullPathName());
+	    
+	    List<InodeTable> results = query.getResultList();
+	    
+        //InodeTable inode = session.find(InodeTable.class, node.getFullPathName());
+        session.deletePersistent(results.get(0));
         tx.commit();
         session.flush();
         
@@ -281,7 +312,20 @@ public class INodeTableHelper {
 	      Transaction tx = session.currentTransaction();
 	      tx.begin();
 
-	      InodeTable inode = session.find(InodeTable.class, newChild.getFullPathName());
+	      //InodeTable inode = session.find(InodeTable.class, newChild.getFullPathName());
+	      
+	      QueryBuilder builder = session.getQueryBuilder();
+		  QueryDomainType<InodeTable> domain =
+		  builder.createQueryDefinition(InodeTable.class);
+		    
+		  domain.where(domain.get("name").equal(domain.param(
+		  "name")));
+		  Query<InodeTable> query = session.createQuery(domain);
+		  query.setParameter("name",newChild.getFullPathName());
+
+		  List<InodeTable> results = query.getResultList();
+		  assert ! results.isEmpty() : "Child to replace not in DB";
+		  InodeTable inode= results.get(0);
 	      
 	      inode.setModificationTime(thisInode.modificationTime);
 	      inode.setATime(thisInode.getAccessTime());

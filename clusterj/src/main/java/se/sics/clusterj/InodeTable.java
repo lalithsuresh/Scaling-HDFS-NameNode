@@ -11,7 +11,8 @@ import com.mysql.clusterj.annotation.Lob;
 
 /**
  * 
- *  
+ * 
+id				 bigint
 name             varchar(45) PK
 isdir            tinyint(1)
 modificationTime bigint(20)
@@ -33,9 +34,13 @@ symlink			 blob
  */
 @PersistenceCapable(table="InodeTable")
 public interface InodeTable {
-
-    // Inode
+	//Auto-incremental integer for easier mgmt
     @PrimaryKey
+    @Column(name = "id")
+    long getId ();     // id of the file system
+    void setId (long id);
+	
+    // Inode
     @Column(name = "name")
     String getName ();     // id of the file system
     void setName (String name);

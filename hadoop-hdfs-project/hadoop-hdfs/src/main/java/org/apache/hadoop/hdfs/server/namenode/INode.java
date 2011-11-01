@@ -43,7 +43,8 @@ public abstract class INode implements Comparable<byte[]>, FSInodeInfo {
    *  side should change accordingly.
    */
   protected byte[] name;
-  protected String fullPathName; // Required for Stateless lolz
+  protected String fullPathName; // Required for Kthfs stateless
+  protected long id;
   protected INodeDirectory parent;
   protected long modificationTime;
   protected long accessTime;

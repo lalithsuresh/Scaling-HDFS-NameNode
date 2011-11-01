@@ -447,23 +447,7 @@ public class NameNode {
 
   protected NameNode(Configuration conf, NamenodeRole role) 
       throws IOException { 
-	  
-	  	System.err.println("HELLO3");
-    	System.err.println("HELLO3");
-    	System.err.println("HELLO3");
-    	System.err.println("HELLO3");
-    	System.err.println("HELLO3");
-    	
-    	System.out.println("HELLO2");
-    	System.out.println("HELLO2");
-    	System.out.println("HELLO2");
-    	System.out.println("HELLO2");
-    	
-
-    	//Main_LW.insertINodeFile("/home/bother", "nn", "nnm", 556688);
-    	
-    	
-	  
+	      	
     this.role = role;
     try {
       initializeGenericKeys(conf);
