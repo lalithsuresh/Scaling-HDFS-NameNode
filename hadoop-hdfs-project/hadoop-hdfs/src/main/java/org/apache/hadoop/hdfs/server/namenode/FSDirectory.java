@@ -129,8 +129,7 @@ public class FSDirectory implements Closeable {
         ns.createFsOwnerPermissions(new FsPermission((short)0755)),
         Integer.MAX_VALUE, UNKNOWN_DISK_SPACE);
 
-    // FIXME: Separator 
-    rootDir.setFullPathName("/");
+    rootDir.setFullPathName(Path.SEPARATOR);
     // [STATELESS] Add rootDir to DBMS
 	INodeTableHelper.addChild(rootDir);
     

@@ -34,26 +34,14 @@ public class INodeTableHelper {
 		boolean entry_exists;
 		Transaction tx = session.currentTransaction();
 	    tx.begin();
-	    
-	    QueryBuilder builder = session.getQueryBuilder();
-	    QueryDomainType<InodeTable> domain =
-	    builder.createQueryDefinition(InodeTable.class);
-	    
-	    domain.where(domain.get("name").equal(domain.param(
-	    "name")));
-	    Query<InodeTable> query = session.createQuery(domain);
-	    query.setParameter("name",node.getFullPathName());
-	    
-	    List<InodeTable> results = query.getResultList();
-	    System.err.println("[KTHFS] Try to reach DB with "+node.getFullPathName() + "is it empty" + results.isEmpty());
+	  
+	    List<InodeTable> results = getResultListUsingField("name", node.getFullPathName());
 	    InodeTable inode;
-	    //InodeTable inode = session.find(InodeTable.class, node.getFullPathName());
 	    entry_exists = true;
 	    if (results.isEmpty())
 	    {
 	    	inode = session.newInstance(InodeTable.class);
 	    	inode.setId(System.currentTimeMillis());
-	        System.err.println("[KTHFS] Fullpath for new row" + node.getFullPathName());
 	        inode.setName(node.getFullPathName());
 	        entry_exists = false;
 	    }
@@ -129,14 +117,10 @@ public class INodeTableHelper {
 	    if (node instanceof INodeSymlink)
 	       	inode.setSymlink(((INodeSymlink) node).getSymlink());
 	    
-	    if (entry_exists){
+	    if (entry_exists)
 	    	session.updatePersistent(inode);
-	    }
 	    else
-	    {
-	    	System.err.println("[KTHFS] Entry is new: "+ inode.getName());
 	    	session.makePersistent(inode);
-	    }
 	    tx.commit();
 	    session.flush();
 	}
@@ -144,16 +128,16 @@ public class INodeTableHelper {
 	
 	public static List<INode> getChildren(String parentDir) throws IOException {
 
-		QueryBuilder qb = session.getQueryBuilder();
-		QueryDomainType<InodeTable> dobj = qb.createQueryDefinition(InodeTable.class);
+//		QueryBuilder qb = session.getQueryBuilder();
+//		QueryDomainType<InodeTable> dobj = qb.createQueryDefinition(InodeTable.class);
+//
+//
+//		dobj.where(dobj.get("parent").equal(dobj.param("parent")));
+//
+//		Query<InodeTable> query = session.createQuery(dobj);
+//		query.setParameter("parent", parentDir); //W: WHERE parent = parentDir
 
-
-		dobj.where(dobj.get("parent").equal(dobj.param("parent")));
-
-		Query<InodeTable> query = session.createQuery(dobj);
-		query.setParameter("parent", parentDir); //W: WHERE parent = parentDir
-
-		List<InodeTable> resultList = query.getResultList();
+		List<InodeTable> resultList = getResultListUsingField("parent", parentDir);
 
 		//List<String> children = new ArrayList<String>();
 		List<INode> children = new ArrayList<INode>();
@@ -211,36 +195,35 @@ public class INodeTableHelper {
 
 	}
 	
+	/**Deletes a child inode from the DB. In this case, it removes it using the whole path
+	 * TODO: Check if correct, it enters the function more than one time. 
+	 * FIXME: If node not found, still return it?
+	 * @param node
+	 * @return node : deleted node
+	 * @throws ClusterJDatastoreException
+	 */
 	public static INode removeChild(INode node) throws ClusterJDatastoreException {
 		System.err.println("[Stateless] Inode to be deleted: " + node.getFullPathName());
 		Transaction tx = session.currentTransaction();
-        tx.begin();
-        QueryBuilder builder = session.getQueryBuilder();
-	    QueryDomainType<InodeTable> domain =
-	    builder.createQueryDefinition(InodeTable.class);
+        List<InodeTable> results = getResultListUsingField("name", node.getFullPathName());
+	    if( !results.isEmpty()){
+	    	tx.begin();
+	    	session.deletePersistent(results.get(0));
+        	tx.commit();
+        	session.flush();
+	    }
+        	return node;
 	    
-	    domain.where(domain.get("name").equal(domain.param(
-	    "name")));
-	    Query<InodeTable> query = session.createQuery(domain);
-	    query.setParameter("name",node.getFullPathName());
-	    
-	    List<InodeTable> results = query.getResultList();
-	    
-        //InodeTable inode = session.find(InodeTable.class, node.getFullPathName());
-        session.deletePersistent(results.get(0));
-        tx.commit();
-        session.flush();
-        
-		return node;
 	}
 	
-	/*
-	 * This method is to be used in case an INodeDirectory is
+	/**This method is to be used in case an INodeDirectory is
 	 * renamed (typically from the mv operation). When dealing
 	 * with the DB, such an operation would isolate the sub-tree
 	 * from the parent that was moved, and thus all nodes in the
 	 * sub-tree need to have their fullpath and parent fields updated
-	 *  
+	 * 
+	 * @param oldFullPathOfParent
+	 * @param newFullPathOfParent
 	 */
 	public static void updateParentAcrossSubTree (String oldFullPathOfParent, String newFullPathOfParent) {
 		
@@ -262,8 +245,6 @@ public class INodeTableHelper {
 		tx.begin();
 		
 		for (InodeTable result: resultList) {
-			//InodeTable newINode = INodeTableHelper.setInodeTableFromInodeTable(result);
-			//session.deletePersistent(result);
 			
 			//result.setName(newFullPathOfParent + result.getName().substring(oldFullPathOfParent.length() - 1));
 			String subPath = result.getName().substring(oldFullPathOfParent.length());
@@ -284,48 +265,14 @@ public class INodeTableHelper {
 		tx.commit();
 		session.flush();
 	}
-	/*FIXME: This method should be removed as soon as InodeTable has
-	 * another indexing field, that's not the fullPathname
-	 * Probably should be moved to InodeTable class
-	 */
-	public static InodeTable setInodeTableFromInodeTable( InodeTable inode){
-		
-		inode.setModificationTime(inode.getModificationTime());
-	    inode.setATime(inode.getATime());
-	    inode.setLocalName(inode.getLocalName());
-	    inode.setPermission(inode.getPermission());
-	    inode.setParent(inode.getParent());
-	    inode.setNSQuota(inode.getNSQuota());
-		inode.setDSQuota(inode.getDSQuota());
-		inode.setIsClosedFile(inode.getIsClosedFile());
-	   	inode.setIsUnderConstruction(inode.getIsUnderConstruction());
-	   	inode.setIsDirWithQuota(inode.getIsDirWithQuota());    
-	   	inode.setIsDir(inode.getIsDir());
-	   	inode.setIsDirWithQuota(inode.getIsDirWithQuota());    	
-    	inode.setNSCount(inode.getNSCount());
-    	inode.setDSCount(inode.getDSCount());
-	   	inode.setHeader(inode.getHeader());
-	   	inode.setSymlink(inode.getSymlink());
-		return inode;
 
-	}
 	public static void replaceChild (INode thisInode, INode newChild){
 		 // [STATELESS]
 	      Transaction tx = session.currentTransaction();
 	      tx.begin();
 
-	      //InodeTable inode = session.find(InodeTable.class, newChild.getFullPathName());
 	      
-	      QueryBuilder builder = session.getQueryBuilder();
-		  QueryDomainType<InodeTable> domain =
-		  builder.createQueryDefinition(InodeTable.class);
-		    
-		  domain.where(domain.get("name").equal(domain.param(
-		  "name")));
-		  Query<InodeTable> query = session.createQuery(domain);
-		  query.setParameter("name",newChild.getFullPathName());
-
-		  List<InodeTable> results = query.getResultList();
+		  List <InodeTable> results = getResultListUsingField("name",newChild.getFullPathName() ); 
 		  assert ! results.isEmpty() : "Child to replace not in DB";
 		  InodeTable inode= results.get(0);
 	      
@@ -384,22 +331,17 @@ public class INodeTableHelper {
 		 *  4. else return null;
 		 */
 
-				
-		/*
-		 * Full table scan
-		 * */
-
-		QueryBuilder qb = session.getQueryBuilder();
-		QueryDomainType<InodeTable> dobj = qb.createQueryDefinition(InodeTable.class);
-
+//		QueryBuilder qb = session.getQueryBuilder();
+//		QueryDomainType<InodeTable> dobj = qb.createQueryDefinition(InodeTable.class);
+//
 		System.err.println("Parent: " + parentDir + " search: " + searchDir);
-		dobj.where(dobj.get("parent").equal(dobj.param("parent_param")));
-
-		Query<InodeTable> query = session.createQuery(dobj);
-		query.setParameter("parent_param", parentDir); //W: the WHERE clause of SQL
+//		dobj.where(dobj.get("parent").equal(dobj.param("parent_param")));
+//
+//		Query<InodeTable> query = session.createQuery(dobj);
+//		query.setParameter("parent_param", parentDir); //W: the WHERE clause of SQL
 
 		//Query query = session.createQuery(dobj);
-		List<InodeTable> resultList = query.getResultList();
+		List<InodeTable> resultList = getResultListUsingField("parent", parentDir);
 
 
 		//TODO: localname needs to be added to the InodeTable to make this work
@@ -439,16 +381,16 @@ public class INodeTableHelper {
 	 */
 	public static INode getINodeByNameBasic (String name) throws IOException{
 		
-		QueryBuilder qb = session.getQueryBuilder();
-		QueryDomainType<InodeTable> dobj = qb.createQueryDefinition(InodeTable.class);
+//		QueryBuilder qb = session.getQueryBuilder();
+//		QueryDomainType<InodeTable> dobj = qb.createQueryDefinition(InodeTable.class);
+//
+//
+//		dobj.where(dobj.get("name").equal(dobj.param("inode_name")));
+//
+//		Query<InodeTable> query = session.createQuery(dobj);
+//		query.setParameter("inode_name", name); //W: the WHERE clause of SQL
 
-
-		dobj.where(dobj.get("name").equal(dobj.param("inode_name")));
-
-		Query<InodeTable> query = session.createQuery(dobj);
-		query.setParameter("inode_name", name); //W: the WHERE clause of SQL
-
-		List<InodeTable> resultList = query.getResultList();
+		List<InodeTable> resultList = getResultListUsingField("name", name);
 
 		assert (resultList.size() == 1) : "More than one Inode exists with name " + name;
 				
@@ -508,5 +450,23 @@ public class INodeTableHelper {
 		
 		return inode;
 	}
+	
+	/** This method is invoked by other functions in InodeTableHelper to query the DB for 
+	 * a specific value in a certain field
+	 * @param field: the field in the InodeTable definition
+	 * @param value: the value to match 
+	 * @return List InodeTable objects
+	 */
+	public static List<InodeTable> getResultListUsingField(String field, String value){
+		QueryBuilder qb = session.getQueryBuilder();
+		QueryDomainType<InodeTable> dobj = qb.createQueryDefinition(InodeTable.class);
 
+		dobj.where(dobj.get(field).equal(dobj.param("param")));
+
+		Query<InodeTable> query = session.createQuery(dobj);
+		query.setParameter("param", value); //the WHERE clause of SQL
+
+		return 	query.getResultList();
+
+	}
 }
