@@ -86,19 +86,13 @@ class INodeDirectory extends INode {
 
 	INode removeChild(INode node) {
 		assert getChildrenFromDB() != null;
-		/*
-		int low = Collections.binarySearch(children, node.name);
-		if (low >= 0) {
-			return children.remove(low);
-		} else {
-			return null;
-		}*/
+
 		try {
+			// Remove child from DB
 			INodeTableHelper.removeChild(node);
 			return node;
 		} catch (ClusterJDatastoreException e)
 		{
-			System.err.println("[stateless] Couldn't find " + node.name + " in DBMS, returning null");
 			return null;
 		}
 	}
@@ -156,33 +150,29 @@ class INodeDirectory extends INode {
 	 * Return the INode of the last component in components, or null if the last
 	 * component does not exist.
 	 */
-	private INode getNode2(byte[][] components, boolean resolveLink) 
+	private INode getNode(byte[][] components, boolean resolveLink) 
 			throws UnresolvedLinkException {
 		INode[] inode  = new INode[1];
 
-		//W: commented out for KTHFS because namenode init was failing
-		//    getExistingPathINodes(components, inode, resolveLink);
-		getExistingPathINodes2(components, inode, resolveLink);
+		getExistingPathINodes(components, inode, resolveLink);
 
 		return inode[0];
 	}
 
-	private INode getNode(byte[][] components, boolean resolveLink) 
+	private INode getNodeOld(byte[][] components, boolean resolveLink) 
 			throws UnresolvedLinkException {
 		INode[] inode  = new INode[1];
 		getExistingPathINodes(components, inode, resolveLink);
 		return inode[0];
 	}
 
-	/**
-	 * This is the external interface
-	 */
-	INode getNode2(String path, boolean resolveLink) 
-			throws UnresolvedLinkException {
-		return getNode2(getPathComponents(path), resolveLink);
-	}
-
+	/* Will fetch from DB */
 	INode getNode(String path, boolean resolveLink) 
+			throws UnresolvedLinkException {
+		return getNode(getPathComponents(path), resolveLink);
+	}
+	
+	INode getNodeOld(String path, boolean resolveLink) 
 			throws UnresolvedLinkException {
 		return getNode(getPathComponents(path), resolveLink);
 	}
@@ -229,13 +219,12 @@ class INodeDirectory extends INode {
 	 *        be thrown when the path refers to a symbolic link.
 	 * @return number of existing INodes in the path
 	 */
-	int getExistingPathINodes(byte[][] components, INode[] existing, 
+	int getExistingPathINodesOld(byte[][] components, INode[] existing, 
 			boolean resolveLink) throws UnresolvedLinkException {
 		assert compareBytes(this.name, components[0]) == 0 :
 			"Incorrect name " + getLocalName() + " expected " + 
 			DFSUtil.bytes2String(components[0]);
 
-		//FIXME: [KTHFS] make sense of this method
 		INode curNode = this;
 		int count = 0;
 		int index = existing.length - components.length;
@@ -243,9 +232,6 @@ class INodeDirectory extends INode {
 			index = 0;
 		}
 
-		//KthFsHelper.printKTH("Before while loop components.length="+components.length +
-		//		" resolveLink="+resolveLink+
-		//		" this.name="+new String(this.name));
 		while (count < components.length && curNode != null) {
 			final boolean lastComp = (count == components.length - 1);      
 			if (index >= 0) {
@@ -265,28 +251,23 @@ class INodeDirectory extends INode {
 						constructPath(components, count+1),
 						linkTarget);
 			}
-			//KthFsHelper.printKTH("inside while loop currNode:"+curNode.getFullPathName());
 
 			if (lastComp || !curNode.isDirectory()) {
 				break;
 			}
 
-
-			INodeDirectory parentDir = (INodeDirectory)curNode; //W: will always return / in the first iteration
-
-			//KTHFS: fetch stuff from MYSQL here, comment the below line and do the magic here
-			curNode = parentDir.getChildINode(components[count + 1]); //W: iterating through the path
-			//curNode = parentDir.getChildINodeFromDB(components[count + 1]); 
+			INodeDirectory parentDir = (INodeDirectory)curNode;
+			curNode = parentDir.getChildINode(components[count + 1]);
+			curNode = parentDir.getChildINodeFromDB(components[count + 1]); 
 			count++;
 			index++;
-
 		}
 
-		//KthFsHelper.printKTH("about to return count="+count);
 		return count;
 	}
 
-	int getExistingPathINodes2(byte[][] components, INode[] existing, 
+	// Uses DB
+	int getExistingPathINodes(byte[][] components, INode[] existing, 
 			boolean resolveLink) throws UnresolvedLinkException {
 		assert compareBytes(this.name, components[0]) == 0 :
 			"Incorrect name " + getLocalName() + " expected " + 
@@ -357,7 +338,7 @@ class INodeDirectory extends INode {
 		byte[][] components = getPathComponents(path);
 		INode[] inodes = new INode[components.length];
 
-		this.getExistingPathINodes2(components, inodes, resolveLink);
+		this.getExistingPathINodes(components, inodes, resolveLink);
 
 		try {
 			System.err.println("[KTHFS] (Inside getExisitingPathINodes) inodes.length:"+inodes.length);
@@ -412,20 +393,11 @@ class INodeDirectory extends INode {
 			node.setPermission(p);
 		}
 				
-		/*
-		if (childrenTemp == null) {
-			children = new ArrayList<INode>(DEFAULT_FILES_PER_DIRECTORY);
-		}*/
-		
-		System.err.println("[STATELESS] INodeDirectory.addChild() called for : " + node.name);
-		
 		int low = Collections.binarySearch(getChildrenFromDB(), node.name);
 		if(low >= 0){
-			System.err.println("[Stateless] i'm returning null " + node.getFullPathName());
 			return null;
 		}
 		node.parent = this;
-		// children.add(-low - 1, node);
 		
 		// update modification time of the parent directory
 		if (setModTime)
@@ -443,7 +415,7 @@ class INodeDirectory extends INode {
 			node.setFullPathName(this.getFullPathName() + Path.SEPARATOR + node.getLocalName());
 		}
 		
-		// [STATELESS]
+		// Invoke addChild to DB
 		INodeTableHelper.addChild(node);
 		
 		return node;
@@ -510,7 +482,7 @@ class INodeDirectory extends INode {
 			return null;
 		// Gets the parent INode
 		INode[] inodes  = new INode[2];
-		getExistingPathINodes2(pathComponents, inodes, false);
+		getExistingPathINodes(pathComponents, inodes, false);
 		INode inode = inodes[0];
 		if (inode == null) {
 			throw new FileNotFoundException("Parent path does not exist: "+
@@ -644,7 +616,7 @@ class INodeDirectory extends INode {
 			total += child.collectSubtreeBlocksAndClear(v);
 		}
 		
-		// [Stateless] Remove me from the DB when done
+		// Remove me from the DB when done
 		INodeTableHelper.removeChild(this);
 		
 		parent = null;
