@@ -21,6 +21,63 @@ import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 public class BlocksHelper {
 
 	public static FSNamesystem ns = null;
+	public static Session session= DBConnector.sessionFactory.getSession() ;
+	
+	
+	/*
+	 * Helper function for appending an array of blocks
+	 * 
+	 * Replacement for INodeFile.appendBlocks
+	 * 
+	 * */
+	void appendBlocks(INodeFile [] inodes, int totalAddedBlocks) {
+		 
+		Transaction tx = session.currentTransaction();
+		tx.begin();
+
+		for(INodeFile in: inodes) {
+			BlockInfo[] inBlocks = in.blocks;
+			for(int i=0;i<inBlocks.length;i++) {
+				BlockInfoTable bInfoTable = createBlockInfoTable(in, inBlocks[i]);
+				session.makePersistent(bInfoTable);
+			}
+		}
+		tx.commit();
+	}
+	
+	/*
+	 * Helper function for inserting a block in the BlocksInfo table
+	 * 
+	 * Replacement for INodeFile.addBlock
+
+	 * */
+	void addBlock(INode node, BlockInfo newblock) {
+		
+		Transaction tx = session.currentTransaction();
+		tx.begin();
+		
+		BlockInfoTable bInfoTable = session.newInstance(BlockInfoTable.class);
+		bInfoTable.setBlockId(newblock.getBlockId());
+		bInfoTable.setGenerationStamp(newblock.getGenerationStamp());
+		bInfoTable.setINodeID(newblock.getINode().getID()); //FIXME: store ID in INodeFile objects - use Mariano :)
+		bInfoTable.setNumBytes(newblock.getNumBytes());
+		bInfoTable.setReplication(-1); //FIXME: see if we need to store this or not
+		
+		session.makePersistent(bInfoTable);
+		tx.commit();
+	}
+	
+	/*Helper function for creating a BlockInfoTable object */
+	private BlockInfoTable createBlockInfoTable(INode node, BlockInfo newblock) {
+		
+		BlockInfoTable bInfoTable = session.newInstance(BlockInfoTable.class);
+		bInfoTable.setBlockId(newblock.getBlockId());
+		bInfoTable.setGenerationStamp(newblock.getGenerationStamp());
+		bInfoTable.setINodeID(newblock.getINode().getID()); //FIXME: store ID in INodeFile objects - use Mariano :)
+		bInfoTable.setNumBytes(newblock.getNumBytes());
+		bInfoTable.setReplication(-1); //FIXME: see if we need to store this or not
+		return bInfoTable;
+	}
 
 	private static List<TripletsTable> getTriplets(long blockId) {
 		Session s = DBConnector.sessionFactory.getSession();
@@ -43,8 +100,7 @@ public class BlocksHelper {
 		DatanodeManager dm = ns.getBlockManager().getDatanodeManager();
 
 		BlockInfoTable bit = s.find(BlockInfoTable.class, blockId);
-
-
+		
 		if(bit == null)
 			return null;
 		else {
@@ -66,13 +122,14 @@ public class BlocksHelper {
 			}
 			
 			blockInfo.setTripletsKTH(tripletsKTH);
-
+		
+			//W: assuming that this function will only be called on an INodeFile
+			INodeFile node = (INodeFile)INodeTableHelper.getINode(bit.getINodeID()); 
+			blockInfo.setINode(node);
+			
+			
 			return blockInfo;
 		}
-
-
-
-
 
 	}
 
@@ -85,7 +142,7 @@ public class BlocksHelper {
 		BlockInfoTable bit =  s.newInstance(BlockInfoTable.class);
 		bit.setBlockId(binfo.getBlockId());
 		bit.setGenerationStamp(binfo.getGenerationStamp());
-		bit.setINodePath(binfo.getINode().getFullPathName());
+		bit.setINodeID(binfo.getINode().getID()); //FIXME: verify if this is working
 		bit.setNumBytes(binfo.getNumBytes());
 		//FIXME: KTHFS: Ying and Wasif: replication is null at the moment - remove the column if not required later on
 		
@@ -102,6 +159,7 @@ public class BlocksHelper {
 			t.setIndex(i);
 			t.setPreviousBlockId(prevBlockId);
 			t.setNextBlockId(nextBlockId);
+			s.makePersistent(t);
 			
 		}
 		
@@ -110,6 +168,13 @@ public class BlocksHelper {
 
 	}
 
-
-
 }
+
+/*
+ * TODO
+ * change commitOrCompleteLastBlock
+ * change commitBlockSynchronization
+ * change NameNodeRpcServer.blockReport
+ * 
+ * 
+ * */

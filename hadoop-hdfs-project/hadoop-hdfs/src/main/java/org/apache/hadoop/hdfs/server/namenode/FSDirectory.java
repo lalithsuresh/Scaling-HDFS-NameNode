@@ -1245,7 +1245,6 @@ public class FSDirectory implements Closeable {
 			for (int i=0; i<numOfListing; i++) {
 				INode cur = contents.get(startChild+i);
 				listing[i] = createFileStatus(cur.name, cur, needLocation);
-				KthFsHelper.printKTH("listing[i].getAccessTime():"+listing[i].getAccessTime() + " listing[i].getModTime"+listing[i].getModificationTime());
 			}
 			return new DirectoryListing(
 					listing, totalNumChildren-startChild-numOfListing);

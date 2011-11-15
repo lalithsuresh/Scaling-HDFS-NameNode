@@ -456,6 +456,20 @@ public class INodeTableHelper {
 		return inode;
 	}
 
+	/*Returns an INode object which has iNodeID*/
+	public static INode getINode(long iNodeID) {
+		
+		InodeTable inTable = session.find(InodeTable.class, iNodeID);
+		INode node = null;
+		try {
+			node =  convertINodeTableToINode(inTable);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return node;
+		
+	}
+	
 	/** This method is invoked by other functions in InodeTableHelper to query the DB for 
 	 * a specific value in a certain field
 	 * @param field: the field in the InodeTable definition
@@ -474,6 +488,8 @@ public class INodeTableHelper {
 		return 	query.getResultList();
 
 	}
+	
+	
 	public static INode updateSrcDst(String src, String dst){
 
 		List<InodeTable> results = getResultListUsingField("name", src);

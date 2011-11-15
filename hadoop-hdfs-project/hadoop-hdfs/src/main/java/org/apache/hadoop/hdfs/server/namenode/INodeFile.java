@@ -41,6 +41,9 @@ public class INodeFile extends INode {
   protected long header;
 
   protected BlockInfo blocks[] = null;
+  
+  /*added for KTHFS*/
+  protected long id = -1;
 
   INodeFile(PermissionStatus permissions,
             int nrBlocks, short replication, long modificationTime,
@@ -130,6 +133,7 @@ public class INodeFile extends INode {
   /**
    * append array of blocks to this.blocks
    */
+  //FIXME: KTHFSBLOCKS use BlocksHelper.appendBlocks instead
   void appendBlocks(INodeFile [] inodes, int totalAddedBlocks) {
     int size = this.blocks.length;
     
@@ -150,6 +154,7 @@ public class INodeFile extends INode {
   /**
    * add a block to the block list
    */
+  //FIXME: KTHFSBLOCKS use BlocksHelper.addBlock instead
   void addBlock(BlockInfo newblock) {
     if (this.blocks == null) {
       this.blocks = new BlockInfo[1];
@@ -166,6 +171,7 @@ public class INodeFile extends INode {
   /**
    * Set file block
    */
+  //FIXME: KTHFSBLOCKS
   public void setBlock(int idx, BlockInfo blk) {
     this.blocks[idx] = blk;
   }
@@ -196,6 +202,7 @@ public class INodeFile extends INode {
   /** Compute file size.
    * May or may not include BlockInfoUnderConstruction.
    */
+  //FIXME: KTHFSBLOCKS
   long computeFileSize(boolean includesBlockInfoUnderConstruction) {
     if (blocks == null || blocks.length == 0) {
       return 0;
@@ -246,6 +253,7 @@ public class INodeFile extends INode {
   /**
    * Return the penultimate allocated block for this file.
    */
+  //FIXME: KTHFSBLOCKS
   BlockInfo getPenultimateBlock() {
     if (blocks == null || blocks.length <= 1) {
       return null;
@@ -257,6 +265,7 @@ public class INodeFile extends INode {
    * Get the last block of the file.
    * Make sure it has the right type.
    */
+  //FIXME: KTHFSBLOCKS
   public <T extends BlockInfo> T getLastBlock() throws IOException {
     if (blocks == null || blocks.length == 0)
       return null;
@@ -273,7 +282,29 @@ public class INodeFile extends INode {
   }
 
   /** @return the number of blocks */ 
+  //FIXME: KTHFSBLOCKS
   public int numBlocks() {
     return blocks == null ? 0 : blocks.length;
   }
+  
+
+  /*FIXME: This should be called when the inodes are created
+   * 
+   * added for KTHFS
+   * 
+   * */
+  public void setID(long id) {
+	  this.id = id;
+  }
+  
+  /*
+   * added for KTHFS
+   * 
+   * */
+  public long getID() {
+	  return this.id;
+  }
+  
+  
+  
 }

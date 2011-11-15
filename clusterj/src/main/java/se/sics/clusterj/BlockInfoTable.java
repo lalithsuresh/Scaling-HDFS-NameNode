@@ -8,6 +8,7 @@ import com.mysql.clusterj.annotation.Column;
 import com.mysql.clusterj.annotation.PersistenceCapable;
 import com.mysql.clusterj.annotation.PrimaryKey;
 
+
 /**
  *
  * @author wmalik
@@ -15,8 +16,12 @@ import com.mysql.clusterj.annotation.PrimaryKey;
 @PersistenceCapable(table="BlockInfo")
 public interface BlockInfoTable {
 
-    // Inode
+    
     @PrimaryKey
+    @Column(name = "iNodeID")
+    long getINodeID();
+    void setINodeID(long iNodeID);
+    
     @Column(name = "blockId")
     long getBlockId();     
     void setBlockId(long bid);
@@ -33,8 +38,6 @@ public interface BlockInfoTable {
     int getReplication();
     void setReplication(int replication);
     
-     @Column(name = "iNodePath")
-    String getINodePath();
-    void setINodePath(String path);
+    
     
 }
