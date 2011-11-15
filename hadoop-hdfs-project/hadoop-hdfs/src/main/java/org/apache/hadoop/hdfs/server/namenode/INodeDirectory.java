@@ -451,10 +451,12 @@ class INodeDirectory extends INode {
 		InodeTable inode = results.get(0);
 		
 		inode.setModificationTime(node.getModificationTime());
+		//inode.setATime(node.getAccessTime()); //added by W
+		//KthFsHelper.printKTH("successfully set access time: "+node.getAccessTime());
 		session.updatePersistent(inode);
 		tx.commit();
-		//if (setModTime)
-		//	setModificationTime(node.getModificationTime());
+		if (setModTime)
+			setModificationTime(node.getModificationTime());
 		if (node.getGroupName() == null) {
 			node.setGroup(getGroupName());
 		}

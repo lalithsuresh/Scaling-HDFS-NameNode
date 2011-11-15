@@ -85,6 +85,8 @@ public class INodeTableHelper {
 	    	inode.setIsUnderConstruction(false);
 	    	inode.setIsDirWithQuota(false);    
 	    	inode.setIsDir(true);
+	    	inode.setATime(node.modificationTime);
+	    	
 	    }
 	    if (node instanceof INodeDirectoryWithQuota)
 	    {
@@ -94,6 +96,8 @@ public class INodeTableHelper {
 	    	inode.setIsDirWithQuota(true);    	
 	    	inode.setNSCount(((INodeDirectoryWithQuota) node).getNsCount());
 	    	inode.setDSCount(((INodeDirectoryWithQuota) node).getDsCount());
+	    	inode.setATime(node.modificationTime);
+	    	
 	    }
 	    if (node instanceof INodeFile)
 	    {
@@ -114,6 +118,9 @@ public class INodeTableHelper {
 	    	System.err.println("[STATELESS] Client name : " +((INodeFileUnderConstruction) node).getClientNode().getName());
 	    	inode.setClientNode(((INodeFileUnderConstruction) node).getClientNode().getName());
 	    }
+	    
+	    KthFsHelper.printKTH("Atime:"+inode.getATime() + " modificationTime:"+inode.getModificationTime());
+	    
 	    if (node instanceof INodeSymlink)
 	       	inode.setSymlink(((INodeSymlink) node).getSymlink());
 	    
@@ -416,9 +423,13 @@ public class INodeTableHelper {
 				
 		if (inodetable.getIsDir()){
 			inode = new INodeDirectory(inodetable.getName(), ps);
+			inode.setAccessTime(inodetable.getATime());
+			inode.setModificationTime(inodetable.getModificationTime());
 		}
 		if (inodetable.getIsDirWithQuota()) {
 			inode = new INodeDirectoryWithQuota(inodetable.getName(), ps, inodetable.getNSCount(), inodetable.getDSQuota());
+			inode.setAccessTime(inodetable.getATime());
+			inode.setModificationTime(inodetable.getModificationTime());
 		}
 		if (inodetable.getIsUnderConstruction()) {
 			/* FIXME: Handle blocks */
