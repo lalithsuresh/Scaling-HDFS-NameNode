@@ -574,7 +574,7 @@ public class FSDirectory implements Closeable {
     
     byte[][] dstComponents = INode.getPathComponents(dst);
     INode[] dstInodes = new INode[dstComponents.length];
-    rootDir.getExistingPathINodes2(dstComponents, dstInodes, false);
+    rootDir.getExistingPathINodes(dstComponents, dstInodes, false);
     if (dstInodes[dstInodes.length-1] != null) {
       NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
                                    +"failed to rename "+src+" to "+dst+ 
@@ -701,7 +701,7 @@ public class FSDirectory implements Closeable {
     }
     final byte[][] dstComponents = INode.getPathComponents(dst);
     final INode[] dstInodes = new INode[dstComponents.length];
-    rootDir.getExistingPathINodes2(dstComponents, dstInodes, false);
+    rootDir.getExistingPathINodes(dstComponents, dstInodes, false);
     INode dstInode = dstInodes[dstInodes.length - 1];
     if (dstInodes.length == 1) {
       error = "rename destination cannot be the root";
@@ -1216,28 +1216,24 @@ public class FSDirectory implements Closeable {
 			boolean needLocation) throws UnresolvedLinkException, IOException {
 		String srcs = normalizePath(src);
 
-		//[KTHFS] read from MySQL Cluster and return the DirectoryListing object
-		
+		// Read from MySQL Cluster and return the DirectoryListing object
 		readLock();
 		try {
-			INode targetNode = rootDir.getNode2(srcs, true);
-			//KthFsHelper.printKTH("inside getListing() ----- targetNode.toString() -> "+targetNode.toString());
-			
+			INode targetNode = rootDir.getNode(srcs, true);
+						
 			if (targetNode == null)
 				return null;
 			
 
 			if (!targetNode.isDirectory()) {
-				//KthFsHelper.printKTH(targetNode.toString()+" - NOT a DIRECTORY");
 				return new DirectoryListing(
 						new HdfsFileStatus[]{createFileStatus(HdfsFileStatus.EMPTY_NAME,
-								targetNode, needLocation)}, 0);
+							targetNode, needLocation)}, 0);
 			}
 			
-			//W: else its a directory
+			// Else its a directory
 			INodeDirectory dirInode = (INodeDirectory)targetNode;
-			//KthFsHelper.printKTH("dirInode.toString() -> "+dirInode.toString());
-			List<INode> contents = dirInode.getChildrenFromDB(); //W: modified for KTHFS
+			List<INode> contents = dirInode.getChildrenFromDB(); 
 			int startChild = dirInode.nextChild(startAfter);
 			int totalNumChildren = contents.size();
 			int numOfListing = Math.min(totalNumChildren-startChild, this.lsLimit);
@@ -1264,7 +1260,7 @@ public class FSDirectory implements Closeable {
     String srcs = normalizePath(src);
     readLock();
     try {
-      INode targetNode = rootDir.getNode2(srcs, resolveLink);
+      INode targetNode = rootDir.getNode(srcs, resolveLink);
       if (targetNode == null) {
         return null;
       }
@@ -1302,7 +1298,7 @@ public class FSDirectory implements Closeable {
   INodeFile getFileINode(String src) throws UnresolvedLinkException {
     readLock();
     try {
-      INode inode = rootDir.getNode2(src, true);
+      INode inode = rootDir.getNode(src, true);
       if (inode == null || inode.isDirectory())
         return null;
       assert !inode.isLink();      
@@ -1535,7 +1531,7 @@ public class FSDirectory implements Closeable {
 
     writeLock();
     try {
-      rootDir.getExistingPathINodes2(components, inodes, false);
+      rootDir.getExistingPathINodes(components, inodes, false);
 
       // find the index of the first null in inodes[]
       StringBuilder pathbuilder = new StringBuilder();
@@ -1615,7 +1611,7 @@ public class FSDirectory implements Closeable {
     INode[] inodes = new INode[components.length];
     writeLock();
     try {
-      rootDir.getExistingPathINodes2(components, inodes, false);
+      rootDir.getExistingPathINodes(components, inodes, false);
       return addChild(inodes, inodes.length-1, child, childDiskspace,
                       inheritPermission);
     } finally {
