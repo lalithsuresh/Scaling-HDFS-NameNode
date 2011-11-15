@@ -69,7 +69,7 @@ public class FSImage implements Closeable {
   protected static final Log LOG = LogFactory.getLog(FSImage.class.getName());
 
   protected FSNamesystem namesystem = null;
-  protected FSEditLog editLog = null;
+  //protected FSEditLog editLog = null;
   private boolean isUpgradeFinalized = false;
 
   protected NNStorage storage;
@@ -82,7 +82,7 @@ public class FSImage implements Closeable {
 
   final private Configuration conf;
 
-  private final NNStorageRetentionManager archivalManager; 
+  //private final NNStorageRetentionManager archivalManager; 
 
   /**
    * Construct an FSImage.
@@ -131,10 +131,10 @@ public class FSImage implements Closeable {
       storage.setRestoreFailedStorage(true);
     }
 
-    this.editLog = new FSEditLog(storage);
+    //this.editLog = new FSEditLog(storage);
     setFSNamesystem(ns);
     
-    archivalManager = new NNStorageRetentionManager(conf, storage, editLog);
+    //archivalManager = new NNStorageRetentionManager(conf, storage, editLog);
   }
 
   protected FSNamesystem getFSNamesystem() {
@@ -341,7 +341,7 @@ public class FSImage implements Closeable {
         assert curDir.exists() : "Current directory must exist.";
         assert !prevDir.exists() : "prvious directory must not exist.";
         assert !tmpDir.exists() : "prvious.tmp directory must not exist.";
-        assert !editLog.isOpen() : "Edits log must not be open.";
+        //assert !editLog.isOpen() : "Edits log must not be open.";
 
         // rename current to tmp
         NNStorage.rename(curDir, tmpDir);
@@ -359,7 +359,7 @@ public class FSImage implements Closeable {
     storage.reportErrorsOnDirectories(errorSDs);
     errorSDs.clear();
 
-    saveFSImageInAllDirs(editLog.getLastWrittenTxId());
+    //saveFSImageInAllDirs(editLog.getLastWrittenTxId());
 
     for (Iterator<StorageDirectory> it = storage.dirIterator(); it.hasNext();) {
       StorageDirectory sd = it.next();
@@ -487,16 +487,16 @@ public class FSImage implements Closeable {
     return isUpgradeFinalized;
   }
 
-  public FSEditLog getEditLog() {
-    return editLog;
-  }
+  //public FSEditLog getEditLog() {
+//    return editLog;
+//  }
 
   void openEditLog() throws IOException {
-    assert editLog != null : "editLog must be initialized";
-    Preconditions.checkState(!editLog.isOpen(),
-        "edit log should not yet be open");
-    editLog.open();
-    storage.writeTransactionIdFileToStorage(editLog.getCurSegmentTxId());
+    //assert editLog != null : "editLog must be initialized";
+    //Preconditions.checkState(!editLog.isOpen(),
+    //    "edit log should not yet be open");
+    //editLog.open();
+    //storage.writeTransactionIdFileToStorage(editLog.getCurSegmentTxId());
   };
   
   /**
@@ -536,12 +536,12 @@ public class FSImage implements Closeable {
 
     Iterable<EditLogInputStream> editStreams = null;
 
-    editLog.recoverUnclosedStreams();
+    //editLog.recoverUnclosedStreams();
 
     if (LayoutVersion.supports(Feature.TXID_BASED_LAYOUT, 
                                getLayoutVersion())) {
-      editStreams = editLog.selectInputStreams(imageFile.getCheckpointTxId() + 1,
-                                               inspector.getMaxSeenTxId());
+      //editStreams = editLog.selectInputStreams(imageFile.getCheckpointTxId() + 1,
+      //                                         inspector.getMaxSeenTxId());
     } else {
       editStreams = FSImagePreTransactionalStorageInspector
         .getEditLogStreams(storage);
@@ -587,7 +587,7 @@ public class FSImage implements Closeable {
                                                     numLoaded);
     
     // update the txid for the edit log
-    editLog.setNextTxId(storage.getMostRecentCheckpointTxId() + numLoaded + 1);
+    //editLog.setNextTxId(storage.getMostRecentCheckpointTxId() + numLoaded + 1);
     return needToSave;
   }
 
@@ -664,7 +664,7 @@ public class FSImage implements Closeable {
   private void loadFSImage(File curFile, MD5Hash expectedMd5) throws IOException {
     FSImageFormat.Loader loader = new FSImageFormat.Loader(
         conf, getFSNamesystem());
-    loader.load(curFile);
+    //loader.load(curFile);
     namesystem.setBlockPoolId(this.getBlockPoolID());
 
     // Check that the image digest we loaded matches up with what
@@ -752,25 +752,25 @@ public class FSImage implements Closeable {
    * current storage directories.
    */
   void saveNamespace() throws IOException {
-    assert editLog != null : "editLog must be initialized";
+    //assert editLog != null : "editLog must be initialized";
     storage.attemptRestoreRemovedStorage();
 
-    boolean editLogWasOpen = editLog.isOpen();
+    //boolean editLogWasOpen = editLog.isOpen();
     
-    if (editLogWasOpen) {
-      editLog.endCurrentLogSegment(true);
-    }
-    long imageTxId = editLog.getLastWrittenTxId();
-    try {
-      saveFSImageInAllDirs(imageTxId);
-      storage.writeAll();
-    } finally {
-      if (editLogWasOpen) {
-        editLog.startLogSegment(imageTxId + 1, true);
+    //if (editLogWasOpen) {
+    //  editLog.endCurrentLogSegment(true);
+    //}
+    //long imageTxId = editLog.getLastWrittenTxId();
+    //try {
+    //  saveFSImageInAllDirs(imageTxId);
+    //  storage.writeAll();
+    //} finally {
+    //  if (editLogWasOpen) {
+    //    editLog.startLogSegment(imageTxId + 1, true);
         // Take this opportunity to note the current transaction
-        storage.writeTransactionIdFileToStorage(imageTxId + 1);
-      }
-    }
+    //    storage.writeTransactionIdFileToStorage(imageTxId + 1);
+    //  }
+    //}
     
   }
   
@@ -814,7 +814,7 @@ public class FSImage implements Closeable {
    */
   public void purgeOldStorage() {
     try {
-      archivalManager.purgeOldStorage();
+//      archivalManager.purgeOldStorage();
     } catch (Exception e) {
       LOG.warn("Unable to purge old storage", e);
     }
@@ -889,9 +889,9 @@ public class FSImage implements Closeable {
   }
 
   synchronized public void close() throws IOException {
-    if (editLog != null) { // 2NN doesn't have any edit log
-      getEditLog().close();
-    }
+   // if (editLog != null) { // 2NN doesn't have any edit log
+   //   getEditLog().close();
+   // }
     storage.close();
   }
 
