@@ -596,7 +596,8 @@ public class FSDirectory implements Closeable {
     String srcChildName = null;
     try {
       // remove src
-      srcChild = removeChild(srcInodes, srcInodes.length-1);
+      //srcChild = removeChild(srcInodes, srcInodes.length-1);
+      srcChild = srcInodes[srcInodes.length-1];
       if (srcChild == null) {
         NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
             + "failed to rename " + src + " to " + dst
@@ -607,8 +608,11 @@ public class FSDirectory implements Closeable {
       srcChild.setLocalName(dstComponents[dstInodes.length-1]);
       
       // add src to the destination
-      dstChild = addChildNoQuotaCheck(dstInodes, dstInodes.length - 1,
-          srcChild, UNKNOWN_DISK_SPACE, false);
+      //dstChild = addChildNoQuotaCheck(dstInodes, dstInodes.length - 1,
+      //    srcChild, UNKNOWN_DISK_SPACE, false);
+    //[KTHFS] We do not add child, but update previous node in DB
+      dstChild = INodeTableHelper.updateSrcDst(src, dst);
+   
       if (dstChild != null) {
         srcChild = null;
         if (NameNode.stateChangeLog.isDebugEnabled()) {
@@ -745,7 +749,8 @@ public class FSDirectory implements Closeable {
 
     // Ensure dst has quota to accommodate rename
     verifyQuotaForRename(srcInodes, dstInodes);
-    INode removedSrc = removeChild(srcInodes, srcInodes.length - 1);
+    //INode removedSrc = removeChild(srcInodes, srcInodes.length - 1);
+    INode removedSrc = srcInodes[srcInodes.length - 1];
     if (removedSrc == null) {
       error = "Failed to rename " + src + " to " + dst
           + " because the source can not be removed";
@@ -758,7 +763,8 @@ public class FSDirectory implements Closeable {
     INode removedDst = null;
     try {
       if (dstInode != null) { // dst exists remove it
-        removedDst = removeChild(dstInodes, dstInodes.length - 1);
+        //removedDst = removeChild(dstInodes, dstInodes.length - 1);
+        removedDst = dstInodes[dstInodes.length-1];
         dstChildName = removedDst.getLocalName();
       }
 

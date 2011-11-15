@@ -428,33 +428,6 @@ class INodeDirectory extends INode {
 		// children.add(-low - 1, node);
 		
 		// update modification time of the parent directory
-		Session session = DBConnector.sessionFactory.getSession();		
-		Transaction tx = session.currentTransaction();
-		tx.begin();
-		
-		/*
-		InodeTable inode = session.find(InodeTable.class, this.getFullPathName());
-		assert inode != null : "this Inode doesn't exist in DB";
-		*/
-		
-		//[KTHFS] This could be later become a method in InodeTableHelper
-	    QueryBuilder builder = session.getQueryBuilder();
-	    QueryDomainType<InodeTable> domain =
-	    builder.createQueryDefinition(InodeTable.class);
-	    domain.where(domain.get("name").equal(domain.param(
-	    "name")));
-	    Query<InodeTable> query = session.createQuery(domain);
-	    query.setParameter("name",this.getFullPathName());
-
-	    List<InodeTable> results = query.getResultList();
-	    assert ! results.isEmpty(): "[KTHFS] This Inode doesn't exist in DB";
-		InodeTable inode = results.get(0);
-		
-		inode.setModificationTime(node.getModificationTime());
-		//inode.setATime(node.getAccessTime()); //added by W
-		//KthFsHelper.printKTH("successfully set access time: "+node.getAccessTime());
-		session.updatePersistent(inode);
-		tx.commit();
 		if (setModTime)
 			setModificationTime(node.getModificationTime());
 		if (node.getGroupName() == null) {
