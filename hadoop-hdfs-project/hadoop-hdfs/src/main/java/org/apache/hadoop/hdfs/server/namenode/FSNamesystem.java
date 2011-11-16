@@ -328,7 +328,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     if(fsImage == null) {
       this.dir = new FSDirectory(this, conf);
       StartupOption startOpt = NameNode.getStartupOption(conf);
-      //this.dir.loadFSImage(startOpt);
+      this.dir.loadFSImage(startOpt);
       long timeTakenToLoadFSImage = now() - systemStart;
       LOG.info("Finished loading FSImage in " + timeTakenToLoadFSImage + " msecs");
       NameNode.getNameNodeMetrics().setFsImageLoadTime(
@@ -496,14 +496,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     readLock();
     try {
       // Hack time
-      /*return new NamespaceInfo(dir.fsImage.getStorage().getNamespaceID(),
+      return new NamespaceInfo(dir.fsImage.getStorage().getNamespaceID(),
           getClusterId(), getBlockPoolId(),
           dir.fsImage.getStorage().getCTime(),
-          upgradeManager.getUpgradeVersion());*/
-      return new NamespaceInfo(1306457433,
-              "CID-61005dc3-4ac1-486b-b52d-a8902c603731", "BP-299233199-127.0.1.1-1321376642071",
-              0,
-              upgradeManager.getUpgradeVersion());
+          upgradeManager.getUpgradeVersion());
     } finally {
       readUnlock();
     }
