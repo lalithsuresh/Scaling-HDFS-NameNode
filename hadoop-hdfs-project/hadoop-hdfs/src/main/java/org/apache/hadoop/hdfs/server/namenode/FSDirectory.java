@@ -1874,8 +1874,6 @@ public class FSDirectory implements Closeable {
     /* We don't need nodesInPath if we could use 'parent' field in 
      * INode. using 'parent' is not currently recommended. */
     nodesInPath.add(dir);
-
-    System.err.println("[Stateless] dingding " + dir.getFullPathName());
     
     for (INode child : dir.getChildren()) {
       if (child.isDirectory()) {
