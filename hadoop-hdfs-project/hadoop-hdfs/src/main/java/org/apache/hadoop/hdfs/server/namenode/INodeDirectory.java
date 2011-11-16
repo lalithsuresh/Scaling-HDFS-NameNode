@@ -417,7 +417,7 @@ class INodeDirectory extends INode {
 			children = new ArrayList<INode>(DEFAULT_FILES_PER_DIRECTORY);
 		}*/
 		
-		System.err.println("[STATELESS] INodeDirectory.addChild() called for : " + node.name);
+		System.err.println("[STATELESS] INodeDirectory.addChild() called for : " + node.getLocalName());
 		
 		int low = Collections.binarySearch(getChildrenFromDB(), node.name);
 		if(low >= 0){

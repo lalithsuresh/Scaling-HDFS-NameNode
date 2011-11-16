@@ -325,8 +325,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     setConfigurationParameters(conf);
     dtSecretManager = createDelegationTokenSecretManager(conf);
     this.registerMBean(); // register the MBean for the FSNamesystemState
+    
     if(fsImage == null) {
       this.dir = new FSDirectory(this, conf);
+
+      // [STATELESS] Add rootDir to DBMS
+      this.dir.rootDir.setFullPathName(Path.SEPARATOR);
+  	  INodeTableHelper.addChild(this.dir.rootDir);
+  	  
       StartupOption startOpt = NameNode.getStartupOption(conf);
       this.dir.loadFSImage(startOpt);
       long timeTakenToLoadFSImage = now() - systemStart;
@@ -335,6 +341,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                                 (int) timeTakenToLoadFSImage);
     } else {
       this.dir = new FSDirectory(fsImage, this, conf);
+
+      // [STATELESS] Add rootDir to DBMS
+      this.dir.rootDir.setFullPathName(Path.SEPARATOR);
+  	  INodeTableHelper.addChild(this.dir.rootDir);
     }
     this.safeMode = new SafeModeInfo(conf);
     INodeTableHelper.ns = this;
