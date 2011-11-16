@@ -56,6 +56,26 @@ public class INodeFile extends INode {
     blocks = null;
     header = 0;
   }
+  
+  
+
+  /*FIXME: This should be called when the inodes are created
+   * 
+   * added for KTHFS
+   * 
+   * */
+  public void setID(long id) {
+	  this.id = id;
+  }
+  
+  /*
+   * added for KTHFS
+   * 
+   * */
+  public long getID() {
+	  return this.id;
+  }
+  
 
   protected INodeFile(PermissionStatus permissions, BlockInfo[] blklist,
                       short replication, long modificationTime,
@@ -170,10 +190,22 @@ public class INodeFile extends INode {
 
   /**
    * Set file block
-   */
+   *//*
   //FIXME: KTHFSBLOCKS
-  public void setBlock(int idx, BlockInfo blk) {
+  public void setBlock_old(int idx, BlockInfo blk) {
     this.blocks[idx] = blk;
+  }*/
+  
+  /**
+   * Set file block - KTHFS
+   */
+  
+  public void setBlock(int idx, BlockInfo blk) {
+    BlocksHelper.updateIndex(idx, blk);
+  }
+  
+  public void setBlocksList(BlockInfo[] blklist) {
+	  this.blocks = blklist;
   }
 
   int collectSubtreeBlocksAndClear(List<Block> v) {
@@ -288,22 +320,6 @@ public class INodeFile extends INode {
   }
   
 
-  /*FIXME: This should be called when the inodes are created
-   * 
-   * added for KTHFS
-   * 
-   * */
-  public void setID(long id) {
-	  this.id = id;
-  }
-  
-  /*
-   * added for KTHFS
-   * 
-   * */
-  public long getID() {
-	  return this.id;
-  }
   
   
   

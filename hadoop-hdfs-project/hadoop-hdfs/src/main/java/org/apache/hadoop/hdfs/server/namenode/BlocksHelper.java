@@ -25,12 +25,12 @@ public class BlocksHelper {
 	
 	
 	/*
-	 * Helper function for appending an array of blocks
+	 * Helper function for appending an array of blocks - used by concat
 	 * 
 	 * Replacement for INodeFile.appendBlocks
 	 * 
 	 * */
-	void appendBlocks(INodeFile [] inodes, int totalAddedBlocks) {
+	void appendBlocks(INodeFile thisNode, INodeFile [] inodes, int totalAddedBlocks) {
 		 
 		Transaction tx = session.currentTransaction();
 		tx.begin();
@@ -38,7 +38,7 @@ public class BlocksHelper {
 		for(INodeFile in: inodes) {
 			BlockInfo[] inBlocks = in.blocks;
 			for(int i=0;i<inBlocks.length;i++) {
-				BlockInfoTable bInfoTable = createBlockInfoTable(in, inBlocks[i]);
+				BlockInfoTable bInfoTable = createBlockInfoTable(thisNode, inBlocks[i]);
 				session.makePersistent(bInfoTable);
 			}
 		}
@@ -51,8 +51,10 @@ public class BlocksHelper {
 	 * Replacement for INodeFile.addBlock
 
 	 * */
-	void addBlock(INode node, BlockInfo newblock) {
+	void addBlock(BlockInfo newblock) {
 		
+		putBlockInfo(newblock);
+		/*
 		Transaction tx = session.currentTransaction();
 		tx.begin();
 		
@@ -64,7 +66,7 @@ public class BlocksHelper {
 		bInfoTable.setReplication(-1); //FIXME: see if we need to store this or not
 		
 		session.makePersistent(bInfoTable);
-		tx.commit();
+		tx.commit();*/
 	}
 	
 	/*Helper function for creating a BlockInfoTable object */
@@ -95,6 +97,10 @@ public class BlocksHelper {
 		return query.getResultList(); 
 	}
 
+	/**
+	 * @param blockId
+	 * @return
+	 */
 	public static BlockInfo getBlockInfo(long blockId) {
 		Session s = DBConnector.sessionFactory.getSession();
 		DatanodeManager dm = ns.getBlockManager().getDatanodeManager();
@@ -168,13 +174,76 @@ public class BlocksHelper {
 
 	}
 
+	
+	/**
+	 * @param idx index of the BlockInfo
+	 * @param binfo BlockInfo object that already exists in the database
+	 */
+	public static void updateIndex(int idx, BlockInfo binfo) {
+		Session s = DBConnector.sessionFactory.getSession();
+		Transaction tx = s.currentTransaction();
+		tx.begin();
+		BlockInfoTable bit =  s.newInstance(BlockInfoTable.class);
+		bit.setBlockId(binfo.getBlockId());
+		bit.setGenerationStamp(binfo.getGenerationStamp());
+		bit.setINodeID(binfo.getINode().getID()); //FIXME: verify if this is working - use Mariano
+		bit.setBlockIndex(idx); //setting the index in the table
+		bit.setNumBytes(binfo.getNumBytes());
+		s.updatePersistent(bit);
+		tx.commit();
+	}
+	
+	public static void updateINodeID(long iNodeID, BlockInfo binfo) {
+		Session s = DBConnector.sessionFactory.getSession();
+		Transaction tx = s.currentTransaction();
+		tx.begin();
+		BlockInfoTable bit =  s.newInstance(BlockInfoTable.class);
+		bit.setBlockId(binfo.getBlockId());
+		bit.setGenerationStamp(binfo.getGenerationStamp());
+		bit.setINodeID(iNodeID); //setting the iNodeID here - the rest is same
+		bit.setNumBytes(binfo.getNumBytes());
+		s.updatePersistent(bit);
+		tx.commit();
+	}
+	
+
+	
+	public static List<BlockInfoTable> getResultListUsingField(String field, long value){
+		QueryBuilder qb = session.getQueryBuilder();
+		QueryDomainType<BlockInfoTable> dobj = qb.createQueryDefinition(BlockInfoTable.class);
+
+		dobj.where(dobj.get(field).equal(dobj.param("param")));
+
+		Query<BlockInfoTable> query = session.createQuery(dobj);
+		query.setParameter("param", value); //the WHERE clause of SQL
+
+		return 	query.getResultList();
+
+	}
+	
+	public static BlockInfo[] getBlocksArray(INodeFile inode) {
+		
+		List<BlockInfoTable> blocksList = getResultListUsingField("iNodeID", inode.getID());
+		
+		if(blocksList.size() == 0 || blocksList == null)
+			return null;
+		
+		BlockInfo[] blocksArray = new BlockInfo[blocksList.size()];
+		for(int i=0; i<blocksArray.length; i++) {
+			blocksArray[i] = getBlockInfo(blocksList.get(i).getBlockId());
+		}
+		
+		return blocksArray;
+	}
+	
 }
 
 /*
  * TODO
- * change commitOrCompleteLastBlock
- * change commitBlockSynchronization
- * change NameNodeRpcServer.blockReport
+ * change commitOrCompleteLastBlock //gets called by datanode and the client both
+ * change commitBlockSynchronization //this gets called by the datanode
+ * change NameNodeRpcServer.blockReport //this gets called when datanode comes up and then every heartbeat
  * 
+ * populate the BlockInfo when INodeFile objects are created - use Mariano
  * 
  * */

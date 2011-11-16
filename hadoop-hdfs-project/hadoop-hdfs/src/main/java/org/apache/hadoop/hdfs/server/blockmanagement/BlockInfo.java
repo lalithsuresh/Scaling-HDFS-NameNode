@@ -19,6 +19,7 @@ package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
+import org.apache.hadoop.hdfs.server.namenode.BlocksHelper;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.KthFsHelper;
 import org.apache.hadoop.hdfs.util.LightWeightGSet;
@@ -86,9 +87,13 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
     return inode;
   }
 
-  public void setINode(INodeFile inode) {
+  /*public void setINode_old(INodeFile inode) {
     this.inode = inode;
-  }
+  }*/
+  
+  public void setINode(INodeFile inode) {
+	    BlocksHelper.updateINodeID(inode.getID(), this);
+	  }
 
   DatanodeDescriptor getDatanode(int index) {
     assert this.triplets != null : "BlockInfo is not initialized";

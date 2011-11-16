@@ -21,6 +21,11 @@ public interface BlockInfoTable {
     @Column(name = "iNodeID")
     long getINodeID();
     void setINodeID(long iNodeID);
+
+    @Column(name = "blockIndex")
+    int getBlockIndex();     
+    void setBlockIndex(int idx);
+
     
     @Column(name = "blockId")
     long getBlockId();     

@@ -60,17 +60,6 @@ public class INodeTableHelper {
 		}
 
 
-
-		/* Commented by W
-	    long finalPerm = 0;
-	    try {
-			permissionString.writeLong(finalPerm);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}	
-		 */
-
 		inode.setPermission(permissionString.getData());
 
 		// Corner case for rootDir
@@ -129,14 +118,6 @@ public class INodeTableHelper {
 
 	public static List<INode> getChildren(String parentDir) throws IOException {
 
-		//		QueryBuilder qb = session.getQueryBuilder();
-		//		QueryDomainType<InodeTable> dobj = qb.createQueryDefinition(InodeTable.class);
-		//
-		//
-		//		dobj.where(dobj.get("parent").equal(dobj.param("parent")));
-		//
-		//		Query<InodeTable> query = session.createQuery(dobj);
-		//		query.setParameter("parent", parentDir); //W: WHERE parent = parentDir
 
 		List<InodeTable> resultList = getResultListUsingField("parent", parentDir);
 
@@ -439,6 +420,11 @@ public class INodeTableHelper {
 					inodetable.getClientName(),
 					inodetable.getClientMachine(),
 					ns.getBlockManager().getDatanodeManager().getDatanodeByHost(inodetable.getClientNode()));
+			
+			//W: not sure if we need to do this for INodeFileUnderConstruction
+			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
+			BlockInfo[] blocksArray = BlocksHelper.getBlocksArray((INodeFile)inode);
+			((INodeFile)(inode)).setBlocksList(blocksArray);
 		}
 		if (inodetable.getIsClosedFile()) {
 			/* FIXME: Double check numbers later */
@@ -446,13 +432,19 @@ public class INodeTableHelper {
 					0,
 					(short)1,
 					inodetable.getModificationTime(),
-					inodetable.getATime(), 64);	
+					inodetable.getATime(), 64);
+			
+			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
+			
+			BlockInfo[] blocksArray = BlocksHelper.getBlocksArray((INodeFile)inode);
+			((INodeFile)(inode)).setBlocksList(blocksArray);
 		}
 
 		/* FIXME: Call getLocalName() */
 		inode.setFullPathName(inodetable.getName());
 		inode.setLocalName(inodetable.getLocalName());
-
+		
+		
 		return inode;
 	}
 

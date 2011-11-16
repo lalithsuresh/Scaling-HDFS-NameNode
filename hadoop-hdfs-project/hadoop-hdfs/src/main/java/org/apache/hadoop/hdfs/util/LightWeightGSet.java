@@ -26,6 +26,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.BlocksHelper;
+import org.apache.hadoop.hdfs.server.namenode.KthFsHelper;
 import org.apache.hadoop.HadoopIllegalArgumentException;
 
 /**
@@ -114,8 +115,8 @@ public class LightWeightGSet<K, E extends K> implements GSet<K, E> {
 		return r;
 	}
 
-	@Override
-	public E get(final K key) {
+	/*@Override
+	public E get_old(final K key) {
 		//validate key
 		if (key == null) {
 			throw new NullPointerException("key == null");
@@ -130,17 +131,18 @@ public class LightWeightGSet<K, E extends K> implements GSet<K, E> {
 		}
 		//element not found
 		return null;
-	}
+	}*/
 
 
 	/*KTHFS method for getting a BlockInfo from the database*/
-	public E getFromDB(final K key) {
+	public E get(final K key) {
 		//TODO: use functions from BlocksHelper
 		//validate key
 		if (key == null) {
 			throw new NullPointerException("key == null");
 		}
 		BlockInfo binfo = (BlockInfo)key;
+		KthFsHelper.printKTH("ListhgWeightGSet.get() "+ binfo.toString());
 		return (E)BlocksHelper.getBlockInfo(binfo.getBlockId());
 
 	}
@@ -151,7 +153,7 @@ public class LightWeightGSet<K, E extends K> implements GSet<K, E> {
 	}
 
 	@Override
-	public E put(final E element) {
+	/*public E put_old(final E element) {
 		//validate element
 		if (element == null) {
 			throw new NullPointerException("Null element is not supported.");
@@ -176,13 +178,17 @@ public class LightWeightGSet<K, E extends K> implements GSet<K, E> {
 		entries[index] = e;
 
 		return existing;
-	}
+	}*/
 
 	/*KTHFS method for putting a BlockInfo into the database*/
-	public E putIntoDB(final E element) {
-
+	public E put(final E element) {
+		
+		
 		//TODO: use functions from BlocksHelper
 		BlockInfo binfo = (BlockInfo)element;
+		
+		KthFsHelper.printKTH("LightWeightGset.put() " + binfo.toString());
+		
 		BlockInfo existing = BlocksHelper.getBlockInfo(binfo.getBlockId());
 		BlocksHelper.putBlockInfo(binfo);
 		if(existing == null) {

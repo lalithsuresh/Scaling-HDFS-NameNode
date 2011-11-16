@@ -110,6 +110,17 @@ class BlocksMap {
     info.setINode(iNode);
     return info;
   }
+  
+  
+  /**
+   * KTHFS
+   */
+  /*BlockInfo addINodeKth(BlockInfo b, INodeFile iNode) {
+ 
+    blocks.getFromDB(null);
+ 
+  }*/
+  
 
   /**
    * Remove the block from the block map;
