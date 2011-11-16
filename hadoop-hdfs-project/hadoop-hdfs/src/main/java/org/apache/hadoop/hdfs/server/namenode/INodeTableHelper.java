@@ -3,9 +3,11 @@ package org.apache.hadoop.hdfs.server.namenode;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.PermissionStatus;
+import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.DataOutputBuffer;
@@ -41,7 +43,8 @@ public class INodeTableHelper {
 		if (results.isEmpty())
 		{
 			inode = session.newInstance(InodeTable.class);
-			inode.setId(System.currentTimeMillis());
+			Random id = DFSUtil.getRandom();
+			inode.setId(Math.abs(id.nextLong()));
 			inode.setName(node.getFullPathName());
 			entry_exists = false;
 		}
