@@ -148,7 +148,9 @@ public class BlocksHelper {
 		BlockInfoTable bit =  s.newInstance(BlockInfoTable.class);
 		bit.setBlockId(binfo.getBlockId());
 		bit.setGenerationStamp(binfo.getGenerationStamp());
-		bit.setINodeID(binfo.getINode().getID()); //FIXME: verify if this is working
+		INodeFile ifile = binfo.getINode();
+		long nodeID = ifile.getID();
+		bit.setINodeID(nodeID); //FIXME: verify if this is working
 		bit.setNumBytes(binfo.getNumBytes());
 		//FIXME: KTHFS: Ying and Wasif: replication is null at the moment - remove the column if not required later on
 		

@@ -64,13 +64,19 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
     this.inode = null;
     
     
+  //this.getINode().getFullPathName();
+	this.getBlockId(); 
+	this.getBlockName();
+	this.getNumBytes(); 
+	this.getGenerationStamp();
+    
     KthFsHelper.printKTH(
-    		"BlockInfo: filename: "+ this.getINode().getFullPathName() +
+    	//	"BlockInfo: filename: "+ this.getINode().getFullPathName() +
     		"blockId: "+this.getBlockId() + 
     		" blockName:"+this.getBlockName() + 
     		" numBytes:"+ this.getNumBytes() + 
     		" genstamp:" + this.getGenerationStamp()
-    		);
+    		); 
   }
 
   /**

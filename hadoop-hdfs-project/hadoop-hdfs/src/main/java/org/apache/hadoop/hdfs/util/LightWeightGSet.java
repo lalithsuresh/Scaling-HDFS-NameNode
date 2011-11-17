@@ -24,6 +24,7 @@ import java.util.Iterator;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceAudience;
+import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.BlocksHelper;
 import org.apache.hadoop.hdfs.server.namenode.KthFsHelper;
@@ -141,7 +142,7 @@ public class LightWeightGSet<K, E extends K> implements GSet<K, E> {
 		if (key == null) {
 			throw new NullPointerException("key == null");
 		}
-		BlockInfo binfo = (BlockInfo)key;
+		Block binfo = (Block)key;
 		KthFsHelper.printKTH("ListhgWeightGSet.get() "+ binfo.toString());
 		return (E)BlocksHelper.getBlockInfo(binfo.getBlockId());
 

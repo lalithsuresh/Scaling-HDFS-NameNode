@@ -426,6 +426,7 @@ public class INodeTableHelper {
 			
 			//W: not sure if we need to do this for INodeFileUnderConstruction
 			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
+			KthFsHelper.printKTH("inodeID: " + ((INodeFile)(inode)).getID());
 			BlockInfo[] blocksArray = BlocksHelper.getBlocksArray((INodeFile)inode);
 			((INodeFile)(inode)).setBlocksList(blocksArray);
 		}
@@ -438,7 +439,7 @@ public class INodeTableHelper {
 					inodetable.getATime(), 64);
 			
 			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
-			
+			KthFsHelper.printKTH("inodeID: " + ((INodeFile)(inode)).getID());
 			BlockInfo[] blocksArray = BlocksHelper.getBlocksArray((INodeFile)inode);
 			((INodeFile)(inode)).setBlocksList(blocksArray);
 		}
