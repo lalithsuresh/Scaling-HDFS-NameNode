@@ -500,12 +500,13 @@ public class INodeTableHelper {
 		Transaction tx = session.currentTransaction();
 		tx.begin();
 		InodeTable newINode = results.get(0);
-		//For the case of 'mv /1/2/3 /New
-		if (! dst.startsWith(newINode.getParent())){
-			newINode.setParent(dst.substring(0,dst.lastIndexOf("/")+1));
-		}
+		//For the case of 'mv /1/2/3 /New and mv /1/2/3 /1/New3
+		String parent = dst.substring(0,dst.lastIndexOf(Path.SEPARATOR));
+		if(parent.isEmpty())
+			parent= Path.SEPARATOR;
+		newINode.setParent(parent);
 		newINode.setName(dst);
-		newINode.setLocalName(dst.substring(dst.lastIndexOf("/")+1));
+		newINode.setLocalName(dst.substring(dst.lastIndexOf(Path.SEPARATOR)+1));
 		newINode.setModificationTime(System.currentTimeMillis());
 		session.updatePersistent(newINode);
 
