@@ -350,7 +350,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   }
   /*added for KTHFS*/
   public Object[] getTripletsKTH() {
-	  return this.tripletsKTH;
+	  return this.triplets;
   }
   
 }

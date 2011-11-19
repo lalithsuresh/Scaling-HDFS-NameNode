@@ -148,22 +148,35 @@ public class BlocksHelper {
 		BlockInfoTable bit =  s.newInstance(BlockInfoTable.class);
 		bit.setBlockId(binfo.getBlockId());
 		bit.setGenerationStamp(binfo.getGenerationStamp());
-		INodeFile ifile = binfo.getINode();
-		long nodeID = ifile.getID();
-		bit.setINodeID(nodeID); //FIXME: verify if this is working
+		
+		/*INodeFile ifile = binfo.getINode();
+		long nodeID = ifile.getID();*/
+		
+		bit.setINodeID(12345); //FIXME: verify if this is working
 		bit.setNumBytes(binfo.getNumBytes());
 		//FIXME: KTHFS: Ying and Wasif: replication is null at the moment - remove the column if not required later on
 		
 		
 		Object[] tripletsKTH = binfo.getTripletsKTH();
-		for(int i=0;i<tripletsKTH.length;i++) {
+		
+		for(int i=0;i<(tripletsKTH.length/3);i++) {
 			DatanodeDescriptor dd = (DatanodeDescriptor)tripletsKTH[3*i];
-			long prevBlockId = ((Long)tripletsKTH[(3*i)+1]).longValue();
-			long nextBlockId = ((Long)tripletsKTH[(3*i)+2]).longValue();
+			long prevBlockId, nextBlockId;
+			if (tripletsKTH[(3*i)+1]==null)
+				prevBlockId = -1;
+			else
+				prevBlockId = ((Long)tripletsKTH[(3*i)+1]).longValue();
+			if (tripletsKTH[(3*i)+2]==null)
+				nextBlockId = -1;
+			else
+				nextBlockId = ((Long)tripletsKTH[(3*i)+2]).longValue();
 			
 			TripletsTable t = s.newInstance(TripletsTable.class);
 			t.setBlockId(binfo.getBlockId());
-			t.setDatanodeName(dd.getHostName());
+			if(dd==null)
+				t.setDatanodeName(null);
+			else
+				t.setDatanodeName(dd.getHostName());
 			t.setIndex(i);
 			t.setPreviousBlockId(prevBlockId);
 			t.setNextBlockId(nextBlockId);
