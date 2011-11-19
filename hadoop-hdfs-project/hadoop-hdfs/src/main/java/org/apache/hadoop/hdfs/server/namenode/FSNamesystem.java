@@ -325,8 +325,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     setConfigurationParameters(conf);
     dtSecretManager = createDelegationTokenSecretManager(conf);
     this.registerMBean(); // register the MBean for the FSNamesystemState
+    
     if(fsImage == null) {
       this.dir = new FSDirectory(this, conf);
+
+      // [STATELESS] Add rootDir to DBMS
+      this.dir.rootDir.setFullPathName(Path.SEPARATOR);
+  	  INodeTableHelper.addChild(this.dir.rootDir);
+  	  
       StartupOption startOpt = NameNode.getStartupOption(conf);
       this.dir.loadFSImage(startOpt);
       long timeTakenToLoadFSImage = now() - systemStart;
@@ -335,6 +341,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                                 (int) timeTakenToLoadFSImage);
     } else {
       this.dir = new FSDirectory(fsImage, this, conf);
+
+      // [STATELESS] Add rootDir to DBMS
+      this.dir.rootDir.setFullPathName(Path.SEPARATOR);
+  	  INodeTableHelper.addChild(this.dir.rootDir);
     }
     this.safeMode = new SafeModeInfo(conf);
     INodeTableHelper.ns = this;
@@ -1237,7 +1247,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
        
         // increment global generation stamp
         long genstamp = nextGenerationStamp();
-        System.err.println("thing in the else " + Thread.currentThread().getId());
         INodeFileUnderConstruction newNode = dir.addFile(src, permissions,
             replication, blockSize, holder, clientMachine, clientNode, genstamp);
         if (newNode == null) {
@@ -2311,7 +2320,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     // The file is no longer pending.
     // Create permanent INode, update blocks
     INodeFile newFile = pendingFile.convertToInodeFile();
-    System.err.println("finalizeINodeFileUnderConstruction " + Thread.currentThread().getId());
     dir.replaceNode(src, pendingFile, newFile);
 
     // close file and persist block allocations for this file

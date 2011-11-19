@@ -128,10 +128,6 @@ public class FSDirectory implements Closeable {
     rootDir = new INodeDirectoryWithQuota(INodeDirectory.ROOT_NAME,
         ns.createFsOwnerPermissions(new FsPermission((short)0755)),
         Integer.MAX_VALUE, UNKNOWN_DISK_SPACE);
-
-    rootDir.setFullPathName(Path.SEPARATOR);
-    // [STATELESS] Add rootDir to DBMS
-	INodeTableHelper.addChild(rootDir);
     
     this.fsImage = fsImage;
     int configuredLimit = conf.getInt(
@@ -1874,7 +1870,7 @@ public class FSDirectory implements Closeable {
     /* We don't need nodesInPath if we could use 'parent' field in 
      * INode. using 'parent' is not currently recommended. */
     nodesInPath.add(dir);
-
+    
     for (INode child : dir.getChildren()) {
       if (child.isDirectory()) {
         updateCountForINodeWithQuota((INodeDirectory)child, 

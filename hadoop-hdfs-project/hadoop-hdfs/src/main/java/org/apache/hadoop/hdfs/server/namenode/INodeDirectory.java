@@ -340,16 +340,6 @@ class INodeDirectory extends INode {
 
 		this.getExistingPathINodes(components, inodes, resolveLink);
 
-		try {
-			System.err.println("[KTHFS] (Inside getExisitingPathINodes) inodes.length:"+inodes.length);
-			for (int i = 0; i < inodes.length; i++) {
-				System.err.println("[KTHFS] fullPathName: "+inodes[i].getFullPathName());
-			}
-		} catch (NullPointerException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
 		return inodes;
 	}
 
@@ -392,7 +382,7 @@ class INodeDirectory extends INode {
 			}
 			node.setPermission(p);
 		}
-				
+		
 		int low = Collections.binarySearch(getChildrenFromDB(), node.name);
 		if(low >= 0){
 			return null;
@@ -402,13 +392,7 @@ class INodeDirectory extends INode {
 		Session session = DBConnector.sessionFactory.getSession();    
 		Transaction tx = session.currentTransaction();
 		tx.begin();
-		
-		/*
-		InodeTable inode = session.find(InodeTable.class, this.getFullPathName());
-		assert inode != null : "this Inode doesn't exist in DB";
-		*/
-		
-		//[KTHFS] This could be later become a method in InodeTableHelper
+				
 		QueryBuilder builder = session.getQueryBuilder();
 		QueryDomainType<InodeTable> domain =
 		builder.createQueryDefinition(InodeTable.class);

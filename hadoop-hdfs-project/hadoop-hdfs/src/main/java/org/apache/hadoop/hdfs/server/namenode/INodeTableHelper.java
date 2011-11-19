@@ -3,9 +3,11 @@ package org.apache.hadoop.hdfs.server.namenode;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.PermissionStatus;
+import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.DataOutputBuffer;
@@ -41,7 +43,8 @@ public class INodeTableHelper {
 		if (results.isEmpty())
 		{
 			inode = session.newInstance(InodeTable.class);
-			inode.setId(System.currentTimeMillis());
+			Random id = DFSUtil.getRandom();
+			inode.setId(Math.abs(id.nextLong()));
 			inode.setName(node.getFullPathName());
 			entry_exists = false;
 		}
@@ -58,18 +61,6 @@ public class INodeTableHelper {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-
-
-		/* Commented by W
-	    long finalPerm = 0;
-	    try {
-			permissionString.writeLong(finalPerm);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}	
-		 */
 
 		inode.setPermission(permissionString.getData());
 
@@ -111,7 +102,6 @@ public class INodeTableHelper {
 			inode.setIsUnderConstruction(true);	    	
 			inode.setClientName(((INodeFileUnderConstruction) node).getClientName());
 			inode.setClientMachine(((INodeFileUnderConstruction) node).getClientMachine());
-			System.err.println("[STATELESS] Client name : " +((INodeFileUnderConstruction) node).getClientNode().getName());
 			inode.setClientNode(((INodeFileUnderConstruction) node).getClientNode().getName());
 		}
 		if (node instanceof INodeSymlink)
@@ -129,63 +119,13 @@ public class INodeTableHelper {
 
 	public static List<INode> getChildren(String parentDir) throws IOException {
 
-		//		QueryBuilder qb = session.getQueryBuilder();
-		//		QueryDomainType<InodeTable> dobj = qb.createQueryDefinition(InodeTable.class);
-		//
-		//
-		//		dobj.where(dobj.get("parent").equal(dobj.param("parent")));
-		//
-		//		Query<InodeTable> query = session.createQuery(dobj);
-		//		query.setParameter("parent", parentDir); //W: WHERE parent = parentDir
-
 		List<InodeTable> resultList = getResultListUsingField("parent", parentDir);
 
-		//List<String> children = new ArrayList<String>();
 		List<INode> children = new ArrayList<INode>();
 
 		for (InodeTable result : resultList) {
-
-			//				//create a directory object
-			//				DataInputBuffer buffer = new DataInputBuffer();
-			//				buffer.reset(result.getPermission(), result.getPermission().length);
-			//				PermissionStatus ps = PermissionStatus.read(buffer);
-			//				//KthFsHelper.printKTH("PermissionStatus: "+ps.getGroupName() + ps.getUserName() + " " + ps.getPermission().toString());
-			//				
-			///*
-			//				INode node = INode.newINode(
-			//						ps,//this.getPermissionStatus(),
-			//						null, //TODO: W: blocks to be read from DB also - null for directories
-			//						"", //symlink name
-			//						(short)1, //replication factor
-			//						result.getModificationTime(), 
-			//						result.getATime(),
-			//						result.getNSQuota(),
-			//						result.getDSQuota(),
-			//						-1);
-			//				node.setLocalName(result.getLocalName());
-			//				children.add(node);*/
-			//				
-			//				
-			//				if(result.getIsDir()) {
-			//                    INodeDirectory dir =  new INodeDirectory(result.getName(), ps);
-			//                    dir.setLocalName(result.getLocalName());
-			//                    children.add(dir);
-			//				}
-			//				else {
-			//                    INodeFile inf = new INodeFile(ps,0,(short)1,result.getModificationTime(), result.getATime(), 64); //FIXME: change this when we store blockinfo
-			//                    inf.setLocalName(result.getName());
-			//                    children.add(inf);
-			//                }
-
 			INode inode = getINodeByNameBasic (result.getName ());
-
-			//System.err.println("[STATELESS] retrieving parent " + result.getParent() + " " + result.getName());
-			// Attach a parent to the Inode we just retrieved
-			//INodeDirectory inodeParent = (INodeDirectory) getINodeByNameBasic(result.getParent());
-			//System.err.println("[STATELESS] NAME IS: " + inode.getFullPathName());
-			//inode.setParent(inodeParent);
 			children.add(inode);
-
 		}
 
 		if (children.size() > 0 )
@@ -204,7 +144,6 @@ public class INodeTableHelper {
 	 * @throws ClusterJDatastoreException
 	 */
 	public static INode removeChild(INode node) throws ClusterJDatastoreException {
-		System.err.println("[Stateless] Inode to be deleted: " + node.getFullPathName());
 		Transaction tx = session.currentTransaction();
 		List<InodeTable> results = getResultListUsingField("name", node.getFullPathName());
 		if( !results.isEmpty()){
@@ -214,7 +153,6 @@ public class INodeTableHelper {
 			session.flush();
 		}
 		return node;
-
 	}
 
 	/**This method is to be used in case an INodeDirectory is
@@ -247,11 +185,8 @@ public class INodeTableHelper {
 
 		for (InodeTable result: resultList) {
 
-			//result.setName(newFullPathOfParent + result.getName().substring(oldFullPathOfParent.length() - 1));
 			String subPath = result.getName().substring(oldFullPathOfParent.length());
 			String updatedFullPath = newFullPathOfParent + subPath;
-			//System.err.println("[Stateless] new:" + newFullPathOfParent + " subtree:" + sub);
-			//System.err.println("[Stateless] concated version: " + (newFullPathOfParent + sub));
 
 			result.setName(updatedFullPath);
 
@@ -268,10 +203,9 @@ public class INodeTableHelper {
 	}
 
 	public static void replaceChild (INode thisInode, INode newChild){
-		// [STATELESS]
+
 		Transaction tx = session.currentTransaction();
 		tx.begin();
-
 
 		List <InodeTable> results = getResultListUsingField("name",newChild.getFullPathName() ); 
 		assert ! results.isEmpty() : "Child to replace not in DB";
@@ -289,20 +223,11 @@ public class INodeTableHelper {
 			e.printStackTrace();
 		}
 
-		/* long finalPerm = 0;
-	      try {
-	  		permissionString.writeLong(finalPerm);
-	  	} catch (IOException e) {
-	  		// TODO Auto-generated catch block
-	  		e.printStackTrace();
-	  	}*/
-
 		inode.setPermission(permissionString.getData());
 		inode.setParent(newChild.getParent().getFullPathName());
 		inode.setNSQuota(newChild.getNsQuota());
 		inode.setDSQuota(newChild.getDsQuota());
 
-		// TODO: Does not handle InodeDirectoryWithQuota yet
 		if (newChild instanceof INodeDirectory)
 		{
 			inode.setIsDir(true);
@@ -332,40 +257,23 @@ public class INodeTableHelper {
 		 *  4. else return null;
 		 */
 
-		//		QueryBuilder qb = session.getQueryBuilder();
-		//		QueryDomainType<InodeTable> dobj = qb.createQueryDefinition(InodeTable.class);
-		//
-		System.err.println("Parent: " + parentDir + " search: " + searchDir);
-		//		dobj.where(dobj.get("parent").equal(dobj.param("parent_param")));
-		//
-		//		Query<InodeTable> query = session.createQuery(dobj);
-		//		query.setParameter("parent_param", parentDir); //W: the WHERE clause of SQL
-
-		//Query query = session.createQuery(dobj);
 		List<InodeTable> resultList = getResultListUsingField("parent", parentDir);
 
-
-		//TODO: localname needs to be added to the InodeTable to make this work
-
 		for (InodeTable result : resultList) {
-			//if(result.getIsDir()) {
+			
 			String str = result.getName();
 			str = str.substring(str.lastIndexOf("/")+1);
-			System.err.println("Comparing " + str + " against " + searchDir);
+			
 			if(str.equals(searchDir) ) {
 				INode inode = getINodeByNameBasic (result.getName ());
 
-				//System.err.println("[STATELESS] retrieving parent " + result.getParent() + " " + result.getName());
 				// Attach a parent to the Inode we just retrieved
-				INodeDirectory inodeParent = (INodeDirectory) getINodeByNameBasic(result.getParent());
-				System.err.println("[STATELESS] NAME IS: " + inode.getFullPathName());
+				INodeDirectory inodeParent = (INodeDirectory) getINodeByNameBasic(result.getParent());				
 				inode.setParent(inodeParent);
 				return inode;
 			}
-			//}
 		}
 
-		System.out.println("NOT FOUND - " + searchDir + " in "+parentDir);
 		return null;
 	}
 
@@ -382,22 +290,12 @@ public class INodeTableHelper {
 	 */
 	public static INode getINodeByNameBasic (String name) throws IOException{
 
-		//		QueryBuilder qb = session.getQueryBuilder();
-		//		QueryDomainType<InodeTable> dobj = qb.createQueryDefinition(InodeTable.class);
-		//
-		//
-		//		dobj.where(dobj.get("name").equal(dobj.param("inode_name")));
-		//
-		//		Query<InodeTable> query = session.createQuery(dobj);
-		//		query.setParameter("inode_name", name); //W: the WHERE clause of SQL
-
 		List<InodeTable> resultList = getResultListUsingField("name", name);
 
 		assert (resultList.size() == 1) : "More than one Inode exists with name " + name;
 
 		for (InodeTable result: resultList) {
-			if (result.getName().equals(name))
-			{
+			if (result.getName().equals(name))	{
 				return convertINodeTableToINode (result);
 			}
 		}

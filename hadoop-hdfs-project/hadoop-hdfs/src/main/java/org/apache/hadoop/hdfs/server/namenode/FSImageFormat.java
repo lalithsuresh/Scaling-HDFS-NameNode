@@ -180,6 +180,8 @@ class FSImageFormat {
 
         LOG.info("Loading image file " + curFile + " using " + compression);
 
+        // KTHFS: Do not attempt to read Inodes from FsImage
+        /*
         // load all inodes
         LOG.info("Number of files = " + numFiles);
         if (LayoutVersion.supports(Feature.FSIMAGE_NAME_OPTIMIZATION,
@@ -197,7 +199,7 @@ class FSImageFormat {
 
         // load Files Under Construction
         this.loadFilesUnderConstruction(in);
-
+        */
         this.loadSecretManagerState(in);
 
         // make sure to read to the end of file
@@ -267,7 +269,7 @@ class FSImageFormat {
    private int loadDirectory(DataInputStream in) throws IOException {
 	   //FIXME: [KTHFS] Change this function to read files from MySQL Cluster
      String parentPath = FSImageSerialization.readString(in); 
-     //System.err.println("[KTHFS] parentPath: "+parentPath);
+
      FSDirectory fsDir = namesystem.dir;
      INode parent = fsDir.rootDir.getNode(parentPath, true);
      if (parent == null || !parent.isDirectory()) {
@@ -282,10 +284,7 @@ class FSImageFormat {
        INode newNode = loadINode(in); // read rest of inode
 
        // add to parent
-       namesystem.dir.addToParent(localName, (INodeDirectory)parent, newNode, false);
-       
-       //FIXME: KTHFS 
-       //System.err.format("[KTHFS] parentPath:%s, localName:%s, fullPathName:%s \n",parentPath, newNode.getLocalName() , newNode.getFullPathName());
+       namesystem.dir.addToParent(localName, (INodeDirectory)parent, newNode, false);       
      }
      return numChildren;
    }
@@ -578,12 +577,14 @@ class FSImageFormat {
 
         byte[] byteStore = new byte[4*HdfsConstants.MAX_PATH_LENGTH];
         ByteBuffer strbuf = ByteBuffer.wrap(byteStore);
+        
+        // KTHFS: Do not attempt to read Inodes from FsImage
         // save the root
-        FSImageSerialization.saveINode2Image(fsDir.rootDir, out);
+        //FSImageSerialization.saveINode2Image(fsDir.rootDir, out);
         // save the rest of the nodes
-        saveImage(strbuf, fsDir.rootDir, out);
+        //saveImage(strbuf, fsDir.rootDir, out);
         // save files under construction
-        sourceNamesystem.saveFilesUnderConstruction(out);
+        //sourceNamesystem.saveFilesUnderConstruction(out);
         sourceNamesystem.saveSecretManagerState(out);
         strbuf = null;
 
