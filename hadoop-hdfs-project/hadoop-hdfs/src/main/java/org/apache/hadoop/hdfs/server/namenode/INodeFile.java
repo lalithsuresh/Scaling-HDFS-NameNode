@@ -186,7 +186,7 @@ public class INodeFile extends INode {
 	 * add a block to the block list
 	 */
 	//FIXME: KTHFSBLOCKS use BlocksHelper.addBlock instead
-	void addBlock(BlockInfo newblock) {
+/*	void addBlock(BlockInfo newblock) {
 		if (this.blocks == null) {
 			this.blocks = new BlockInfo[1];
 			this.blocks[0] = newblock;
@@ -197,6 +197,17 @@ public class INodeFile extends INode {
 			newlist[size] = newblock;
 			this.blocks = newlist;
 		}
+	}*/
+	
+	void addBlock(BlockInfo newblock) {
+		if (this.blocks == null) {
+			this.blocks = new BlockInfo[1];
+			this.blocks[0] = newblock;
+		} else {
+			BlocksHelper.addBlock(newblock);
+			this.blocks = BlocksHelper.getBlocksArray(this);
+		}
+
 	}
 
 	/**

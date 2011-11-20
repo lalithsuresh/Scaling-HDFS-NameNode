@@ -301,7 +301,76 @@ public class INodeTableHelper {
 			inode.setNSCount(((INodeDirectoryWithQuota) newChild).getNsCount());
 			inode.setDSCount(((INodeDirectoryWithQuota) newChild).getDsCount());
 		}
+		if (newChild instanceof INodeFile)
+		{
+			inode.setIsUnderConstruction(false);
+		}
 
+		session.updatePersistent(inode);
+
+		tx.commit();
+		session.flush();
+
+	}
+	
+	
+	public static void completeFileUnderConstruction (INode thisInode, INode newChild){
+		// [STATELESS]
+		Transaction tx = session.currentTransaction();
+		tx.begin();
+
+
+		List <InodeTable> results = getResultListUsingField("name",thisInode.getFullPathName() ); 
+		assert ! results.isEmpty() : "Child to replace not in DB";
+		InodeTable inode= results.get(0);
+
+		inode.setModificationTime(thisInode.modificationTime);
+		inode.setATime(thisInode.getAccessTime());
+		inode.setLocalName(thisInode.getLocalName());
+		DataOutputBuffer permissionString = new DataOutputBuffer();
+
+		try {
+			thisInode.getPermissionStatus().write(permissionString);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		/* long finalPerm = 0;
+	      try {
+	  		permissionString.writeLong(finalPerm);
+	  	} catch (IOException e) {
+	  		// TODO Auto-generated catch block
+	  		e.printStackTrace();
+	  	}*/
+
+		inode.setPermission(permissionString.getData());
+		inode.setParent(thisInode.getParent().getFullPathName());
+		inode.setNSQuota(thisInode.getNsQuota());
+		inode.setDSQuota(thisInode.getDsQuota());
+		inode.setIsUnderConstruction(false);
+		inode.setIsClosedFile(true);
+
+		// TODO: Does not handle InodeDirectoryWithQuota yet
+		if (thisInode instanceof INodeDirectory)
+		{
+			inode.setIsDir(true);
+			inode.setIsDirWithQuota(true);
+		}
+		if (thisInode instanceof INodeDirectoryWithQuota)
+		{
+			inode.setIsDir(false);
+			inode.setIsDirWithQuota(true);      	
+			inode.setNSCount(((INodeDirectoryWithQuota) thisInode).getNsCount());
+			inode.setDSCount(((INodeDirectoryWithQuota) thisInode).getDsCount());
+		}
+		try{
+			newChild = convertINodeTableToINode(inode);
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
 		session.updatePersistent(inode);
 
 		tx.commit();

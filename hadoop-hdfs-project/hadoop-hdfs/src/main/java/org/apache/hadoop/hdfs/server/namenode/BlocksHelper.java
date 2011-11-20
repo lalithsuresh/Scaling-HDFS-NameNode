@@ -139,7 +139,10 @@ public class BlocksHelper {
 			blockInfo.setTripletsKTH(tripletsKTH);
 		
 			//W: assuming that this function will only be called on an INodeFile
+			
 			INodeFile node = (INodeFile)INodeTableHelper.getINode(bit.getINodeID());
+			if(node == null)
+				System.out.println("[NOTKTHFS] getBlockInfo node is null!!!!!!!!!!!!!");
 			node.setBlocksList(getBlocksArray(node));//circular?
 			
 			blockInfo.setINode(node);
@@ -198,10 +201,10 @@ public class BlocksHelper {
 		bit.setBlockId(binfo.getBlockId());
 		bit.setGenerationStamp(binfo.getGenerationStamp());
 		
-		/*INodeFile ifile = binfo.getINode();
-		long nodeID = ifile.getID();*/
+		INodeFile ifile = binfo.getINode();
+		long nodeID = ifile.getID();
 		
-		bit.setINodeID(12345); //FIXME: verify if this is working
+		bit.setINodeID(nodeID); //FIXME: verify if this is working
 		bit.setNumBytes(binfo.getNumBytes());
 		//FIXME: KTHFS: Ying and Wasif: replication is null at the moment - remove the column if not required later on
 		
@@ -288,6 +291,12 @@ public class BlocksHelper {
 	
 	public static BlockInfo[] getBlocksArray(INodeFile inode) {
 		
+		if(inode==null)
+		{
+			System.out.println("[NOT KTHFS]: getBLocksArray inode is null!!!!");
+			return null;
+		}
+		System.out.println("[NOT KTHFS]: getBLocksArray inodeID" + inode.getID());
 		List<BlockInfoTable> blocksList = getResultListUsingField("iNodeID", inode.getID());
 		
 		if(blocksList.size() == 0 || blocksList == null)

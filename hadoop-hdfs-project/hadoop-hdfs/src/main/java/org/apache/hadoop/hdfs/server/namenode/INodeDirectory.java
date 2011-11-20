@@ -356,11 +356,20 @@ class INodeDirectory extends INode {
 			throws UnresolvedLinkException {
 		byte[][] components = getPathComponents(path);
 		INode[] inodes = new INode[components.length];
-
+		
+		
 		this.getExistingPathINodes2(components, inodes, resolveLink);
-
+		
+		/*for (int i = 0 ; i < inodes.length ; i++)
+		{
+			if(!inodes[i].isDirectory()) {
+			INodeFile inf = (INodeFile) inodes[i];
+			System.out.println("[GGGGGGGGGGGGG] getExistingPathInodes2  "+inodes[i].toString()+"ID AAAAAAAAAAAAA !! "+inf.getID());
+			}
+		}*/
+		
 		try {
-			System.err.println("[KTHFS] (Inside getExisitingPathINodes) inodes.length:"+inodes.length);
+			/*System.err.println("[KTHFS] (Inside getExisitingPathINodes) inodes.length:"+inodes.length);*/
 			for (int i = 0; i < inodes.length; i++) {
 				System.err.println("[KTHFS] fullPathName: "+inodes[i].getFullPathName());
 			}

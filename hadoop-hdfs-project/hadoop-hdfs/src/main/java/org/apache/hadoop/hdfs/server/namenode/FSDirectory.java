@@ -1171,9 +1171,9 @@ public class FSDirectory implements Closeable {
     return filesRemoved;
   }
 
-  /**
+ /* *//**
    * Replaces the specified inode with the specified one.
-   */
+   *//*
   public void replaceNode(String path, INodeFile oldnode, INodeFile newnode)
       throws IOException, UnresolvedLinkException {    
     writeLock();
@@ -1188,9 +1188,9 @@ public class FSDirectory implements Closeable {
                               "failed to remove " + path);
       } 
       
-      /* Currently oldnode and newnode are assumed to contain the same
+       Currently oldnode and newnode are assumed to contain the same
        * blocks. Otherwise, blocks need to be removed from the blocksMap.
-       */
+       
       rootDir.addNode(path, newnode); 
 
       int index = 0;
@@ -1202,7 +1202,39 @@ public class FSDirectory implements Closeable {
     } finally {
       writeUnlock();
     }
-  }
+  }*/
+  
+  public void replaceNode(String path, INodeFile oldnode, INodeFile newnode)
+	      throws IOException, UnresolvedLinkException {    
+	    writeLock();
+	    try {
+	      //
+	      // Remove the node from the namespace 
+	      //
+	      /*if (!oldnode.removeNode()) {
+	        NameNode.stateChangeLog.warn("DIR* FSDirectory.replaceNode: " +
+	                                     "failed to remove " + path);
+	        throw new IOException("FSDirectory.replaceNode: " +
+	                              "failed to remove " + path);
+	      } 
+	      
+	       Currently oldnode and newnode are assumed to contain the same
+	       * blocks. Otherwise, blocks need to be removed from the blocksMap.
+	       
+	      rootDir.addNode(path, newnode); */
+	      
+	      INodeTableHelper.completeFileUnderConstruction(oldnode, newnode);
+
+	      int index = 0;
+	      for (BlockInfo b : newnode.getBlocks()) {
+	        BlockInfo info = getBlockManager().addINode(b, newnode);
+	        newnode.setBlock(index, info); // inode refers to the block in BlocksMap
+	        index++;
+	      }
+	    } finally {
+	      writeUnlock();
+	    }
+	  }
 
   /**
    * Get a partial listing of the indicated directory
