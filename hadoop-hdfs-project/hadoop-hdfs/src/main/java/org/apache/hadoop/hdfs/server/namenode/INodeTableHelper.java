@@ -464,6 +464,7 @@ public class INodeTableHelper {
 					(short)1,
 					inodetable.getModificationTime(),
 					inodetable.getATime(), 64);	
+			((INodeFile) inode).setHeader(inodetable.getHeader());
 		}
 
 		/* FIXME: Call getLocalName() */
@@ -531,7 +532,7 @@ public class INodeTableHelper {
 		
 		return null;
 	}
-	public static INode updateSrcDstInternal(String src, String dst){
+	private static INode updateSrcDstInternal(String src, String dst){
 
 		List<InodeTable> results = getResultListUsingField("name", src);
 		assert  results.size() == 1 : "mv operation found more than one node to update";
@@ -557,5 +558,36 @@ public class INodeTableHelper {
 		}
 		return null;	
 	}
-
+	public static boolean updateHeader (String name ,long header) throws IOException{
+		boolean done = false;
+		int tries = RETRY_COUNT;
+		List<InodeTable> list =  getResultListUsingField("name", name);
+		assert list != null : "InodeTable object not found";
+		InodeTable inode = list.get(0); 
+		//InodeTable inode = session.find(InodeTable.class, id);
+		Transaction tx = session.currentTransaction();
+		while (done == false && tries > 0) {
+			try {
+				tx.begin();
+				updateHeaderInternal(inode, header);
+				tx.commit();
+				done = true;
+				session.flush();
+				return done;
+			}
+			catch (ClusterJException e){
+				tx.rollback();
+				System.err.println("InodeTableHelper.addChild() threw error " + e.getMessage());
+				tries--;
+			}
+		}
+		
+		return false;
+	}
+	
+	private static void updateHeaderInternal (InodeTable inode, long header){
+			inode.setHeader(header);
+			session.updatePersistent(inode);
+			
+	}
 }

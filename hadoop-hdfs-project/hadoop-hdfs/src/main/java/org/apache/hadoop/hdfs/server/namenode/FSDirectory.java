@@ -857,8 +857,7 @@ public class FSDirectory implements Closeable {
     long dsDelta = (replication - oldRepl) * (fileNode.diskspaceConsumed()/oldRepl);
     updateCount(inodes, inodes.length-1, 0, dsDelta, true);
 
-    fileNode.setReplication(replication);
-
+    fileNode.setReplicationDB(replication);
     if (oldReplication != null) {
       oldReplication[0] = oldRepl;
     }
