@@ -1,5 +1,6 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.hadoop.hdfs.protocol.Block;
@@ -30,14 +31,16 @@ public class BlocksHelper {
 	 * Replacement for INodeFile.appendBlocks
 	 * 
 	 * */
-	void appendBlocks(INodeFile thisNode, INodeFile [] inodes, int totalAddedBlocks) {
+	public static void appendBlocks(INodeFile thisNode, INodeFile [] inodes, int totalAddedBlocks) {
 		 
 		Transaction tx = session.currentTransaction();
 		tx.begin();
 
 		for(INodeFile in: inodes) {
-			BlockInfo[] inBlocks = in.blocks;
+			KthFsHelper.printKTH("loop starts!!");
+			BlockInfo[] inBlocks = in.getBlocks();
 			for(int i=0;i<inBlocks.length;i++) {
+				KthFsHelper.printKTH("loop!!!");
 				BlockInfoTable bInfoTable = createBlockInfoTable(thisNode, inBlocks[i]);
 				session.makePersistent(bInfoTable);
 			}
@@ -51,8 +54,9 @@ public class BlocksHelper {
 	 * Replacement for INodeFile.addBlock
 
 	 * */
-	void addBlock(BlockInfo newblock) {
+	public static void addBlock(BlockInfo newblock) {
 		
+		KthFsHelper.printKTH("addBlock called");
 		putBlockInfo(newblock);
 		/*
 		Transaction tx = session.currentTransaction();
@@ -70,8 +74,9 @@ public class BlocksHelper {
 	}
 	
 	/*Helper function for creating a BlockInfoTable object */
-	private BlockInfoTable createBlockInfoTable(INode node, BlockInfo newblock) {
+	private static BlockInfoTable createBlockInfoTable(INode node, BlockInfo newblock) {
 		
+		KthFsHelper.printKTH("createBlockInfoTable called");
 		BlockInfoTable bInfoTable = session.newInstance(BlockInfoTable.class);
 		bInfoTable.setBlockId(newblock.getBlockId());
 		bInfoTable.setGenerationStamp(newblock.getGenerationStamp());
@@ -100,8 +105,9 @@ public class BlocksHelper {
 	/**
 	 * @param blockId
 	 * @return
+	 * @throws IOException 
 	 */
-	public static BlockInfo getBlockInfo(long blockId) {
+	public static BlockInfo getBlockInfo(long blockId)  {
 		Session s = DBConnector.sessionFactory.getSession();
 		DatanodeManager dm = ns.getBlockManager().getDatanodeManager();
 
@@ -116,7 +122,10 @@ public class BlocksHelper {
 			//FIXME: change primary key of table - sort the results on index
 			List<TripletsTable> tripletsTable = getTriplets(blockId); 
 			Object[] tripletsKTH = new Object[3*tripletsTable.size()];
+			
 			for(int i=0;i<tripletsTable.size();i++) {
+				
+				KthFsHelper.printKTH("triplets loop called");
 				DatanodeDescriptor dd = dm.getDatanodeByHost(tripletsTable.get(i).getDatanodeName()); //KTHFS: see if this works
 				long prevBlockId = tripletsTable.get(i).getPreviousBlockId();
 				long nextBlockId = tripletsTable.get(i).getNextBlockId();
@@ -130,15 +139,55 @@ public class BlocksHelper {
 			blockInfo.setTripletsKTH(tripletsKTH);
 		
 			//W: assuming that this function will only be called on an INodeFile
-			INodeFile node = (INodeFile)INodeTableHelper.getINode(bit.getINodeID()); 
-			blockInfo.setINode(node);
+			INodeFile node = (INodeFile)INodeTableHelper.getINode(bit.getINodeID());
+			node.setBlocksList(getBlocksArray(node));//circular?
 			
+			blockInfo.setINode(node);
 			
 			return blockInfo;
 		}
 
 	}
 
+	
+	public static BlockInfo getBlockInfoSingle(long blockId) throws IOException {
+		Session s = DBConnector.sessionFactory.getSession();
+		DatanodeManager dm = ns.getBlockManager().getDatanodeManager();
+
+		BlockInfoTable bit = s.find(BlockInfoTable.class, blockId);
+		
+		if(bit == null)
+			return null;
+		else {
+			Block b = new Block(bit.getBlockId(), bit.getNumBytes(), bit.getGenerationStamp());
+			BlockInfo blockInfo = new BlockInfo(b, bit.getReplication());
+
+			//FIXME: change primary key of table - sort the results on index
+			List<TripletsTable> tripletsTable = getTriplets(blockId); 
+			Object[] tripletsKTH = new Object[3*tripletsTable.size()];
+			
+			for(int i=0;i<tripletsTable.size();i++) {
+				
+				KthFsHelper.printKTH("triplets loop called");
+				DatanodeDescriptor dd = dm.getDatanodeByHost(tripletsTable.get(i).getDatanodeName()); //KTHFS: see if this works
+				long prevBlockId = tripletsTable.get(i).getPreviousBlockId();
+				long nextBlockId = tripletsTable.get(i).getNextBlockId();
+				int index = tripletsTable.get(i).getIndex();
+
+				tripletsKTH[3*index] = dd;
+				tripletsKTH[(3*index) + 1] = prevBlockId;
+				tripletsKTH[(3*index) + 2] = nextBlockId;
+			}
+			
+			blockInfo.setTripletsKTH(tripletsKTH);
+		
+			
+			return blockInfo;
+		}
+
+	}
+
+	
 	public static void putBlockInfo(BlockInfo binfo) {
 
 		Session s = DBConnector.sessionFactory.getSession();
@@ -162,6 +211,7 @@ public class BlocksHelper {
 		for(int i=0;i<(tripletsKTH.length/3);i++) {
 			DatanodeDescriptor dd = (DatanodeDescriptor)tripletsKTH[3*i];
 			long prevBlockId, nextBlockId;
+			
 			if (tripletsKTH[(3*i)+1]==null)
 				prevBlockId = -1;
 			else
@@ -245,7 +295,13 @@ public class BlocksHelper {
 		
 		BlockInfo[] blocksArray = new BlockInfo[blocksList.size()];
 		for(int i=0; i<blocksArray.length; i++) {
-			blocksArray[i] = getBlockInfo(blocksList.get(i).getBlockId());
+			try {
+				blocksArray[i] = getBlockInfoSingle(blocksList.get(i).getBlockId());
+				blocksArray[i].setINode(inode);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		
 		return blocksArray;

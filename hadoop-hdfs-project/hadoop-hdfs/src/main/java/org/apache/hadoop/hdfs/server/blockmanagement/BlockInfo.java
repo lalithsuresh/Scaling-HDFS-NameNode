@@ -61,6 +61,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   public BlockInfo(Block blk, int replication) {
     super(blk);
     this.triplets = new Object[3*replication];
+    this.tripletsKTH = new Object[3*replication];
     this.inode = null;
     
     
@@ -98,6 +99,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   }*/
   
   public void setINode(INodeFile inode) {
+	  KthFsHelper.printKTH("inside setINode() - inode.getID()"+inode.getID());
 	    BlocksHelper.updateINodeID(inode.getID(), this);
 	  }
 
