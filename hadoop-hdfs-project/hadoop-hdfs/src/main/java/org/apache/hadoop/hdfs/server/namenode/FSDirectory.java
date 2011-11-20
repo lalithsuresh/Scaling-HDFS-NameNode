@@ -384,6 +384,8 @@ public class FSDirectory implements Closeable {
             fileINode.getReplication(),
             BlockUCState.UNDER_CONSTRUCTION,
             targets);
+      
+      KthFsHelper.printKTH("fileINode: " + fileINode.toString() + " DAMN!!!!!!!  " + fileINode.getID());
       getBlockManager().addINode(blockInfo, fileINode);
       fileINode.addBlock(blockInfo);
 
@@ -1223,12 +1225,15 @@ public class FSDirectory implements Closeable {
 	       
 	      rootDir.addNode(path, newnode); */
 	      
-	      INodeTableHelper.completeFileUnderConstruction(oldnode, newnode);
+	      INodeFile newestNode =  INodeTableHelper.completeFileUnderConstruction(oldnode, newnode);
+	      KthFsHelper.printKTH("7:46PM!!!  newnode.size()" + newestNode.getBlocks()[0]);
 
 	      int index = 0;
-	      for (BlockInfo b : newnode.getBlocks()) {
-	        BlockInfo info = getBlockManager().addINode(b, newnode);
-	        newnode.setBlock(index, info); // inode refers to the block in BlocksMap
+	      for (BlockInfo b : newestNode.getBlocks()) {
+	    	  KthFsHelper.printKTH("HELLO I AM HERER!!!! b.toStrng()= "+b.toString());
+	    	  KthFsHelper.printKTH("HELLO I AM HERER!!!!  b.getINode()= "+b.getINode());
+	        BlockInfo info = getBlockManager().addINode(b, newestNode);
+	        newestNode.setBlock(index, info); // inode refers to the block in BlocksMap
 	        index++;
 	      }
 	    } finally {

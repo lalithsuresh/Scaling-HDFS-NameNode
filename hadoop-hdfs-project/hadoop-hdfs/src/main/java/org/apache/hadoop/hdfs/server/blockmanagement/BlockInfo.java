@@ -100,6 +100,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   
   public void setINode(INodeFile inode) {
 	  KthFsHelper.printKTH("inside setINode() - inode.getID()"+inode.getID());
+	  this.inode = inode;
 	    BlocksHelper.updateINodeID(inode.getID(), this);
 	  }
 

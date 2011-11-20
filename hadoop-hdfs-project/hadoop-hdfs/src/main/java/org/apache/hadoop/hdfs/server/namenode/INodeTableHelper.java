@@ -314,8 +314,9 @@ public class INodeTableHelper {
 	}
 	
 	
-	public static void completeFileUnderConstruction (INode thisInode, INode newChild){
+	public static INodeFile completeFileUnderConstruction (INode thisInode, INodeFile newChild){
 		// [STATELESS]
+		INodeFile nodeToBeReturned = null;
 		Transaction tx = session.currentTransaction();
 		tx.begin();
 
@@ -324,6 +325,7 @@ public class INodeTableHelper {
 		assert ! results.isEmpty() : "Child to replace not in DB";
 		InodeTable inode= results.get(0);
 
+		
 		inode.setModificationTime(thisInode.modificationTime);
 		inode.setATime(thisInode.getAccessTime());
 		inode.setLocalName(thisInode.getLocalName());
@@ -365,7 +367,17 @@ public class INodeTableHelper {
 			inode.setDSCount(((INodeDirectoryWithQuota) thisInode).getDsCount());
 		}
 		try{
-			newChild = convertINodeTableToINode(inode);
+			//see if this works!?
+			newChild = (INodeFile)convertINodeTableToINode(inode);
+			KthFsHelper.printKTH("I AM A NEW CHILD!!!!  newChild.ID= " + newChild.getID());
+			BlockInfo blklist[] = BlocksHelper.getBlocksArray(newChild);
+			
+			KthFsHelper.printKTH("8:25PM !!!!! lklist[0].getINode() " + blklist[0].getINode());
+			//KthFsHelper.printKTH("blklist.length: " + );
+			newChild.setBlocksList(blklist);
+			nodeToBeReturned = newChild;
+			KthFsHelper.printKTH("08:01PM I AM A NEW CHILD!!!!  newChild.ID= " + newChild.getBlocks()[0].getINode());
+
 		}
 		catch (IOException e)
 		{
@@ -375,6 +387,10 @@ public class INodeTableHelper {
 
 		tx.commit();
 		session.flush();
+		
+		KthFsHelper.printKTH("08:02 PM I AM A NEW CHILD!!!!  newChild.ID= " + nodeToBeReturned.getID());
+//		KthFsHelper.printKTH("nodetobereturned: " + );
+		return nodeToBeReturned; //see if this works!
 
 	}
 

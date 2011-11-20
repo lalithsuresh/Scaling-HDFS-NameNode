@@ -227,7 +227,11 @@ public class INodeFile extends INode {
 	}
 
 	public void setBlocksList(BlockInfo[] blklist) {
+		if(blklist != null) {
+		KthFsHelper.printKTH("8:20pm blklist before "+ blklist[0].getINode() );
 		this.blocks = blklist;
+		KthFsHelper.printKTH("8:20pm blklist after "+ this.blocks[0].getINode() );
+		}
 	}
 
 	int collectSubtreeBlocksAndClear(List<Block> v) {
