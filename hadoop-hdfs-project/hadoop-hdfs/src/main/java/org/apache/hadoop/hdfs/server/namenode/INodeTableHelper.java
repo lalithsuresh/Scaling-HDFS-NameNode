@@ -15,6 +15,7 @@ import org.apache.hadoop.io.DataOutputBuffer;
 import se.sics.clusterj.InodeTable;
 
 import com.mysql.clusterj.ClusterJDatastoreException;
+import com.mysql.clusterj.ClusterJException;
 import com.mysql.clusterj.Query;
 import com.mysql.clusterj.Session;
 
@@ -26,6 +27,7 @@ public class INodeTableHelper {
 	public static Session session= DBConnector.sessionFactory.getSession() ;
 	static final int MAX_DATA = 128;
 	public static FSNamesystem ns = null;
+	static final int RETRY_COUNT = 3; 
 
 
 	/*AddChild should take care of the different InodeOperations
@@ -33,9 +35,30 @@ public class INodeTableHelper {
 	 * TODO: InodeSymLink
 	 */
 	public static void addChild(INode node){
-		boolean entry_exists;
+		boolean done = false;
+		int tries = RETRY_COUNT;
 		Transaction tx = session.currentTransaction();
-		tx.begin();
+		
+		while (done == false && tries > 0) {
+			try {
+				tx.begin();
+				
+				addChildInternal(node);
+				done = true;
+				
+				tx.commit();
+				session.flush();
+			}
+			catch (ClusterJException e){
+				tx.rollback();
+				System.err.println("InodeTableHelper.addChild() threw error " + e.getMessage());
+				tries--;
+			}
+		}
+	}
+	
+	public static void addChildInternal(INode node){
+		boolean entry_exists;
 
 		List<InodeTable> results = getResultListUsingField("name", node.getFullPathName());
 		InodeTable inode;
@@ -111,13 +134,37 @@ public class INodeTableHelper {
 			session.updatePersistent(inode);
 		else
 			session.makePersistent(inode);
-		tx.commit();
-		session.flush();
-
+		
 	}
 
-
 	public static List<INode> getChildren(String parentDir) throws IOException {
+		boolean done = false;
+		int tries = RETRY_COUNT;
+		Transaction tx = session.currentTransaction();
+		List<INode> ret = null;
+		
+		while (done == false && tries > 0) {
+			try {
+				tx.begin();
+				
+				ret = getChildrenInternal(parentDir);
+				done = true;
+				
+				tx.commit();
+				session.flush();
+				return ret;
+			}
+			catch (ClusterJException e){
+				tx.rollback();
+				System.err.println("InodeTableHelper.getChildren() threw error " + e.getMessage());
+				tries--;
+			}
+		}
+		
+		return null;
+	}
+	
+	public static List<INode> getChildrenInternal(String parentDir) throws IOException {
 
 		List<InodeTable> resultList = getResultListUsingField("parent", parentDir);
 
@@ -132,10 +179,34 @@ public class INodeTableHelper {
 			return children;
 		else 
 			return null;
-
-
 	}
 
+	public static INode removeChild(INode node) throws ClusterJDatastoreException {
+		boolean done = false;
+		int tries = RETRY_COUNT;
+		Transaction tx = session.currentTransaction();
+		
+		while (done == false && tries > 0) {
+			try {
+				tx.begin();
+				
+				INode ret = removeChildInternal(node);
+				done = true;
+				
+				tx.commit();
+				session.flush();
+				return ret;
+			}
+			catch (ClusterJException e){
+				tx.rollback();
+				System.err.println("InodeTableHelper.removeChild() threw error " + e.getMessage());
+				tries--;
+			}
+		}
+		
+		return node;
+	}
+	
 	/**Deletes a child inode from the DB. In this case, it removes it using the whole path
 	 * TODO: Check if correct, it enters the function more than one time. 
 	 * FIXME: If node not found, still return it?
@@ -143,18 +214,37 @@ public class INodeTableHelper {
 	 * @return node : deleted node
 	 * @throws ClusterJDatastoreException
 	 */
-	public static INode removeChild(INode node) throws ClusterJDatastoreException {
-		Transaction tx = session.currentTransaction();
+	public static INode removeChildInternal(INode node) throws ClusterJDatastoreException {
 		List<InodeTable> results = getResultListUsingField("name", node.getFullPathName());
 		if( !results.isEmpty()){
-			tx.begin();
 			session.deletePersistent(results.get(0));
-			tx.commit();
-			session.flush();
 		}
 		return node;
 	}
 
+	public static void updateParentAcrossSubTree (String oldFullPathOfParent, String newFullPathOfParent) {
+		boolean done = false;
+		int tries = RETRY_COUNT;
+		Transaction tx = session.currentTransaction();
+		
+		while (done == false && tries > 0) {
+			try {
+				tx.begin();
+				
+				updateParentAcrossSubTreeInternal(oldFullPathOfParent, newFullPathOfParent);
+				done = true;
+				
+				tx.commit();
+				session.flush();
+			}
+			catch (ClusterJException e){
+				tx.rollback();
+				System.err.println("InodeTableHelper.updateParentAcrossSubTreeInternal() threw error " + e.getMessage());
+				tries--;
+			}
+		}
+	}
+	
 	/**This method is to be used in case an INodeDirectory is
 	 * renamed (typically from the mv operation). When dealing
 	 * with the DB, such an operation would isolate the sub-tree
@@ -164,7 +254,7 @@ public class INodeTableHelper {
 	 * @param oldFullPathOfParent
 	 * @param newFullPathOfParent
 	 */
-	public static void updateParentAcrossSubTree (String oldFullPathOfParent, String newFullPathOfParent) {
+	public static void updateParentAcrossSubTreeInternal (String oldFullPathOfParent, String newFullPathOfParent) {
 
 		QueryBuilder qb = session.getQueryBuilder();
 		QueryDomainType<InodeTable> dobj = qb.createQueryDefinition(InodeTable.class);
@@ -201,11 +291,31 @@ public class INodeTableHelper {
 		tx.commit();
 		session.flush();
 	}
-
+	
 	public static void replaceChild (INode thisInode, INode newChild){
-
+		boolean done = false;
+		int tries = RETRY_COUNT;
 		Transaction tx = session.currentTransaction();
-		tx.begin();
+		
+		while (done == false && tries > 0) {
+			try {
+				tx.begin();
+				
+				replaceChild(thisInode, newChild);
+				done = true;
+				
+				tx.commit();
+				session.flush();
+			}
+			catch (ClusterJException e){
+				tx.rollback();
+				System.err.println("InodeTableHelper.replaceChild() threw error " + e.getMessage());
+				tries--;
+			}
+		}
+	}
+	
+	public static void replaceChildInternal (INode thisInode, INode newChild){
 
 		List <InodeTable> results = getResultListUsingField("name",newChild.getFullPathName() ); 
 		assert ! results.isEmpty() : "Child to replace not in DB";
@@ -242,10 +352,6 @@ public class INodeTableHelper {
 		}
 
 		session.updatePersistent(inode);
-
-		tx.commit();
-		session.flush();
-
 	}
 
 	public static INode getChildDirectory(String parentDir, String searchDir) throws IOException {
@@ -328,15 +434,28 @@ public class INodeTableHelper {
 			/* FIXME: Double check numbers later */
 			BlockInfo [] blocks = new BlockInfo [1];
 			blocks[0] = new BlockInfo(3);
-			inode = new INodeFileUnderConstruction(inodetable.getName().getBytes(),
-					(short) 1,
-					inodetable.getModificationTime(),
-					64,
-					blocks,
-					ps,
-					inodetable.getClientName(),
-					inodetable.getClientMachine(),
-					ns.getBlockManager().getDatanodeManager().getDatanodeByHost(inodetable.getClientNode()));
+			try {
+				inode = new INodeFileUnderConstruction(inodetable.getName().getBytes(),
+						(short) 1,
+						inodetable.getModificationTime(),
+						64,
+						blocks,
+						ps,
+						inodetable.getClientName(),
+						inodetable.getClientMachine(),
+						ns.getBlockManager().getDatanodeManager().getDatanodeByHost(inodetable.getClientNode()));
+			}
+			catch (NullPointerException e) {
+				inode = new INodeFileUnderConstruction(inodetable.getName().getBytes(),
+						(short) 1,
+						inodetable.getModificationTime(),
+						64,
+						blocks,
+						ps,
+						inodetable.getClientName(),
+						inodetable.getClientMachine(),
+						null);
+			}
 		}
 		if (inodetable.getIsClosedFile()) {
 			/* FIXME: Double check numbers later */
@@ -387,20 +506,43 @@ public class INodeTableHelper {
 
 	}
 	
-	
 	public static INode updateSrcDst(String src, String dst){
+		boolean done = false;
+		int tries = RETRY_COUNT;
+		Transaction tx = session.currentTransaction();
+		
+		while (done == false && tries > 0) {
+			try {
+				tx.begin();
+				
+				INode ret = updateSrcDstInternal(src, dst);
+				done = true;
+				
+				tx.commit();
+				session.flush();
+				return ret;
+			}
+			catch (ClusterJException e){
+				tx.rollback();
+				System.err.println("InodeTableHelper.addChild() threw error " + e.getMessage());
+				tries--;
+			}
+		}
+		
+		return null;
+	}
+	public static INode updateSrcDstInternal(String src, String dst){
 
 		List<InodeTable> results = getResultListUsingField("name", src);
 		assert  results.size() == 1 : "mv operation found more than one node to update";
-		Transaction tx = session.currentTransaction();
-		tx.begin();
+
 		InodeTable newINode = results.get(0);
 		newINode.setName(dst);
 		newINode.setLocalName(dst.substring(dst.lastIndexOf("/")+1));
 		newINode.setModificationTime(System.currentTimeMillis());
 		session.updatePersistent(newINode);
 
-		tx.commit();
+		// FIXME: Can we avoid flushing to DB here?
 		session.flush();
 		try {
 			return getINodeByNameBasic(dst);

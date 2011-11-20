@@ -608,7 +608,7 @@ public class FSDirectory implements Closeable {
       //    srcChild, UNKNOWN_DISK_SPACE, false);
     //[KTHFS] We do not add child, but update previous node in DB
       dstChild = INodeTableHelper.updateSrcDst(src, dst);
-   
+      
       if (dstChild != null) {
         srcChild = null;
         if (NameNode.stateChangeLog.isDebugEnabled()) {
