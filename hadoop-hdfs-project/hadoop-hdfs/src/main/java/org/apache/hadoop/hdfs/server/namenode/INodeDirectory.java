@@ -389,14 +389,14 @@ class INodeDirectory extends INode {
 		}
 		node.parent = this;
 		
-		Session session = DBConnector.sessionFactory.getSession();    
-		Transaction tx = session.currentTransaction();
-		tx.begin();
-		System.err.println("Check it out: " + this.getFullPathName());
 		List<InodeTable> results = INodeTableHelper.getResultListUsingField ("name", this.getFullPathName());
 		assert ! results.isEmpty(): "[KTHFS] This Inode doesn't exist in DB";
 		InodeTable inode = results.get(0);
-		    
+		
+
+		Session session = DBConnector.sessionFactory.getSession();    
+		Transaction tx = session.currentTransaction();
+		tx.begin();
 		inode.setModificationTime(node.getModificationTime());
 		session.updatePersistent(inode);
 		tx.commit();

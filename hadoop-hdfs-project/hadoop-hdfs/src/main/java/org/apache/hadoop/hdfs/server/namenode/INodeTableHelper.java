@@ -24,7 +24,7 @@ import com.mysql.clusterj.query.QueryBuilder;
 import com.mysql.clusterj.query.QueryDomainType;
 
 public class INodeTableHelper {
-	public static Session session= DBConnector.sessionFactory.getSession() ;
+	public static Session session = DBConnector.sessionFactory.getSession();
 	static final int MAX_DATA = 128;
 	public static FSNamesystem ns = null;
 	static final int RETRY_COUNT = 3; 
@@ -270,9 +270,6 @@ public class INodeTableHelper {
 
 		List<InodeTable> resultList = query.getResultList();
 
-		Transaction tx = session.currentTransaction();
-		tx.begin();
-
 		for (InodeTable result: resultList) {
 
 			String subPath = result.getName().substring(oldFullPathOfParent.length());
@@ -287,9 +284,6 @@ public class INodeTableHelper {
 
 			session.updatePersistent(result);
 		}
-
-		tx.commit();
-		session.flush();
 	}
 	
 	public static void replaceChild (INode thisInode, INode newChild){
@@ -547,14 +541,13 @@ public class INodeTableHelper {
 		newINode.setModificationTime(System.currentTimeMillis());
 		session.updatePersistent(newINode);
 
-		// FIXME: Can we avoid flushing to DB here?
-		session.flush();
 		try {
-			return getINodeByNameBasic(dst);
+			return convertINodeTableToINode(newINode);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
 		return null;	
 	}
 
