@@ -509,12 +509,13 @@ public class INodeTableHelper {
 		}
 		if (inodetable.getIsClosedFile()) {
 			/* FIXME: Double check numbers later */
-			inode = new INodeFile(ps,
+			INodeFile tmp = new INodeFile(ps,
 					0,
 					(short)1,
 					inodetable.getModificationTime(),
 					inodetable.getATime(), 64);	
-			((INodeFile) inode).setHeader(inodetable.getHeader());
+			tmp.setHeader(inodetable.getHeader());
+			inode = tmp;
 		}
 
 		/* FIXME: Call getLocalName() */
