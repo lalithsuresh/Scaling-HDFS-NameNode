@@ -301,7 +301,7 @@ public class INodeTableHelper {
 			try {
 				tx.begin();
 				
-				replaceChild(thisInode, newChild);
+				replaceChildInternal(thisInode, newChild);
 				done = true;
 				
 				tx.commit();
