@@ -64,20 +64,10 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
     this.tripletsKTH = new Object[3*replication];
     this.inode = null;
     
-    
-  //this.getINode().getFullPathName();
 	this.getBlockId(); 
 	this.getBlockName();
 	this.getNumBytes(); 
 	this.getGenerationStamp();
-    
-    KthFsHelper.printKTH(
-    	//	"BlockInfo: filename: "+ this.getINode().getFullPathName() +
-    		"blockId: "+this.getBlockId() + 
-    		" blockName:"+this.getBlockName() + 
-    		" numBytes:"+ this.getNumBytes() + 
-    		" genstamp:" + this.getGenerationStamp()
-    		); 
   }
 
   /**
@@ -99,7 +89,6 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   }*/
   
   public void setINode(INodeFile inode) {
-	  KthFsHelper.printKTH("inside setINode() - inode.getID()"+inode.getID());
 	  this.inode = inode;
 	    BlocksHelper.updateINodeID(inode.getID(), this);
 	  }

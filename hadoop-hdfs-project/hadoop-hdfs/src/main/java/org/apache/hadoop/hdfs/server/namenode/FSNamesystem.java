@@ -1233,7 +1233,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                                         holder,
                                         clientMachine,
                                         clientNode);
-        System.err.println("thing in the if " + Thread.currentThread().getId());
         dir.replaceNode(src, node, cons);
         leaseManager.addLease(cons.getClientName(), src);
 
@@ -1249,6 +1248,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         long genstamp = nextGenerationStamp();
         INodeFileUnderConstruction newNode = dir.addFile(src, permissions,
             replication, blockSize, holder, clientMachine, clientNode, genstamp);
+        
         if (newNode == null) {
           throw new IOException("DIR* NameSystem.startFile: " +
                                 "Unable to add file to namespace.");
@@ -2010,7 +2010,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       if (isPermissionEnabled) {
         checkTraverse(src);
       }*/
-    	//KthFsHelper.printKTH("getFileInfo called for "+ src);
+
       return dir.getFileInfo(src, resolveLink);
     } finally {
       readUnlock();

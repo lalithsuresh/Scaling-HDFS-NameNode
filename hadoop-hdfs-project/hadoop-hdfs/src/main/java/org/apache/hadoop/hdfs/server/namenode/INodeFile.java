@@ -184,11 +184,7 @@ public class INodeFile extends INode {
   }*/
 
 	void appendBlocks(INodeFile [] inodes, int totalAddedBlocks) {
-
-		KthFsHelper.printKTH("append blocks begin");
 		BlocksHelper.appendBlocks(this, inodes, totalAddedBlocks);
-		KthFsHelper.printKTH("append blocks Done");
-
 	}
 
 

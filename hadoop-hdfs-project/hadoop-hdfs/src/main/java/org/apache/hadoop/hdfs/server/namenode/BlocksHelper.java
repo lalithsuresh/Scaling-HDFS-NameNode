@@ -37,10 +37,8 @@ public class BlocksHelper {
 		tx.begin();
 
 		for(INodeFile in: inodes) {
-			KthFsHelper.printKTH("loop starts!!");
 			BlockInfo[] inBlocks = in.getBlocks();
 			for(int i=0;i<inBlocks.length;i++) {
-				KthFsHelper.printKTH("loop!!!");
 				BlockInfoTable bInfoTable = createBlockInfoTable(thisNode, inBlocks[i]);
 				session.makePersistent(bInfoTable);
 			}
@@ -56,7 +54,6 @@ public class BlocksHelper {
 	 * */
 	public static void addBlock(BlockInfo newblock) {
 
-		KthFsHelper.printKTH("addBlock called");
 		putBlockInfo(newblock);
 		/*
 		Transaction tx = session.currentTransaction();
@@ -76,7 +73,6 @@ public class BlocksHelper {
 	/*Helper function for creating a BlockInfoTable object */
 	private static BlockInfoTable createBlockInfoTable(INode node, BlockInfo newblock) {
 
-		KthFsHelper.printKTH("createBlockInfoTable called");
 		BlockInfoTable bInfoTable = session.newInstance(BlockInfoTable.class);
 		bInfoTable.setBlockId(newblock.getBlockId());
 		bInfoTable.setGenerationStamp(newblock.getGenerationStamp());
@@ -125,7 +121,6 @@ public class BlocksHelper {
 
 			for(int i=0;i<tripletsTable.size();i++) {
 
-				KthFsHelper.printKTH("triplets loop called");
 				DatanodeDescriptor dd = dm.getDatanodeByHost(tripletsTable.get(i).getDatanodeName()); //KTHFS: see if this works
 				long prevBlockId = tripletsTable.get(i).getPreviousBlockId();
 				long nextBlockId = tripletsTable.get(i).getNextBlockId();
@@ -155,8 +150,6 @@ public class BlocksHelper {
 
 	public static BlockInfo getBlockInfoSingle(long blockId) throws IOException {
 		Session s = DBConnector.sessionFactory.getSession();
-		System.err.println("ME NULL: " + ns);
-		System.err.println("ME probably NULL: " + ns.getBlockManager());
 		DatanodeManager dm = ns.getBlockManager().getDatanodeManager();
 
 		BlockInfoTable bit = s.find(BlockInfoTable.class, blockId);
@@ -173,7 +166,6 @@ public class BlocksHelper {
 
 			for(int i=0;i<tripletsTable.size();i++) {
 
-				KthFsHelper.printKTH("triplets loop called");
 				DatanodeDescriptor dd = dm.getDatanodeByHost(tripletsTable.get(i).getDatanodeName()); //KTHFS: see if this works
 				long prevBlockId = tripletsTable.get(i).getPreviousBlockId();
 				long nextBlockId = tripletsTable.get(i).getNextBlockId();
@@ -212,7 +204,6 @@ public class BlocksHelper {
 
 		bit.setNumBytes(binfo.getNumBytes());
 		//FIXME: KTHFS: Ying and Wasif: replication is null at the moment - remove the column if not required later on
-
 
 		Object[] tripletsKTH = binfo.getTripletsKTH();
 
@@ -262,7 +253,7 @@ public class BlocksHelper {
 		bit.setINodeID(binfo.getINode().getID()); //FIXME: verify if this is working - use Mariano
 		bit.setBlockIndex(idx); //setting the index in the table
 		bit.setNumBytes(binfo.getNumBytes());
-		s.updatePersistent(bit);
+		s.savePersistent(bit);
 		tx.commit();
 	}
 
@@ -298,14 +289,11 @@ public class BlocksHelper {
 
 		if(inode==null)
 		{
-			System.out.println("[NOT KTHFS]: getBLocksArray inode is null!!!!");
 			return null;
 		}
-		System.out.println("[NOT KTHFS]: getBLocksArray inodeID" + inode.getID());
 		List<BlockInfoTable> blocksList = getResultListUsingField("iNodeID", inode.getID());
 
 		if(blocksList.size() == 0 || blocksList == null) {
-			KthFsHelper.printKTH("7PM!!!!!!!!!!!!!   blocksList is null");
 			return null;
 		}
 
@@ -314,18 +302,16 @@ public class BlocksHelper {
 			for(int i=0; i<blocksArray.length; i++) {
 
 				blocksArray[i] = getBlockInfoSingle(blocksList.get(i).getBlockId());
-				KthFsHelper.printKTH("7:30PM!!!!!  inode.getID(): "+inode.getID());
 				blocksArray[i].setINode(inode);
 			
 			}
-			KthFsHelper.printKTH("8:36pm inside try catch blocksArrayy[0].getINode(): "+blocksArray[0].getINode());
 			return blocksArray;
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		KthFsHelper.printKTH("8:31pm blocksArrayy[0].getINode(): "+blocksArray[0].getINode());
+
 		return blocksArray;
 	}
 
@@ -334,10 +320,8 @@ public class BlocksHelper {
 
 		if(inode==null)
 		{
-			System.out.println("[NOT KTHFS]: getBLocksArray inode is null!!!!");
 			return null;
 		}
-		System.out.println("[NOT KTHFS]: getBLocksArray inodeID" + inode.getID());
 		List<BlockInfoTable> blocksList = getResultListUsingField("iNodeID", inode.getID());
 
 		if(blocksList.size() == 0 || blocksList == null)

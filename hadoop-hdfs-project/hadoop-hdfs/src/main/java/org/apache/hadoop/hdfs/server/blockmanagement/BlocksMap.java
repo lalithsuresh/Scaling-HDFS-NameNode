@@ -209,7 +209,6 @@ class BlocksMap {
   BlockInfo replaceBlock(BlockInfo newBlock) {
 	  
     BlockInfo currentBlock = blocks.get(newBlock);
-    KthFsHelper.printKTH("MAKE IT OBVIOUS!!!!!! currentBlockID: " + currentBlock.getBlockId() + " newBlockID: " +newBlock.getBlockId() );
     assert currentBlock != null : "the block if not in blocksMap";
     // replace block in data-node lists
     for(int idx = currentBlock.numNodes()-1; idx >= 0; idx--) {

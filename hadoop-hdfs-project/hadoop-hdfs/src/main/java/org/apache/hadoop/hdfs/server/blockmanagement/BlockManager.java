@@ -1676,6 +1676,7 @@ public class BlockManager {
       // it will happen in next block report otherwise.
       return block;
     }
+    
     assert storedBlock != null : "Block must be stored by now";
     INodeFile fileINode = storedBlock.getINode();
     assert fileINode != null : "Block must belong to a file";

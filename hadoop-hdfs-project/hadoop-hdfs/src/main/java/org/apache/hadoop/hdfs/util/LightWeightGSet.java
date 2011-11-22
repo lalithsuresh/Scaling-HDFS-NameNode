@@ -144,7 +144,6 @@ public class LightWeightGSet<K, E extends K> implements GSet<K, E> {
 			throw new NullPointerException("key == null");
 		}
 		Block binfo = (Block)key;
-		KthFsHelper.printKTH("ListhgWeightGSet.get() "+ binfo.toString());
 		return (E)BlocksHelper.getBlockInfo(binfo.getBlockId());
 
 	}
@@ -189,12 +188,10 @@ public class LightWeightGSet<K, E extends K> implements GSet<K, E> {
 		//TODO: use functions from BlocksHelper
 		BlockInfo binfo = (BlockInfo)element;
 		
-		KthFsHelper.printKTH("LightWeightGset.put() " + binfo.toString() +"   bla bla bla   " + binfo.getINode());
-		
 		BlockInfo existing = BlocksHelper.getBlockInfo(binfo.getBlockId());
 		BlocksHelper.putBlockInfo(binfo);
 		if(existing == null) {
-			return null;
+			return (E)binfo;
 		}
 		else {
 			return (E)existing;
