@@ -358,11 +358,8 @@ public class BlocksHelper {
 }
 
 /*
- * TODO
  * change commitOrCompleteLastBlock //gets called by datanode and the client both
  * change commitBlockSynchronization //this gets called by the datanode
  * change NameNodeRpcServer.blockReport //this gets called when datanode comes up and then every heartbeat
- * 
- * populate the BlockInfo when INodeFile objects are created - use Mariano
- * 
+ *  * 
  * */
