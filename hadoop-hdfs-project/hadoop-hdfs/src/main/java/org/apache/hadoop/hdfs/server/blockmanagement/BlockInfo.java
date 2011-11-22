@@ -138,6 +138,8 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
     assert this.triplets != null : "BlockInfo is not initialized";
     assert index >= 0 && index*3 < triplets.length : "Index is out of bound";
     triplets[index*3] = node;
+    //[KTHFS] Updating it in the DB
+    BlocksHelper.setDatanode( this.getBlockId() ,index, node.name);
   }
 
   void setPrevious(int index, BlockInfo to) {
