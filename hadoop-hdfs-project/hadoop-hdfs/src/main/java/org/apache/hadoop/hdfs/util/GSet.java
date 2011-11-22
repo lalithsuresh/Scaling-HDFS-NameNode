@@ -54,7 +54,7 @@ public interface GSet<K, E extends K> extends Iterable<E> {
    * @throws NullPointerException if key == null.
    */
   E get(K key);
-
+  //E getFromDB(K key);
   /**
    * Add/replace an element.
    * If the element does not exist, add it to the set.
@@ -81,4 +81,8 @@ public interface GSet<K, E extends K> extends Iterable<E> {
     * @throws NullPointerException if key == null.
   */
   E remove(K key);
+  
+  
+  
+  
 }

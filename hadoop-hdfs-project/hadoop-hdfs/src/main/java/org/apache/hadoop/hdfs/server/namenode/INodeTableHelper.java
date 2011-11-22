@@ -71,7 +71,9 @@ public class INodeTableHelper {
 		{
 			inode = session.newInstance(InodeTable.class);
 			Random id = DFSUtil.getRandom();
-			inode.setId(Math.abs(id.nextLong()));
+			long tempId = Math.abs(id.nextLong());
+			KthFsHelper.printKTH("randomID by Mariano: BLA BLA BLA!!!! " + tempId);
+			inode.setId(tempId);
 			inode.setName(node.getFullPathName());
 			entry_exists = false;
 		}
@@ -89,6 +91,10 @@ public class INodeTableHelper {
 			e.printStackTrace();
 		}
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4d3426aeb9e3283048c811f3ae10d261645ef711
 		inode.setPermission(permissionString.getData());
 
 		// Corner case for rootDir
@@ -370,8 +376,93 @@ public class INodeTableHelper {
 			inode.setNSCount(((INodeDirectoryWithQuota) newChild).getNsCount());
 			inode.setDSCount(((INodeDirectoryWithQuota) newChild).getDsCount());
 		}
+		if (newChild instanceof INodeFile)
+		{
+			inode.setIsUnderConstruction(false);
+		}
 
 		session.updatePersistent(inode);
+	}
+	
+	
+	public static INodeFile completeFileUnderConstruction (INode thisInode, INodeFile newChild){
+		// [STATELESS]
+		INodeFile nodeToBeReturned = null;
+		Transaction tx = session.currentTransaction();
+		tx.begin();
+
+
+		List <InodeTable> results = getResultListUsingField("name",thisInode.getFullPathName() ); 
+		assert ! results.isEmpty() : "Child to replace not in DB";
+		InodeTable inode= results.get(0);
+
+		
+		inode.setModificationTime(thisInode.modificationTime);
+		inode.setATime(thisInode.getAccessTime());
+		inode.setLocalName(thisInode.getLocalName());
+		DataOutputBuffer permissionString = new DataOutputBuffer();
+
+		try {
+			thisInode.getPermissionStatus().write(permissionString);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		/* long finalPerm = 0;
+	      try {
+	  		permissionString.writeLong(finalPerm);
+	  	} catch (IOException e) {
+	  		// TODO Auto-generated catch block
+	  		e.printStackTrace();
+	  	}*/
+
+		inode.setPermission(permissionString.getData());
+		inode.setParent(thisInode.getParent().getFullPathName());
+		inode.setNSQuota(thisInode.getNsQuota());
+		inode.setDSQuota(thisInode.getDsQuota());
+		inode.setIsUnderConstruction(false);
+		inode.setIsClosedFile(true);
+
+		// TODO: Does not handle InodeDirectoryWithQuota yet
+		if (thisInode instanceof INodeDirectory)
+		{
+			inode.setIsDir(true);
+			inode.setIsDirWithQuota(true);
+		}
+		if (thisInode instanceof INodeDirectoryWithQuota)
+		{
+			inode.setIsDir(false);
+			inode.setIsDirWithQuota(true);      	
+			inode.setNSCount(((INodeDirectoryWithQuota) thisInode).getNsCount());
+			inode.setDSCount(((INodeDirectoryWithQuota) thisInode).getDsCount());
+		}
+		try{
+			//see if this works!?
+			newChild = (INodeFile)convertINodeTableToINode(inode);
+			KthFsHelper.printKTH("I AM A NEW CHILD!!!!  newChild.ID= " + newChild.getID());
+			BlockInfo blklist[] = BlocksHelper.getBlocksArray(newChild);
+			
+			KthFsHelper.printKTH("8:25PM !!!!! lklist[0].getINode() " + blklist[0].getINode());
+			//KthFsHelper.printKTH("blklist.length: " + );
+			newChild.setBlocksList(blklist);
+			nodeToBeReturned = newChild;
+			KthFsHelper.printKTH("08:01PM I AM A NEW CHILD!!!!  newChild.ID= " + newChild.getBlocks()[0].getINode());
+
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+		session.updatePersistent(inode);
+
+		tx.commit();
+		session.flush();
+		
+		KthFsHelper.printKTH("08:02 PM I AM A NEW CHILD!!!!  newChild.ID= " + nodeToBeReturned.getID());
+//		KthFsHelper.printKTH("nodetobereturned: " + );
+		return nodeToBeReturned; //see if this works!
+
 	}
 
 	public static INode getChildDirectory(String parentDir, String searchDir) throws IOException {
@@ -506,6 +597,13 @@ public class INodeTableHelper {
 						inodetable.getClientMachine(),
 						null);
 			}
+			//M: Might need finally here			
+			//W: not sure if we need to do this for INodeFileUnderConstruction
+			KthFsHelper.printKTH("inodetable.getId(): HAHAHHA" + inodetable.getId());
+			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
+			KthFsHelper.printKTH("inodeID: " + ((INodeFile)(inode)).getID());
+			BlockInfo[] blocksArray = BlocksHelper.getBlocksArray((INodeFile)inode);
+			((INodeFile)(inode)).setBlocksList(block
 		}
 		if (inodetable.getIsClosedFile()) {
 			/* FIXME: Double check numbers later */
@@ -513,15 +611,20 @@ public class INodeTableHelper {
 					0,
 					(short)1,
 					inodetable.getModificationTime(),
-					inodetable.getATime(), 64);	
+					inodetable.getATime(), 64);
 			tmp.setHeader(inodetable.getHeader());
 			inode = tmp;
+			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
+			KthFsHelper.printKTH("inodeID: " + ((INodeFile)(inode)).getID());
+			BlockInfo[] blocksArray = BlocksHelper.getBlocksArray((INodeFile)inode);
+			((INodeFile)(inode)).setBlocksList(blocksArray);
 		}
 
 		/* FIXME: Call getLocalName() */
 		inode.setFullPathName(inodetable.getName());
 		inode.setLocalName(inodetable.getLocalName());
-
+		
+		
 		return inode;
 	}
 
@@ -531,12 +634,47 @@ public class INodeTableHelper {
 		InodeTable inTable = session.find(InodeTable.class, iNodeID);
 		INode node = null;
 		try {
-			node =  convertINodeTableToINode(inTable);
+			ps = PermissionStatus.read(buffer);
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
+			ps = null;
 		}
-		session.close();
-		return node;
+		
+		if (inodetable.getIsUnderConstruction()) {
+			
+			inode = new INodeFileUnderConstruction(inodetable.getName().getBytes(),
+					(short) 1,
+					inodetable.getModificationTime(),
+					64,
+					/*blocks,*/null, //we don't need to set blocks here
+					ps,
+					inodetable.getClientName(),
+					inodetable.getClientMachine(),
+					ns.getBlockManager().getDatanodeManager().getDatanodeByHost(inodetable.getClientNode()));
+			
+			//W: not sure if we need to do this for INodeFileUnderConstruction
+			KthFsHelper.printKTH("inodetable.getId(): HAHAHHA" + inodetable.getId());
+			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
+			KthFsHelper.printKTH("inodeID: " + ((INodeFile)(inode)).getID());
+			
+		}
+		if (inodetable.getIsClosedFile()) {
+			/* FIXME: Double check numbers later */
+			inode = new INodeFile(ps,
+					0,
+					(short)1,
+					inodetable.getModificationTime(),
+					inodetable.getATime(), 64);
+			
+			KthFsHelper.printKTH("inodetable.getId(): HAHAHHA" + inodetable.getId());
+			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
+			KthFsHelper.printKTH("inodeID: " + ((INodeFile)(inode)).getID());
+			
+		}
+		
+		return inode;
+		
 	}
 	
 	/** This method is invoked by other functions in InodeTableHelper to query the DB for 

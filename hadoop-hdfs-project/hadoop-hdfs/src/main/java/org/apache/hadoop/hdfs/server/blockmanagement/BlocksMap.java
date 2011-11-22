@@ -21,6 +21,7 @@ import java.util.Iterator;
 
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
+import org.apache.hadoop.hdfs.server.namenode.KthFsHelper;
 import org.apache.hadoop.hdfs.util.GSet;
 import org.apache.hadoop.hdfs.util.LightWeightGSet;
 
@@ -110,6 +111,17 @@ class BlocksMap {
     info.setINode(iNode);
     return info;
   }
+  
+  
+  /**
+   * KTHFS
+   */
+  /*BlockInfo addINodeKth(BlockInfo b, INodeFile iNode) {
+ 
+    blocks.getFromDB(null);
+ 
+  }*/
+  
 
   /**
    * Remove the block from the block map;
@@ -195,7 +207,9 @@ class BlocksMap {
    * @return new block
    */
   BlockInfo replaceBlock(BlockInfo newBlock) {
+	  
     BlockInfo currentBlock = blocks.get(newBlock);
+    KthFsHelper.printKTH("MAKE IT OBVIOUS!!!!!! currentBlockID: " + currentBlock.getBlockId() + " newBlockID: " +newBlock.getBlockId() );
     assert currentBlock != null : "the block if not in blocksMap";
     // replace block in data-node lists
     for(int idx = currentBlock.numNodes()-1; idx >= 0; idx--) {

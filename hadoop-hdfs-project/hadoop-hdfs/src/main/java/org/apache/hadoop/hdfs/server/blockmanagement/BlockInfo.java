@@ -19,6 +19,7 @@ package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
+import org.apache.hadoop.hdfs.server.namenode.BlocksHelper;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.KthFsHelper;
 import org.apache.hadoop.hdfs.util.LightWeightGSet;
@@ -60,16 +61,23 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   public BlockInfo(Block blk, int replication) {
     super(blk);
     this.triplets = new Object[3*replication];
+    this.tripletsKTH = new Object[3*replication];
     this.inode = null;
     
     
+  //this.getINode().getFullPathName();
+	this.getBlockId(); 
+	this.getBlockName();
+	this.getNumBytes(); 
+	this.getGenerationStamp();
+    
     KthFsHelper.printKTH(
-    		"BlockInfo: filename: "+ this.getINode().getFullPathName() +
+    	//	"BlockInfo: filename: "+ this.getINode().getFullPathName() +
     		"blockId: "+this.getBlockId() + 
     		" blockName:"+this.getBlockName() + 
     		" numBytes:"+ this.getNumBytes() + 
     		" genstamp:" + this.getGenerationStamp()
-    		);
+    		); 
   }
 
   /**
@@ -86,9 +94,15 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
     return inode;
   }
 
-  public void setINode(INodeFile inode) {
+  /*public void setINode_old(INodeFile inode) {
     this.inode = inode;
-  }
+  }*/
+  
+  public void setINode(INodeFile inode) {
+	  KthFsHelper.printKTH("inside setINode() - inode.getID()"+inode.getID());
+	  this.inode = inode;
+	    BlocksHelper.updateINodeID(inode.getID(), this);
+	  }
 
   DatanodeDescriptor getDatanode(int index) {
     assert this.triplets != null : "BlockInfo is not initialized";
@@ -339,7 +353,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   }
   /*added for KTHFS*/
   public Object[] getTripletsKTH() {
-	  return this.tripletsKTH;
+	  return this.triplets;
   }
   
 }
