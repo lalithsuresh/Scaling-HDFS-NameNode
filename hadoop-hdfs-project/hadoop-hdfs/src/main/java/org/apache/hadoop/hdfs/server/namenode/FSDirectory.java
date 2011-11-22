@@ -1221,7 +1221,7 @@ public class FSDirectory implements Closeable {
 	      rootDir.addNode(path, newnode); */
 	      
 	      INodeFile newestNode =  INodeTableHelper.completeFileUnderConstruction(oldnode, newnode);
-	      KthFsHelper.printKTH("7:46PM!!!  newnode.size()" + newestNode.getBlocks()[0]);
+	      //KthFsHelper.printKTH("7:46PM!!!  newnode.size()" + newestNode.getBlocks()[0]);
 
 	      int index = 0;
 	      for (BlockInfo b : newestNode.getBlocks()) {

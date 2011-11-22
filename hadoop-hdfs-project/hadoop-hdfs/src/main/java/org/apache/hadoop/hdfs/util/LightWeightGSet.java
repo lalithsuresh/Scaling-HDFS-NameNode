@@ -137,6 +137,7 @@ public class LightWeightGSet<K, E extends K> implements GSet<K, E> {
 
 	/*KTHFS method for getting a BlockInfo from the database*/
 	public E get(final K key) {
+		
 		//TODO: use functions from BlocksHelper
 		//validate key
 		if (key == null) {

@@ -155,6 +155,8 @@ public class BlocksHelper {
 
 	public static BlockInfo getBlockInfoSingle(long blockId) throws IOException {
 		Session s = DBConnector.sessionFactory.getSession();
+		System.err.println("ME NULL: " + ns);
+		System.err.println("ME probably NULL: " + ns.getBlockManager());
 		DatanodeManager dm = ns.getBlockManager().getDatanodeManager();
 
 		BlockInfoTable bit = s.find(BlockInfoTable.class, blockId);

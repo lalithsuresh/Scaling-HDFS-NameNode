@@ -325,6 +325,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     setConfigurationParameters(conf);
     dtSecretManager = createDelegationTokenSecretManager(conf);
     this.registerMBean(); // register the MBean for the FSNamesystemState
+    INodeTableHelper.ns = this;
+    BlocksHelper.ns = this;
     
     if(fsImage == null) {
       this.dir = new FSDirectory(this, conf);
@@ -347,8 +349,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   	  INodeTableHelper.addChild(this.dir.rootDir);
     }
     this.safeMode = new SafeModeInfo(conf);
-    INodeTableHelper.ns = this;
-    BlocksHelper.ns = this;
   }
 
   void activateSecretManager() throws IOException {
@@ -740,7 +740,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       try {
         long now = now();
-        INodeFile inode = dir.getFileINode(src); //TODO: W: needs to be changed for KTHFS
+        INodeFile inode = dir.getFileINode(src);
         if (inode == null) {
           throw new FileNotFoundException("File does not exist: " + src);
         }

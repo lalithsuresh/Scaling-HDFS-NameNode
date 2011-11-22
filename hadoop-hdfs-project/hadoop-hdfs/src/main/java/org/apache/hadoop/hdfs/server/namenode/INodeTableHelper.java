@@ -455,12 +455,8 @@ public class INodeTableHelper {
 			KthFsHelper.printKTH("I AM A NEW CHILD!!!!  newChild.ID= " + newChild.getID());
 			BlockInfo blklist[] = BlocksHelper.getBlocksArray(newChild);
 			
-			KthFsHelper.printKTH("8:25PM !!!!! lklist[0].getINode() " + blklist[0].getINode());
-			//KthFsHelper.printKTH("blklist.length: " + );
 			newChild.setBlocksList(blklist);
 			nodeToBeReturned = newChild;
-			KthFsHelper.printKTH("08:01PM I AM A NEW CHILD!!!!  newChild.ID= " + newChild.getBlocks()[0].getINode());
-
 		}
 		catch (IOException e)
 		{
@@ -584,7 +580,7 @@ public class INodeTableHelper {
 			/* FIXME: Double check numbers later */
 			BlockInfo [] blocks = new BlockInfo [1];
 			blocks[0] = new BlockInfo(3);
-			try {
+			//try {
 				inode = new INodeFileUnderConstruction(inodetable.getName().getBytes(),
 						(short) 1,
 						inodetable.getModificationTime(),
@@ -594,7 +590,7 @@ public class INodeTableHelper {
 						inodetable.getClientName(),
 						inodetable.getClientMachine(),
 						ns.getBlockManager().getDatanodeManager().getDatanodeByHost(inodetable.getClientNode()));
-			}
+			/*}
 			catch (NullPointerException e) {
 				inode = new INodeFileUnderConstruction(inodetable.getName().getBytes(),
 						(short) 1,
@@ -605,7 +601,7 @@ public class INodeTableHelper {
 						inodetable.getClientName(),
 						inodetable.getClientMachine(),
 						null);
-			}
+			}*/
 			//M: Might need finally here			
 			//W: not sure if we need to do this for INodeFileUnderConstruction
 			KthFsHelper.printKTH("inodetable.getId(): HAHAHHA" + inodetable.getId());
