@@ -171,12 +171,6 @@ class INodeDirectory extends INode {
 			throws UnresolvedLinkException {
 		return getNode(getPathComponents(path), resolveLink);
 	}
-
-	INode getNode(String path, boolean resolveLink) 
-			throws UnresolvedLinkException {
-		return getNode(getPathComponents(path), resolveLink);
-	}
-
 	/**
 	 * Retrieve existing INodes from a path. If existing is big enough to store
 	 * all path components (existing and non-existing), then existing INodes

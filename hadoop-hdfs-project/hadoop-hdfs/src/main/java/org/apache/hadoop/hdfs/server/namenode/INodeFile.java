@@ -78,8 +78,29 @@ public class INodeFile extends INode {
   public short getReplication() {
     return (short) ((header & HEADERMASK) >> BLOCKBITS);
   }
+  
+  public void setReplication(short replication) {
+	  if(replication <= 0)
+		  throw new IllegalArgumentException("Unexpected value for the replication");
+	  header = ((long)replication << BLOCKBITS) | (header & ~HEADERMASK);
+  }
 
-	/*FIXME: This should be called when the inodes are created
+  public void setReplicationDB(short replication) {
+	  if(replication <= 0)
+		  throw new IllegalArgumentException("Unexpected value for the replication");
+	  header = ((long)replication << BLOCKBITS) | (header & ~HEADERMASK);
+	  //[KTHFS] Call for update in replication
+	  try {
+		  INodeTableHelper.updateHeader(this.getFullPathName(), header);
+	  } catch (IOException e) {
+		  // TODO Auto-generated catch block
+		  e.printStackTrace();
+	  }
+  }
+
+
+  
+  /*FIXME: This should be called when the inodes are created
 	 * 
 	 * added for KTHFS
 	 * 
@@ -95,7 +116,6 @@ public class INodeFile extends INode {
 	public long getID() {
 		return this.id;
 	}
-  }
 
   /**
    * [STATELESS] get header
