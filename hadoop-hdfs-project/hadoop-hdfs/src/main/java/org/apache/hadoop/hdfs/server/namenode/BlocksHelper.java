@@ -361,21 +361,22 @@ public class BlocksHelper {
 	}
 
 	/**remove this later*/
-	public static BlockInfo[] getBlocksArrayWithINodes(INodeFile inode) {
-
-		if(inode==null)
-		{
-			return null;
-		}
-		List<BlockInfoTable> blocksList = getResultListUsingField("iNodeID", inode.getID());
+	public static BlockInfo[] getBlocksArrayWithNoINodes(long inodeID) {
+		
+		List<BlockInfoTable> blocksList = getResultListUsingField("iNodeID", inodeID);
 
 		if(blocksList.size() == 0 || blocksList == null)
 			return null;
 
 		BlockInfo[] blocksArray = new BlockInfo[blocksList.size()];
 		for(int i=0; i<blocksArray.length; i++) {
-			blocksArray[i] = getBlockInfo(blocksList.get(i).getBlockId());
-			blocksArray[i].setINode(inode);
+			try {
+				//Calling getBlockInfoSingle will return blocks without any Inodes
+				blocksArray[i] = getBlockInfoSingle(blocksList.get(i).getBlockId());
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 
 		return blocksArray;
