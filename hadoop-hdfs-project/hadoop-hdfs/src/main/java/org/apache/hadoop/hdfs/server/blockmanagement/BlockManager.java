@@ -414,11 +414,13 @@ public class BlockManager {
    */
   public boolean commitOrCompleteLastBlock(INodeFileUnderConstruction fileINode, 
       Block commitBlock) throws IOException {
+
     if(commitBlock == null)
       return false; // not committing, this is a block allocation retry
     
     //KTHFSBLOCKS
     BlockInfo lastBlock = fileINode.getLastBlock();
+        
     if(lastBlock == null)
       return false; // no blocks in file yet
     if(lastBlock.isComplete())
@@ -450,6 +452,14 @@ public class BlockManager {
       throw new IOException("Cannot complete block: " +
           "block does not satisfy minimal replication requirement.");
     BlockInfo completeBlock = ucBlock.convertToCompleteBlock();
+    System.err.println("[KTHFS] numBytes here is: " + completeBlock.getNumBytes());
+	
+	Exception up = new Exception("completeBlock");
+	try {
+		throw up;
+	}catch (Exception e){
+		e.printStackTrace();
+	}
     // replace penultimate block in file
     fileINode.setBlock(blkIndex, completeBlock);
     // replace block in the blocksMap
@@ -1563,6 +1573,8 @@ public class BlockManager {
       switch(ucState) {
       case COMPLETE:
       case COMMITTED:
+    	  System.err.println("[isreplicacorrupt] generation stamp comparison: " + storedBlock.getGenerationStamp() + " " + iblk.getGenerationStamp());
+    	  System.err.println("[isreplicacorrupt] numbytes: " + storedBlock.getNumBytes() + " " + iblk.getNumBytes());
         return (storedBlock.getGenerationStamp() != iblk.getGenerationStamp()
             || storedBlock.getNumBytes() != iblk.getNumBytes());
       default:

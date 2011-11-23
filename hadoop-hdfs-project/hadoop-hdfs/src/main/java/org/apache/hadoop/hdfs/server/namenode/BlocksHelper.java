@@ -1,11 +1,13 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeManager;
 
 import se.sics.clusterj.*;
@@ -19,6 +21,7 @@ import com.mysql.clusterj.query.QueryBuilder;
 import com.mysql.clusterj.query.QueryDomainType;
 
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
+import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 
 public class BlocksHelper {
 
@@ -116,6 +119,24 @@ public class BlocksHelper {
 			Block b = new Block(bit.getBlockId(), bit.getNumBytes(), bit.getGenerationStamp());
 			BlockInfo blockInfo = new BlockInfo(b, bit.getReplication());
 
+			if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.COMMITTED.ordinal())
+			{
+				//System.err.println("Retrieved Block that is COMMITTED");
+			}
+			else if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.COMPLETE.ordinal())
+			{
+				//System.err.println("Retrieved Block that is COMPLETE");	
+			}
+			else if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.UNDER_CONSTRUCTION.ordinal())
+			{
+				blockInfo = new BlockInfoUnderConstruction(b, bit.getReplication());
+				//System.err.println("Retrieved Block that is UNDER_CONSTRUCTION");
+			}
+			else if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.UNDER_RECOVERY.ordinal())
+			{
+				//System.err.println("Retrieved Block that is UNDER_RECOVERY");
+			}
+
 			//FIXME: change primary key of table - sort the results on index
 			List<TripletsTable> tripletsTable = getTriplets(blockId); 
 			Object[] tripletsKTH = new Object[3*tripletsTable.size()];
@@ -142,7 +163,7 @@ public class BlocksHelper {
 			node.setBlocksList(getBlocksArray(node));//circular?
 
 			blockInfo.setINode(node);
-
+			
 			return blockInfo;
 		}
 
@@ -154,12 +175,33 @@ public class BlocksHelper {
 		DatanodeManager dm = ns.getBlockManager().getDatanodeManager();
 
 		BlockInfoTable bit = s.find(BlockInfoTable.class, blockId);
-
+		
 		if(bit == null)
 			return null;
 		else {
+			BlockInfo blockInfo = null;
 			Block b = new Block(bit.getBlockId(), bit.getNumBytes(), bit.getGenerationStamp());
-			BlockInfo blockInfo = new BlockInfo(b, bit.getReplication());
+
+
+			if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.COMMITTED.ordinal())
+			{
+				blockInfo = new BlockInfo(b, bit.getReplication());
+				//System.err.println("Retrieved Block that is COMMITTED");
+			}
+			else if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.COMPLETE.ordinal())
+			{
+				blockInfo = new BlockInfo(b, bit.getReplication());
+				//System.err.println("Retrieved Block that is COMPLETE");	
+			}
+			else if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.UNDER_CONSTRUCTION.ordinal())
+			{
+				blockInfo = new BlockInfoUnderConstruction(b, bit.getReplication());
+				//blockInfo.convertToBlockUnderConstruction(HdfsServerConstants.BlockUCState.UNDER_CONSTRUCTION, getDataNodesFromBlock(bit.getBlockId()));
+			}
+			else if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.UNDER_RECOVERY.ordinal())
+			{
+				//System.err.println("Retrieved Block that is UNDER_RECOVERY");
+			}
 
 			//FIXME: change primary key of table - sort the results on index
 			List<TripletsTable> tripletsTable = getTriplets(blockId); 
@@ -177,8 +219,7 @@ public class BlocksHelper {
 				tripletsKTH[(3*index) + 2] = nextBlockId;
 			}
 
-			blockInfo.setTripletsKTH(tripletsKTH);
-
+//			blockInfo.setTripletsKTH(tripletsKTH);
 
 			return blockInfo;
 		}
@@ -195,6 +236,7 @@ public class BlocksHelper {
 		BlockInfoTable bit =  s.newInstance(BlockInfoTable.class);
 		bit.setBlockId(binfo.getBlockId());
 		bit.setGenerationStamp(binfo.getGenerationStamp());
+		bit.setBlockUCState(binfo.getBlockUCState().ordinal());
 
 		if(binfo.isComplete()) {
 			INodeFile ifile = binfo.getINode();
@@ -202,7 +244,8 @@ public class BlocksHelper {
 			bit.setINodeID(nodeID); 
 		}
 
-
+		//System.err.println("[KTHFS] numBytes here is: " + binfo.getNumBytes());
+		
 		bit.setNumBytes(binfo.getNumBytes());
 		//FIXME: KTHFS: Ying and Wasif: replication is null at the moment - remove the column if not required later on
 
@@ -231,12 +274,10 @@ public class BlocksHelper {
 			t.setPreviousBlockId(prevBlockId);
 			t.setNextBlockId(nextBlockId);
 			s.savePersistent(t);
-
 		}
 
 		s.savePersistent(bit);
 		tx.commit();
-
 	}
 
 
@@ -254,8 +295,11 @@ public class BlocksHelper {
 		bit.setINodeID(binfo.getINode().getID()); //FIXME: verify if this is working - use Mariano
 		bit.setBlockIndex(idx); //setting the index in the table
 		bit.setNumBytes(binfo.getNumBytes());
+		bit.setBlockUCState(binfo.getBlockUCState().ordinal());
 		s.savePersistent(bit);
-		tx.commit();
+		tx.commit();		
+
+		//System.err.println("[KTHFS] numBytes here in updateIndex is: " + binfo.getNumBytes());
 	}
 
 	public static void updateINodeID(long iNodeID, BlockInfo binfo) {
@@ -267,11 +311,12 @@ public class BlocksHelper {
 		bit.setGenerationStamp(binfo.getGenerationStamp());
 		bit.setINodeID(iNodeID); //setting the iNodeID here - the rest is same
 		bit.setNumBytes(binfo.getNumBytes());
+		bit.setBlockUCState(binfo.getBlockUCState().ordinal());
 		s.updatePersistent(bit);
 		tx.commit();
+		
+		//System.err.println("[KTHFS] numBytes here in updateInodeId is: " + binfo.getNumBytes());
 	}
-
-
 
 	public static List<BlockInfoTable> getResultListUsingField(String field, long value){
 		QueryBuilder qb = session.getQueryBuilder();
@@ -304,7 +349,6 @@ public class BlocksHelper {
 
 				blocksArray[i] = getBlockInfoSingle(blocksList.get(i).getBlockId());
 				blocksArray[i].setINode(inode);
-			
 			}
 			return blocksArray;
 			
@@ -332,7 +376,6 @@ public class BlocksHelper {
 		for(int i=0; i<blocksArray.length; i++) {
 			blocksArray[i] = getBlockInfo(blocksList.get(i).getBlockId());
 			blocksArray[i].setINode(inode);
-
 		}
 
 		return blocksArray;
@@ -382,6 +425,7 @@ public class BlocksHelper {
 		else
 			tx.rollback();
 	}
+	
 	public static String getDatanode (long blockId, int index){
 		Session session = DBConnector.sessionFactory.getSession();
 		Object[] pKey = new Object[2];
@@ -389,6 +433,31 @@ public class BlocksHelper {
 		pKey[1]=index;
 		TripletsTable triplet = session.find(TripletsTable.class, pKey);
 		return triplet.getDatanodeName();
+	}
+
+	public static DatanodeDescriptor [] getDataNodesFromBlock (long blockId){
+		Session session = DBConnector.sessionFactory.getSession();
+		List<TripletsTable> result = getResultListUsingField("blockId", blockId, session);
+		DatanodeDescriptor[] nodeDescriptor = new DatanodeDescriptor[result.size()];
+
+		int i = 0;
+		for (TripletsTable t: result){
+			DatanodeID dn = new DatanodeID(t.getDatanodeName());
+			nodeDescriptor[i] = new DatanodeDescriptor(dn);
+			i++; // giggidy
+		}
+		
+		return nodeDescriptor;
+	}
+
+	public static List<TripletsTable> getResultListUsingField(String field, long value, Session s){
+		QueryBuilder qb = s.getQueryBuilder();
+		QueryDomainType<TripletsTable> dobj = qb.createQueryDefinition(TripletsTable.class);
+		dobj.where(dobj.get(field).equal(dobj.param("param")));
+		Query<TripletsTable> query = s.createQuery(dobj);
+		query.setParameter("param", value); //the WHERE clause of SQL
+		return  query.getResultList();
+
 	}
 
 }

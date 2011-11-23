@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.ReplicaState;
+import org.apache.hadoop.hdfs.server.namenode.BlocksHelper;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 
 /**
@@ -220,6 +221,8 @@ public class BlockInfoUnderConstruction extends BlockInfo {
           + block.getBlockId() + ", expected id = " + getBlockId());
     blockUCState = BlockUCState.COMMITTED;
     this.set(getBlockId(), block.getNumBytes(), block.getGenerationStamp());
+    System.err.println("commitBlock() is being executed");
+    BlocksHelper.updateINodeID(this.getINode().getID(),this);
   }
   
 

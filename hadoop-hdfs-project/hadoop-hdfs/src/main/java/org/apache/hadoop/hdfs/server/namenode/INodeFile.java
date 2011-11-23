@@ -206,14 +206,14 @@ public class INodeFile extends INode {
 	}*/
 	
 	void addBlock(BlockInfo newblock) {
+		/*
 		if (this.blocks == null) {
 			this.blocks = new BlockInfo[1];
 			this.blocks[0] = newblock;
-		} else {
+		} else {*/
 			BlocksHelper.addBlock(newblock);
 			this.blocks = BlocksHelper.getBlocksArray(this);
-		}
-
+		//}
 	}
 
 	/**
@@ -246,6 +246,7 @@ public class INodeFile extends INode {
 				blk.setINode(null);
 			}
 		}
+		//FIXME: Reflect this in the DB plz
 		blocks = null;
 
 		// [Stateless] Remove me from DB
@@ -329,16 +330,19 @@ public class INodeFile extends INode {
 	 */
 	//FIXME: KTHFSBLOCKS
 	public <T extends BlockInfo> T getLastBlock() throws IOException {
-		if (blocks == null || blocks.length == 0)
+		
+		BlockInfo [] tempblocks = BlocksHelper.getBlocksArray(this);
+		
+		if (tempblocks == null || tempblocks.length == 0)
 			return null;
 		T returnBlock = null;
 		try {
 			@SuppressWarnings("unchecked")  // ClassCastException is caught below
-			T tBlock = (T)blocks[blocks.length - 1];
+			T tBlock = (T)tempblocks[tempblocks.length - 1];
 			returnBlock = tBlock;
 		} catch(ClassCastException cce) {
 			throw new IOException("Unexpected last block type: " 
-					+ blocks[blocks.length - 1].getClass().getSimpleName());
+					+ tempblocks[tempblocks.length - 1].getClass().getSimpleName());
 		}
 		return returnBlock;
 	}

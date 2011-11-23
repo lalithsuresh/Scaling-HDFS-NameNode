@@ -144,6 +144,7 @@ public class LightWeightGSet<K, E extends K> implements GSet<K, E> {
 			throw new NullPointerException("key == null");
 		}
 		Block binfo = (Block)key;
+		//System.err.println("NUMBYTES HERE IS AAAAAAAA : " + binfo.getNumBytes());
 		return (E)BlocksHelper.getBlockInfo(binfo.getBlockId());
 
 	}
@@ -184,14 +185,13 @@ public class LightWeightGSet<K, E extends K> implements GSet<K, E> {
 	/*KTHFS method for putting a BlockInfo into the database*/
 	public E put(final E element) {
 		
-		
 		//TODO: use functions from BlocksHelper
 		BlockInfo binfo = (BlockInfo)element;
 		
 		BlockInfo existing = BlocksHelper.getBlockInfo(binfo.getBlockId());
 		BlocksHelper.putBlockInfo(binfo);
 		if(existing == null) {
-			return (E)binfo;
+			return null;
 		}
 		else {
 			return (E)existing;

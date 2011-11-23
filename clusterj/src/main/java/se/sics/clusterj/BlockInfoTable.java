@@ -42,7 +42,9 @@ public interface BlockInfoTable {
      @Column(name = "replication")
     int getReplication();
     void setReplication(int replication);
-    
-    
+
+      @Column(name = "BlockUCState")
+    int getBlockUCState();
+    void setBlockUCState(int blockUCState);
     
 }
