@@ -609,13 +609,15 @@ public class INodeTableHelper {
 		if (inodetable.getIsUnderConstruction()) {
 			//Get the full list of blocks for this inodeID, 
 			// at this point no blocks have no INode reference
-			BlockInfo[] blocksArray = BlocksHelper.getBlocksArrayWithNoINodes(inodetable.getId());
+			BlockInfo [] blocks = new BlockInfo [1];
+			blocks[0]= new BlockInfo(3);
+			//BlockInfo[] blocksArray = BlocksHelper.getBlocksArrayWithNoINodes(inodetable.getId());
 			//try {
 				inode = new INodeFileUnderConstruction(inodetable.getName().getBytes(),
 						getReplicationFromHeader(inodetable.getHeader()),
 						inodetable.getModificationTime(),
 						getPreferredBlockSize(inodetable.getHeader()),
-						blocksArray,
+						blocks,
 						ps,
 						inodetable.getClientName(),
 						inodetable.getClientMachine(),
