@@ -705,9 +705,9 @@ public class INodeTableHelper {
 		if (inodetable.getIsUnderConstruction()) {
 
 			inode = new INodeFileUnderConstruction(inodetable.getName().getBytes(),
-					(short) 1,
+					getReplicationFromHeader(inodetable.getHeader()),
 					inodetable.getModificationTime(),
-					64,
+					getPreferredBlockSize(inodetable.getHeader()),
 					/*blocks,*/null, //we don't need to set blocks here
 					ps,
 					inodetable.getClientName(),
@@ -720,7 +720,7 @@ public class INodeTableHelper {
 			/* FIXME: Double check numbers later */
 			inode = new INodeFile(ps,
 					0,
-					(short)1,
+					getReplicationFromHeader(inodetable.getHeader()),
 					inodetable.getModificationTime(),
 					inodetable.getATime(), 64);
 
