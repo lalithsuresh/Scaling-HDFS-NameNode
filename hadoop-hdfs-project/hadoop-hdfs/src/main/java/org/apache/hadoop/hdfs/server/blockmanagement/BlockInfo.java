@@ -96,6 +96,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   DatanodeDescriptor getDatanode(int index) {
     assert this.triplets != null : "BlockInfo is not initialized";
     assert index >= 0 && index*3 < triplets.length : "Index is out of bound";
+    KthFsHelper.printKTH(BlocksHelper.getDatanode(this.getBlockId(), index));
     DatanodeDescriptor node = (DatanodeDescriptor)triplets[index*3];
     assert node == null || 
         DatanodeDescriptor.class.getName().equals(node.getClass().getName()) : 
@@ -127,20 +128,28 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
     assert this.triplets != null : "BlockInfo is not initialized";
     assert index >= 0 && index*3 < triplets.length : "Index is out of bound";
     triplets[index*3] = node;
-    //[KTHFS] Updating it in the DB
-    BlocksHelper.setDatanode( this.getBlockId() ,index, node.name);
+    System.err.println("[KTHFS] BlockInfo setDatanode is "+node);
+    if(node != null)
+    	BlocksHelper.setDatanode(this.getBlockId(), index, node.name);		
   }
 
   void setPrevious(int index, BlockInfo to) {
     assert this.triplets != null : "BlockInfo is not initialized";
     assert index >= 0 && index*3+1 < triplets.length : "Index is out of bound";
     triplets[index*3+1] = to;
+    System.err.println("[KTHFS] BlockInfo Setprevious is "+to);
+    if(to != null)
+    	BlocksHelper.setNextPrevious(this.getBlockId(), index, to, true);
+    	
   }
 
   void setNext(int index, BlockInfo to) {
     assert this.triplets != null : "BlockInfo is not initialized";
     assert index >= 0 && index*3+2 < triplets.length : "Index is out of bound";
     triplets[index*3+2] = to;
+    if(to != null)
+    	BlocksHelper.setNextPrevious( this.getBlockId(), index, to, true);
+
   }
 
   int getCapacity() {

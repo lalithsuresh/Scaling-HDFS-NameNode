@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeManager;
 
@@ -337,22 +338,58 @@ public class BlocksHelper {
 		return blocksArray;
 	}
 
-
-	public static void setDatanode(long id, int idx, String DataNode){
+	/** Update Previous or next block in the triplets table for a given BlockId.
+	 *  next=true: update nextBlockId, false: updatePrevious */
+	public static void setNextPrevious(long blockid, int idx, BlockInfo nextBlock, boolean next){
 		Session session = DBConnector.sessionFactory.getSession();
 		Transaction tx = session.currentTransaction();
-		TripletsTable triplet = session.find(TripletsTable.class, id);
+		TripletsTable triplet = session.find(TripletsTable.class, blockid);
 		tx.begin();
-		if (triplet != null){
-			System.err.println("[KTHFS] Trying to print" + triplet.getBlockId());
-			triplet.setDatanodeName(DataNode);
+		if (triplet != null)
+		{
+			if(next)
+			triplet.setNextBlockId(nextBlock.getBlockId());
+			else
+				triplet.setPreviousBlockId(nextBlock.getBlockId());
+
 			triplet.setIndex(idx);
 			session.updatePersistent(triplet);
 			tx.commit();
 		}
-		
+
 	}
+
+	/** Update the DataNode in the triplets table.*/
+
+	public static void setDatanode(long blockId, int index, String name) {
+		Session session = DBConnector.sessionFactory.getSession();
+		Transaction tx = session.currentTransaction();
+		Object[] pKey = new Object[2];
+		pKey[0]=blockId;
+		pKey[1]=index;
+		TripletsTable triplet = session.find(TripletsTable.class, pKey);
+		tx.begin();
+		if (triplet != null)
+		{
+			triplet.setDatanodeName(name);
+			triplet.setIndex(index);
+			session.updatePersistent(triplet);
+			tx.commit();
+		}
+		else
+			tx.rollback();
+	}
+	public static String getDatanode (long blockId, int index){
+		Session session = DBConnector.sessionFactory.getSession();
+		Object[] pKey = new Object[2];
+		pKey[0]=blockId;
+		pKey[1]=index;
+		TripletsTable triplet = session.find(TripletsTable.class, pKey);
+		return triplet.getDatanodeName();
+	}
+
 }
+
 /*
  * change commitOrCompleteLastBlock //gets called by datanode and the client both
  * change commitBlockSynchronization //this gets called by the datanode
