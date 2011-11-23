@@ -71,7 +71,7 @@ public class INodeTableHelper {
 		{
 			inode = session.newInstance(InodeTable.class);
 			Random id = DFSUtil.getRandom();
-			long tempId = Math.abs(id.nextLong());
+			long tempId = id.nextLong();			
 			inode.setId(tempId);
 			inode.setName(node.getFullPathName());
 			entry_exists = false;

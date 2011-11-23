@@ -106,7 +106,7 @@ public class BlocksHelper {
 	public static BlockInfo getBlockInfo(long blockId)  {
 		Session s = DBConnector.sessionFactory.getSession();
 		DatanodeManager dm = ns.getBlockManager().getDatanodeManager();
-
+	
 		BlockInfoTable bit = s.find(BlockInfoTable.class, blockId);
 
 		if(bit == null)
@@ -338,15 +338,24 @@ public class BlocksHelper {
 	}
 
 
-
+	public static void setDatanode(long id, int idx, String DataNode){
+		Session session = DBConnector.sessionFactory.getSession();
+		Transaction tx = session.currentTransaction();
+		TripletsTable triplet = session.find(TripletsTable.class, id);
+		tx.begin();
+		if (triplet != null){
+			System.err.println("[KTHFS] Trying to print" + triplet.getBlockId());
+			triplet.setDatanodeName(DataNode);
+			triplet.setIndex(idx);
+			session.updatePersistent(triplet);
+			tx.commit();
+		}
+		
+	}
 }
-
 /*
- * TODO
  * change commitOrCompleteLastBlock //gets called by datanode and the client both
  * change commitBlockSynchronization //this gets called by the datanode
  * change NameNodeRpcServer.blockReport //this gets called when datanode comes up and then every heartbeat
- * 
- * populate the BlockInfo when INodeFile objects are created - use Mariano
- * 
+ *  * 
  * */
