@@ -343,7 +343,10 @@ public class BlocksHelper {
 	public static void setNextPrevious(long blockid, int idx, BlockInfo nextBlock, boolean next){
 		Session session = DBConnector.sessionFactory.getSession();
 		Transaction tx = session.currentTransaction();
-		TripletsTable triplet = session.find(TripletsTable.class, blockid);
+		Object[] pKey = new Object[2];
+		pKey[0]=blockid;
+		pKey[1]=idx;
+		TripletsTable triplet = session.find(TripletsTable.class, pKey);
 		tx.begin();
 		if (triplet != null)
 		{
