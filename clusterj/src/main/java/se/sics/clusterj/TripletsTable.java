@@ -21,7 +21,8 @@ public interface TripletsTable {
     long getBlockId();     
     void setBlockId(long bid);
     
-     @Column(name = "index")
+    @PrimaryKey
+    @Column(name = "index")
     int getIndex();
     void setIndex(int index);
     
