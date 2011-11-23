@@ -1573,8 +1573,6 @@ public class BlockManager {
       switch(ucState) {
       case COMPLETE:
       case COMMITTED:
-    	  System.err.println("[isreplicacorrupt] generation stamp comparison: " + storedBlock.getGenerationStamp() + " " + iblk.getGenerationStamp());
-    	  System.err.println("[isreplicacorrupt] numbytes: " + storedBlock.getNumBytes() + " " + iblk.getNumBytes());
         return (storedBlock.getGenerationStamp() != iblk.getGenerationStamp()
             || storedBlock.getNumBytes() != iblk.getNumBytes());
       default:
