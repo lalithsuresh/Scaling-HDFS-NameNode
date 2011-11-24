@@ -96,7 +96,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   DatanodeDescriptor getDatanode(int index) {
     assert this.triplets != null : "BlockInfo is not initialized";
     assert index >= 0 && index*3 < triplets.length : "Index is out of bound";
-    KthFsHelper.printKTH(BlocksHelper.getDatanode(this.getBlockId(), index));
+    //KthFsHelper.printKTH(BlocksHelper.getDatanode(this.getBlockId(), index));
     DatanodeDescriptor node = (DatanodeDescriptor)triplets[index*3];
     assert node == null || 
         DatanodeDescriptor.class.getName().equals(node.getClass().getName()) : 

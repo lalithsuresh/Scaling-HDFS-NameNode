@@ -706,7 +706,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           "Negative length is not supported. File: " + src);
     }
     final LocatedBlocks ret = getBlockLocationsUpdateTimes(src,
-        offset, length, doAccessTime, needBlockToken);  
+        offset, length, doAccessTime, needBlockToken);
     if (auditLog.isInfoEnabled() && isExternalInvocation()) {
       logAuditEvent(UserGroupInformation.getCurrentUser(),
                     Server.getRemoteIp(),

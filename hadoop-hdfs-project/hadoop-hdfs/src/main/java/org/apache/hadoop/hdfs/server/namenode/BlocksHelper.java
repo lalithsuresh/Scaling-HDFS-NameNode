@@ -136,7 +136,7 @@ public class BlocksHelper {
 			{
 				//System.err.println("Retrieved Block that is UNDER_RECOVERY");
 			}
-
+/*
 			//FIXME: change primary key of table - sort the results on index
 			List<TripletsTable> tripletsTable = getTriplets(blockId); 
 			Object[] tripletsKTH = new Object[3*tripletsTable.size()];
@@ -154,7 +154,7 @@ public class BlocksHelper {
 			}
 
 			blockInfo.setTripletsKTH(tripletsKTH);
-
+*/
 			//W: assuming that this function will only be called on an INodeFile
 
 			INodeFile node = (INodeFile)INodeTableHelper.getINode(bit.getINodeID());
@@ -163,6 +163,9 @@ public class BlocksHelper {
 			node.setBlocksList(getBlocksArray(node));//circular?
 
 			blockInfo.setINode(node);
+			
+			for (DatanodeDescriptor d: getDataNodesFromBlock(blockInfo.getBlockId()))
+				blockInfo.addNode(d);
 			
 			return blockInfo;
 		}
@@ -202,7 +205,7 @@ public class BlocksHelper {
 			{
 				//System.err.println("Retrieved Block that is UNDER_RECOVERY");
 			}
-
+/*
 			//FIXME: change primary key of table - sort the results on index
 			List<TripletsTable> tripletsTable = getTriplets(blockId); 
 			Object[] tripletsKTH = new Object[3*tripletsTable.size()];
@@ -220,7 +223,10 @@ public class BlocksHelper {
 			}
 
 //			blockInfo.setTripletsKTH(tripletsKTH);
-
+*/
+			for (DatanodeDescriptor d: getDataNodesFromBlock(blockInfo.getBlockId()))
+				blockInfo.addNode(d);
+					
 			return blockInfo;
 		}
 
@@ -432,6 +438,7 @@ public class BlocksHelper {
 		Object[] pKey = new Object[2];
 		pKey[0]=blockId;
 		pKey[1]=index;
+		System.err.println("W????? " + blockId + " " + index);
 		TripletsTable triplet = session.find(TripletsTable.class, pKey);
 		return triplet.getDatanodeName();
 	}

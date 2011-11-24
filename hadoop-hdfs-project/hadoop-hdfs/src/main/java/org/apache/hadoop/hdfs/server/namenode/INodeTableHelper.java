@@ -635,9 +635,10 @@ public class INodeTableHelper {
 						null);
 			}*/
 			//M: Might need finally here			
-			//W: not sure if we need to do this for INodeFileUnderConstruction
-			blocksArray = BlocksHelper.getBlocksArray((INodeFile)inode);
+			//W: not sure if we need to do this for INodeFileUnderConstruction			
 			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
+			
+			BlockInfo[] blocksArray = BlocksHelper.getBlocksArray((INodeFile)inode);
 			((INodeFile)(inode)).setBlocksList(blocksArray);
 		}
 		if (inodetable.getIsClosedFile()) {

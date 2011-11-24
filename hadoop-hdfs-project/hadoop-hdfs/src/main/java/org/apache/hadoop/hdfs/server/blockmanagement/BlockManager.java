@@ -626,6 +626,7 @@ public class BlockManager {
     if (blocks == null) {
       return null;
     } else if (blocks.length == 0) {
+    	System.err.println("Blocks.length == 0? I mean, how? I don't understand");
       return new LocatedBlocks(0, isFileUnderConstruction,
           Collections.<LocatedBlock>emptyList(), null, false);
     } else {
