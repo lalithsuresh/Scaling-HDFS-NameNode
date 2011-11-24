@@ -150,7 +150,7 @@ public class INodeFile extends INode {
 	 * @return file blocks
 	 */
 	public BlockInfo[] getBlocks() {
-		return this.blocks;
+		return BlocksHelper.getBlocksArray(this);
 	}
 
 	/**

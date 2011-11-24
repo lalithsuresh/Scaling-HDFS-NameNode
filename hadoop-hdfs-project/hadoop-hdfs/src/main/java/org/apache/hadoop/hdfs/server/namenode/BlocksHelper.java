@@ -121,6 +121,8 @@ public class BlocksHelper {
 
 			if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.COMMITTED.ordinal())
 			{
+				blockInfo = new BlockInfoUnderConstruction(b, bit.getReplication());
+				((BlockInfoUnderConstruction) blockInfo).setBlockUCState(HdfsServerConstants.BlockUCState.COMMITTED);
 				//System.err.println("Retrieved Block that is COMMITTED");
 			}
 			else if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.COMPLETE.ordinal())
@@ -130,13 +132,14 @@ public class BlocksHelper {
 			else if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.UNDER_CONSTRUCTION.ordinal())
 			{
 				blockInfo = new BlockInfoUnderConstruction(b, bit.getReplication());
+				((BlockInfoUnderConstruction) blockInfo).setBlockUCState(HdfsServerConstants.BlockUCState.UNDER_CONSTRUCTION);
 				//System.err.println("Retrieved Block that is UNDER_CONSTRUCTION");
 			}
 			else if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.UNDER_RECOVERY.ordinal())
 			{
 				//System.err.println("Retrieved Block that is UNDER_RECOVERY");
 			}
-/*
+
 			//FIXME: change primary key of table - sort the results on index
 			List<TripletsTable> tripletsTable = getTriplets(blockId); 
 			Object[] tripletsKTH = new Object[3*tripletsTable.size()];
@@ -154,7 +157,7 @@ public class BlocksHelper {
 			}
 
 			blockInfo.setTripletsKTH(tripletsKTH);
-*/
+
 			//W: assuming that this function will only be called on an INodeFile
 
 			INodeFile node = (INodeFile)INodeTableHelper.getINode(bit.getINodeID());
@@ -188,7 +191,8 @@ public class BlocksHelper {
 
 			if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.COMMITTED.ordinal())
 			{
-				blockInfo = new BlockInfo(b, bit.getReplication());
+				blockInfo = new BlockInfoUnderConstruction(b, bit.getReplication());
+				((BlockInfoUnderConstruction) blockInfo).setBlockUCState(HdfsServerConstants.BlockUCState.COMMITTED);
 				//System.err.println("Retrieved Block that is COMMITTED");
 			}
 			else if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.COMPLETE.ordinal())
@@ -199,13 +203,16 @@ public class BlocksHelper {
 			else if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.UNDER_CONSTRUCTION.ordinal())
 			{
 				blockInfo = new BlockInfoUnderConstruction(b, bit.getReplication());
+				((BlockInfoUnderConstruction) blockInfo).setBlockUCState(HdfsServerConstants.BlockUCState.UNDER_CONSTRUCTION);
+	
 				//blockInfo.convertToBlockUnderConstruction(HdfsServerConstants.BlockUCState.UNDER_CONSTRUCTION, getDataNodesFromBlock(bit.getBlockId()));
 			}
 			else if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.UNDER_RECOVERY.ordinal())
 			{
 				//System.err.println("Retrieved Block that is UNDER_RECOVERY");
 			}
-/*
+			
+
 			//FIXME: change primary key of table - sort the results on index
 			List<TripletsTable> tripletsTable = getTriplets(blockId); 
 			Object[] tripletsKTH = new Object[3*tripletsTable.size()];
@@ -222,8 +229,8 @@ public class BlocksHelper {
 				tripletsKTH[(3*index) + 2] = nextBlockId;
 			}
 
-//			blockInfo.setTripletsKTH(tripletsKTH);
-*/
+			blockInfo.setTripletsKTH(tripletsKTH);
+
 			for (DatanodeDescriptor d: getDataNodesFromBlock(blockInfo.getBlockId()))
 				blockInfo.addNode(d);
 					
@@ -272,7 +279,7 @@ public class BlocksHelper {
 
 			TripletsTable t = s.newInstance(TripletsTable.class);
 			t.setBlockId(binfo.getBlockId());
-			if(dd==null)
+			if(dd==null || dd.getName() == null)
 				t.setDatanodeName(null);
 			else
 				t.setDatanodeName(dd.getHostName());
@@ -348,8 +355,9 @@ public class BlocksHelper {
 		if(blocksList.size() == 0 || blocksList == null) {
 			return null;
 		}
-
+		
 		BlockInfo[] blocksArray = new BlockInfo[blocksList.size()];
+		
 		try {
 			for(int i=0; i<blocksArray.length; i++) {
 

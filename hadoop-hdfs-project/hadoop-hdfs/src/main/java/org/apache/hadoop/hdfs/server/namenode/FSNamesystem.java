@@ -707,6 +707,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
     final LocatedBlocks ret = getBlockLocationsUpdateTimes(src,
         offset, length, doAccessTime, needBlockToken);
+    //System.err.println("Ret hehehe -> " + ret.get(0).getLocations()[0].name);
     if (auditLog.isInfoEnabled() && isExternalInvocation()) {
       logAuditEvent(UserGroupInformation.getCurrentUser(),
                     Server.getRemoteIp(),
@@ -1694,6 +1695,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * replication factor, then insert them into neededReplication
    */
   private void checkReplicationFactor(INodeFile file) {
+
     int numExpectedReplicas = file.getReplication();
     Block[] pendingBlocks = file.getBlocks();
     int nrBlocks = pendingBlocks.length;
@@ -2321,10 +2323,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     // Create permanent INode, update blocks
     INodeFile newFile = pendingFile.convertToInodeFile();
     dir.replaceNode(src, pendingFile, newFile);
-
+    
     // close file and persist block allocations for this file
     dir.closeFile(src, newFile);
-
+    
     checkReplicationFactor(newFile);
   }
 

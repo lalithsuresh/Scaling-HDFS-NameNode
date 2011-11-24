@@ -119,6 +119,7 @@ public class LeaseManager {
     }
     sortedLeasesByPath.put(src, lease);
     lease.paths.add(src);
+    System.err.println("Lease size is " + lease.paths.size());
     return lease;
   }
 
@@ -228,7 +229,8 @@ public class LeaseManager {
     private String findPath(INodeFileUnderConstruction pendingFile) {
       try {
         for (String src : paths) {
-          if (fsnamesystem.dir.getFileINode(src) == pendingFile) {
+        	//System.err.println("A: " + fsnamesystem.dir.getFileINode(src).getFullPathName() + " B: " + pendingFile.getFullPathName());
+          if (fsnamesystem.dir.getFileINode(src).getFullPathName().equals(pendingFile.getFullPathName())) {
             return src;
           }
         }

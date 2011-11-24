@@ -159,6 +159,7 @@ public class BlockInfoUnderConstruction extends BlockInfo {
   BlockInfo convertToCompleteBlock() throws IOException {
     assert getBlockUCState() != BlockUCState.COMPLETE :
       "Trying to convert a COMPLETE block";
+    System.err.println("Here's my state: " + getBlockUCState());
     if(getBlockUCState() != BlockUCState.COMMITTED)
       throw new IOException(
           "Cannot complete block: block has not been COMMITTED by the client");
@@ -200,7 +201,7 @@ public class BlockInfoUnderConstruction extends BlockInfo {
     return blockUCState;
   }
 
-  void setBlockUCState(BlockUCState s) {
+  public void setBlockUCState(BlockUCState s) {
     blockUCState = s;
   }
 
