@@ -1740,6 +1740,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         // check all blocks of the file.
         //
         for (BlockInfo block: v.getBlocks()) {
+        	System.err.println("I'm comparing it for a block: " + block.getBlockUCState());
           if (!block.isComplete()) {
             LOG.info("BLOCK* NameSystem.checkFileProgress: "
                 + "block " + block + " has not reached minimal replication "

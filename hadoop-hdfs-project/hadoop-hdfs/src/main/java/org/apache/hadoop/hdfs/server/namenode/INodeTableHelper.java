@@ -610,7 +610,7 @@ public class INodeTableHelper {
 			//Get the full list of blocks for this inodeID, 
 			// at this point no blocks have no INode reference
 			BlockInfo [] blocks = new BlockInfo [1];
-			blocks[0]= new BlockInfo(3);
+			blocks[0]= new BlockInfo(1);
 			//BlockInfo[] blocksArray = BlocksHelper.getBlocksArrayWithNoINodes(inodetable.getId());
 			//try {
 				inode = new INodeFileUnderConstruction(inodetable.getName().getBytes(),

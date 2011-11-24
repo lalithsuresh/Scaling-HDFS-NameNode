@@ -40,6 +40,8 @@ class BlocksMap {
     }
 
     public boolean hasNext() {
+    	System.err.println("Block id is: " + blockInfo.getBlockId());
+    	System.err.println("Datanode is: " + blockInfo.getDatanode(nextIdx));
       return blockInfo != null && nextIdx < blockInfo.getCapacity()
               && blockInfo.getDatanode(nextIdx) != null;
     }
