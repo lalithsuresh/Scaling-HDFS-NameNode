@@ -448,7 +448,6 @@ public class BlockManager {
     if(curBlock.isComplete())
       return curBlock;
     BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction)curBlock;
-    System.err.println("curBlock's state is: " + curBlock.getBlockUCState() + " ucBlock: " + ucBlock.getBlockUCState());
     if(ucBlock.numNodes() < minReplication)
       throw new IOException("Cannot complete block: " +
           "block does not satisfy minimal replication requirement.");

@@ -119,7 +119,6 @@ public class LeaseManager {
     }
     sortedLeasesByPath.put(src, lease);
     lease.paths.add(src);
-    System.err.println("Lease size is " + lease.paths.size());
     return lease;
   }
 
