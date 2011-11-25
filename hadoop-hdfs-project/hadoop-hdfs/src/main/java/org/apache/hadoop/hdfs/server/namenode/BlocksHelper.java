@@ -13,6 +13,7 @@ import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeManager;
 
 import se.sics.clusterj.*;
 
+import com.mysql.clusterj.ClusterJException;
 import com.mysql.clusterj.ClusterJHelper;
 import com.mysql.clusterj.Query;
 import com.mysql.clusterj.SessionFactory;
@@ -28,56 +29,55 @@ public class BlocksHelper {
 
 	public static FSNamesystem ns = null;
 	public static Session session= DBConnector.sessionFactory.getSession() ;
+	static final int RETRY_COUNT = 3; 
 
-
-	/*
+	/**
 	 * Helper function for appending an array of blocks - used by concat
-	 * 
 	 * Replacement for INodeFile.appendBlocks
-	 * 
-	 * */
+	 */
 	public static void appendBlocks(INodeFile thisNode, INodeFile [] inodes, int totalAddedBlocks) {
-
+		int tries=RETRY_COUNT;
+		boolean done = false;
 		Transaction tx = session.currentTransaction();
-		tx.begin();
-
+		while (done == false && tries > 0 ){
+			try{	
+				tx.begin();
+				appendBlocksInternal(thisNode, inodes, totalAddedBlocks, session);
+				tx.commit();
+				done=true;
+				session.flush();
+			}
+			catch (ClusterJException e){
+				tx.rollback();
+				System.err.println("InodeTableHelper.addChild() threw error " + e.getMessage());
+				tries--;
+			}
+			finally {
+				session.close ();
+			}
+		}
+		
+	}
+	private static void appendBlocksInternal (INodeFile thisNode, INodeFile[] inodes, int totalAddedBlocks, Session session){
 		for(INodeFile in: inodes) {
 			BlockInfo[] inBlocks = in.getBlocks();
 			for(int i=0;i<inBlocks.length;i++) {
-				BlockInfoTable bInfoTable = createBlockInfoTable(thisNode, inBlocks[i]);
+				BlockInfoTable bInfoTable = createBlockInfoTable(thisNode, inBlocks[i], session);
 				session.makePersistent(bInfoTable);
 			}
 		}
-		tx.commit();
 	}
 
-	/*
+	/**
 	 * Helper function for inserting a block in the BlocksInfo table
-	 * 
 	 * Replacement for INodeFile.addBlock
-
 	 * */
 	public static void addBlock(BlockInfo newblock) {
-
 		putBlockInfo(newblock);
-		/*
-		Transaction tx = session.currentTransaction();
-		tx.begin();
-
-		BlockInfoTable bInfoTable = session.newInstance(BlockInfoTable.class);
-		bInfoTable.setBlockId(newblock.getBlockId());
-		bInfoTable.setGenerationStamp(newblock.getGenerationStamp());
-		bInfoTable.setINodeID(newblock.getINode().getID()); //FIXME: store ID in INodeFile objects - use Mariano :)
-		bInfoTable.setNumBytes(newblock.getNumBytes());
-		bInfoTable.setReplication(-1); //FIXME: see if we need to store this or not
-
-		session.makePersistent(bInfoTable);
-		tx.commit();*/
 	}
 
-	/*Helper function for creating a BlockInfoTable object */
-	private static BlockInfoTable createBlockInfoTable(INode node, BlockInfo newblock) {
-
+	/**Helper function for creating a BlockInfoTable object, no DB access */
+	private static BlockInfoTable createBlockInfoTable(INode node, BlockInfo newblock, Session session) {
 		BlockInfoTable bInfoTable = session.newInstance(BlockInfoTable.class);
 		bInfoTable.setBlockId(newblock.getBlockId());
 		bInfoTable.setGenerationStamp(newblock.getGenerationStamp());
@@ -87,32 +87,49 @@ public class BlocksHelper {
 		return bInfoTable;
 	}
 
-	private static List<TripletsTable> getTriplets(long blockId) {
-		Session s = DBConnector.sessionFactory.getSession();
-		QueryBuilder qb = s.getQueryBuilder();
-
-		QueryDomainType<TripletsTable> dobj = qb.createQueryDefinition(TripletsTable.class);
-
-
-		dobj.where(dobj.get("blockId").equal(dobj.param("blockId"))); //works?
-
-		Query<TripletsTable> query = s.createQuery(dobj);
-		query.setParameter("blockId", blockId); //W: WHERE blockId = blockId
-
-
-		return query.getResultList(); 
-	}
-
-	/**
+//	private static List<TripletsTable> getTriplets(long blockId) {
+//		Session s = DBConnector.sessionFactory.getSession();
+//		QueryBuilder qb = s.getQueryBuilder();
+//		QueryDomainType<TripletsTable> dobj = qb.createQueryDefinition(TripletsTable.class);
+//		dobj.where(dobj.get("blockId").equal(dobj.param("blockId"))); //works?
+//		Query<TripletsTable> query = s.createQuery(dobj);
+//		query.setParameter("blockId", blockId); //W: WHERE blockId = blockId
+//		
+//
+//		return query.getResultList(); 
+//	}
+//
+	/** Return a BlockInfo object from an blockId 
 	 * @param blockId
 	 * @return
 	 * @throws IOException 
 	 */
 	public static BlockInfo getBlockInfo(long blockId)  {
-		Session s = DBConnector.sessionFactory.getSession();
-		DatanodeManager dm = ns.getBlockManager().getDatanodeManager();
-	
-		BlockInfoTable bit = s.find(BlockInfoTable.class, blockId);
+		int tries = RETRY_COUNT;
+		boolean done = false;
+		Session session = DBConnector.sessionFactory.getSession();
+		Transaction tx = session.currentTransaction();
+		while (done == false && tries > 0) {
+			try {
+				tx.begin();
+				BlockInfo ret = getBlockInfoInternal(blockId, session);
+				done=true;
+				tx.commit();
+				return ret;
+			}
+			catch (ClusterJException e){
+				tx.rollback();
+				System.err.println("InodeTableHelper.getChildren() threw error " + e.getMessage());
+				tries--;
+			}
+			finally {
+				session.close ();
+			}
+		}
+		return null;
+	}
+	private static BlockInfo getBlockInfoInternal(long blockId, Session session){	
+		BlockInfoTable bit = session.find(BlockInfoTable.class, blockId);
 
 		if(bit == null)
 		{
@@ -126,19 +143,15 @@ public class BlocksHelper {
 			{
 				blockInfo = new BlockInfoUnderConstruction(b, bit.getReplication());
 				((BlockInfoUnderConstruction) blockInfo).setBlockUCState(HdfsServerConstants.BlockUCState.COMMITTED);
-				//System.err.println("Retrieved Block that is COMMITTED");
 			}
 			else if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.COMPLETE.ordinal())
 			{
 				blockInfo = new BlockInfo(b, bit.getReplication());
-				//System.err.println("Retrieved Block that is COMPLETE " + blockInfo.getBlockUCState());
-				//System.err.println("Retrieved Block that is COMPLETE");	
 			}
 			else if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.UNDER_CONSTRUCTION.ordinal())
 			{
 				blockInfo = new BlockInfoUnderConstruction(b, bit.getReplication());
 				((BlockInfoUnderConstruction) blockInfo).setBlockUCState(HdfsServerConstants.BlockUCState.UNDER_CONSTRUCTION);
-				//System.err.println("Retrieved Block that is UNDER_CONSTRUCTION");
 			}
 			else if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.UNDER_RECOVERY.ordinal())
 			{
@@ -602,7 +615,7 @@ public class BlocksHelper {
 		session.deletePersistent(triplet);
 		tx.commit();
 	}
-
+	/** Given a BlockInfo object, fetch the rows of the Triplets table as a Triplets object  */
 	public static Object[] getTripletsForBlock (BlockInfo blockinfo) {
 		Session session = DBConnector.sessionFactory.getSession();
 		List<TripletsTable> results = getTripletsListUsingField ("blockId", blockinfo.getBlockId(), session);

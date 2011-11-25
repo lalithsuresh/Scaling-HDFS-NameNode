@@ -19,6 +19,8 @@ package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import java.io.IOException;
 
+import javax.sound.midi.SysexMessage;
+
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.namenode.BlocksHelper;
@@ -170,7 +172,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
     if(to != null)
     	BlocksHelper.setNextPrevious( this.getBlockId(), index, to, true);
   }
-
+  /** Checks the size of the triplets and how many more, we can add (in theory) */
   int getCapacity() {
     //assert this.triplets != null : "BlockInfo is not initialized";
     assert BlocksHelper.getTripletsForBlock(this).length % 3 == 0 : "Malformed BlockInfo";
@@ -256,6 +258,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
     int len = getCapacity();
     System.err.println("Capacity: " + len);
     for(int idx = 0; idx < len; idx++) {
+    	System.err.println("Now in the loop ");
       DatanodeDescriptor cur = getDatanode(idx);
       if(cur == dn){
         return idx;
@@ -313,7 +316,8 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
       next.setPrevious(next.findDatanode(dn), prev);
     if(this == head)  // removing the head
       head = next;
-    BlocksHelper.removeTriplets(this,dnIndex);
+    //FIXME: Yings code removes triplets that are needed for this block later 
+    //BlocksHelper.removeTriplets(this,dnIndex);
     System.out.println("printed once !!!!!!");
     return head;
   }
