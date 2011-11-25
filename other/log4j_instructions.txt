@@ -1,0 +1,10 @@
+# add the following lines to your $HADOOP_COMMON_HOME/etc/hadoop/log4j.properties file
+# remove the existing configurations paramters for FSNamesystem
+
+#FSNamesystem Audit logging
+# All audit events are logged at INFO level
+#
+log4j.logger.org.apache.hadoop.hdfs.server.namenode.FSNamesystem.audit=DEBUG
+log4j.logger.org.apache.hadoop=DEBUG
+log4j.logger.org.apache.hadoop.hdfs.server.namenode.FSNamesystem=DEBUG
+

@@ -1,0 +1,67 @@
+
+delimiter $$
+
+CREATE DATABASE `test` /*!40100 DEFAULT CHARACTER SET latin1 */$$
+
+delimiter $$
+
+CREATE TABLE `BlockInfo` (
+  `blockId` bigint(20) NOT NULL,
+  `blockIndex` int(11) DEFAULT NULL,
+  `iNodeID` bigint(20) DEFAULT NULL,
+  `numBytes` bigint(20) DEFAULT NULL,
+  `generationStamp` bigint(20) DEFAULT NULL,
+  `replication` int(11) DEFAULT NULL,
+  `BlockUCState` int(11) DEFAULT NULL,
+  PRIMARY KEY (`blockId`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+
+
+
+
+delimiter $$
+
+CREATE TABLE `InodeTable` (
+  `id` bigint(20) NOT NULL,
+  `name` varchar(250) DEFAULT NULL,
+  `isDir` tinyint(1) DEFAULT NULL,
+  `replication` int(11) DEFAULT NULL,
+  `modificationTime` bigint(20) DEFAULT NULL,
+  `aTime` bigint(20) DEFAULT NULL,
+  `permission` blob,
+  `nsquota` bigint(20) DEFAULT NULL,
+  `dsquota` bigint(20) DEFAULT NULL,
+  `isUnderConstruction` tinyint(1) DEFAULT NULL,
+  `clientName` varchar(45) DEFAULT NULL,
+  `clientMachine` varchar(45) DEFAULT NULL,
+  `clientNode` varchar(45) DEFAULT NULL,
+  `isClosedFile` tinyint(1) DEFAULT NULL,
+  `header` bigint(20) DEFAULT NULL,
+  `parent` varchar(250) DEFAULT NULL,
+  `isDirWithQuota` tinyint(1) DEFAULT NULL,
+  `nscount` bigint(20) DEFAULT NULL,
+  `dscount` bigint(20) DEFAULT NULL,
+  `localName` varchar(200) DEFAULT NULL,
+  `symlink` blob,
+  PRIMARY KEY (`id`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (id)
+PARTITIONS 1 */$$
+
+
+
+
+
+delimiter $$
+
+CREATE TABLE `triplets` (
+  `blockId` bigint(20) NOT NULL,
+  `index` int(11) NOT NULL,
+  `datanodeName` varchar(128) DEFAULT NULL,
+  `previousBlockId` bigint(20) DEFAULT NULL,
+  `nextBlockId` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`blockId`,`index`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+
+
+

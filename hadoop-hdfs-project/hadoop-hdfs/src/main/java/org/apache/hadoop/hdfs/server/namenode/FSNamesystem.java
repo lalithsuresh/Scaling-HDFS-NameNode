@@ -1734,6 +1734,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   boolean checkFileProgress(INodeFile v, boolean checkall) {
     readLock();
+    KthFsHelper.printKTH("####### checkall: " + checkall);
     try {
       if (checkall) {
         //
