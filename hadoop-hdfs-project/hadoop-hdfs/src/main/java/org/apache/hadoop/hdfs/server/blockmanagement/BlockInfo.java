@@ -264,7 +264,6 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
         break;
       }
     }
-    System.err.println("I'm a sissy");
     return -1;
   }
 
