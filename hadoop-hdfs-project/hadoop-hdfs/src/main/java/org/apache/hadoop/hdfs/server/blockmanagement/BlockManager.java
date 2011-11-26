@@ -2187,7 +2187,6 @@ public class BlockManager {
     Iterator<DatanodeDescriptor> nodeIter = blocksMap.nodeIterator(b);
     Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(b);
     while (nodeIter.hasNext()) {
-    	System.err.println("LOOOOOOOOOOOOOOOOOOL");
       DatanodeDescriptor node = nodeIter.next();
       if ((nodesCorrupt != null) && (nodesCorrupt.contains(node))) {
         corrupt++;

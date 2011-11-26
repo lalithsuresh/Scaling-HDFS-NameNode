@@ -96,8 +96,9 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	  }
 
   public DatanodeDescriptor getDatanode(int index) {
-    assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3 < triplets.length : "Index is out of bound";
+	  System.err.println("getDatanode invoked with index: " + index);
+    //assert this.triplets != null : "BlockInfo is not initialized";
+    assert index >= 0 && index*3 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
     //DatanodeDescriptor node = (DatanodeDescriptor)triplets[index*3];
     DatanodeDescriptor node = BlocksHelper.getDatanode(this.getBlockId(), index);
     assert node == null || 
@@ -107,8 +108,8 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   }
 
   BlockInfo getPrevious(int index) {
-    assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3+1 < triplets.length : "Index is out of bound";
+    //assert this.triplets != null : "BlockInfo is not initialized";
+    assert index >= 0 && index*3+1 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
     //BlockInfo info = (BlockInfo)triplets[index*3+1];
     BlockInfo info = null;
 	try {
@@ -126,7 +127,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 
   BlockInfo getNext(int index) {
     assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3+2 < triplets.length : "Index is out of bound";
+    assert index >= 0 && index*3+2 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
 //    BlockInfo info = (BlockInfo)triplets[index*3+2];
     BlockInfo info = null;
   	try {
@@ -143,16 +144,16 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   }
 
   void setDatanode(int index, DatanodeDescriptor node) {
-    assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3 < triplets.length : "Index is out of bound";
+    //assert this.triplets != null : "BlockInfo is not initialized";
+    assert index >= 0 && index*3 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
     //triplets[index*3] = node;
     if(node != null)
     	BlocksHelper.setDatanode(this.getBlockId(), index, node.name);		
   }
 
   void setPrevious(int index, BlockInfo to) {
-    assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3+1 < triplets.length : "Index is out of bound";
+    //assert this.triplets != null : "BlockInfo is not initialized";
+    assert index >= 0 && index*3+1 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
     //triplets[index*3+1] = to;
     if(to != null)
     	BlocksHelper.setNextPrevious(this.getBlockId(), index, to, false);
@@ -160,17 +161,17 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   }
 
   void setNext(int index, BlockInfo to) {
-    assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3+2 < triplets.length : "Index is out of bound";
+    //assert this.triplets != null : "BlockInfo is not initialized";
+    assert index >= 0 && index*3+2 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
     //triplets[index*3+2] = to;
     if(to != null)
     	BlocksHelper.setNextPrevious( this.getBlockId(), index, to, true);
   }
 
   int getCapacity() {
-    assert this.triplets != null : "BlockInfo is not initialized";
-    assert triplets.length % 3 == 0 : "Malformed BlockInfo";
-    return BlocksHelper.setTripletsForBlock(this).length / 3;
+    //assert this.triplets != null : "BlockInfo is not initialized";
+    assert BlocksHelper.getTripletsForBlock(this).length % 3 == 0 : "Malformed BlockInfo";
+    return BlocksHelper.getTripletsForBlock(this).length / 3;
   }
 
   /**
@@ -178,10 +179,10 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
    * @return first free triplet index.
    */
   private int ensureCapacity(int num) {
-    assert this.triplets != null : "BlockInfo is not initialized";
+    //assert this.triplets != null : "BlockInfo is not initialized";
     int last = numNodes();
-    //triplets = BlocksHelper.setTripletsForBlock(this);
-    if(triplets.length >= (last+num)*3)
+    Object [] temptriplets = BlocksHelper.getTripletsForBlock(this);
+    if(temptriplets.length >= (last+num)*3)
       return last;
     /* Not enough space left. Create a new array. Should normally 
      * happen only when replication is manually increased by the user. */
@@ -198,7 +199,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
    */
   int numNodes() {
     assert this.triplets != null : "BlockInfo is not initialized";
-    assert triplets.length % 3 == 0 : "Malformed BlockInfo";
+    assert BlocksHelper.getTripletsForBlock(this).length % 3 == 0 : "Malformed BlockInfo";
     for(int idx = getCapacity()-1; idx >= 0; idx--) {
       if(getDatanode(idx) != null)
         return idx+1;

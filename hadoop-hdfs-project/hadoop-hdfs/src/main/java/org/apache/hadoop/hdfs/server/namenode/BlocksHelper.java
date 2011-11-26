@@ -264,8 +264,9 @@ public class BlocksHelper {
 		bit.setNumBytes(binfo.getNumBytes());
 		//FIXME: KTHFS: Ying and Wasif: replication is null at the moment - remove the column if not required later on
 		
-				
+		
 		List<TripletsTable> results = getTripletsListUsingField ("blockId", binfo.getBlockId(), session);
+		
 		if (results.isEmpty())
 		{
 			// We don't have the triplets table yet,
@@ -290,6 +291,7 @@ public class BlocksHelper {
 
 				TripletsTable t = s.newInstance(TripletsTable.class);
 				t.setBlockId(binfo.getBlockId());
+				
 				if(dd==null)
 				{
 					t.setDatanodeName(null);
@@ -550,7 +552,7 @@ public class BlocksHelper {
 
 	}
 
-	public static Object[] setTripletsForBlock (BlockInfo blockinfo) {
+	public static Object[] getTripletsForBlock (BlockInfo blockinfo) {
 		Session session = DBConnector.sessionFactory.getSession();
 		List<TripletsTable> results = getTripletsListUsingField ("blockId", blockinfo.getBlockId(), session);
 		
