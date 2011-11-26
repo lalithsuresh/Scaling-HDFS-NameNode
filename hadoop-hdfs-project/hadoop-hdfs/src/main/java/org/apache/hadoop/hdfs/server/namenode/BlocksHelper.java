@@ -115,8 +115,10 @@ public class BlocksHelper {
 		BlockInfoTable bit = s.find(BlockInfoTable.class, blockId);
 
 		if(bit == null)
+		{
 			return null;
-		else {
+		}
+			else {
 			Block b = new Block(bit.getBlockId(), bit.getNumBytes(), bit.getGenerationStamp());
 			BlockInfo blockInfo = new BlockInfo(b, bit.getReplication());
 
@@ -165,7 +167,10 @@ public class BlocksHelper {
 
 			INodeFile node = (INodeFile)INodeTableHelper.getINode(bit.getINodeID());
 			if(node == null)
+			{
 				System.out.println("[NOTKTHFS] getBlockInfo node is null!!!!!!!!!!!!!");
+				return null;
+			}
 			node.setBlocksList(getBlocksArray(node));//circular?
 
 			blockInfo.setINode(node);
@@ -266,8 +271,9 @@ public class BlocksHelper {
 		bit.setNumBytes(binfo.getNumBytes());
 		//FIXME: KTHFS: Ying and Wasif: replication is null at the moment - remove the column if not required later on
 		
-				
+		
 		List<TripletsTable> results = getTripletsListUsingField ("blockId", binfo.getBlockId(), session);
+		
 		if (results.isEmpty())
 		{
 			// We don't have the triplets table yet,
@@ -292,6 +298,7 @@ public class BlocksHelper {
 
 				TripletsTable t = s.newInstance(TripletsTable.class);
 				t.setBlockId(binfo.getBlockId());
+				
 				if(dd==null)
 				{
 					t.setDatanodeName(null);
@@ -492,7 +499,17 @@ public class BlocksHelper {
 			tx.commit();
 		}
 		else
-			tx.rollback();
+		{
+			System.err.println("new triplets Datanode name at this point is: " + name);
+			TripletsTable newTriplet = session.newInstance(TripletsTable.class);
+			newTriplet.setBlockId(blockId);
+			newTriplet.setDatanodeName(name);
+			newTriplet.setIndex(index);
+			newTriplet.setPreviousBlockId(-1);
+			newTriplet.setNextBlockId(-1);
+			session.savePersistent(newTriplet);
+			tx.commit();
+		}
 	}
 	
 	public static DatanodeDescriptor getDatanode (long blockId, int index){
@@ -553,8 +570,40 @@ public class BlocksHelper {
 		return query.getResultList();
 
 	}
+	
+	public static BlockInfo removeBlocks(Block key)
+	{
+		System.out.println("removeBlocks called");
+		Session s = DBConnector.sessionFactory.getSession();
+		long blockId = key.getBlockId();
+		BlockInfo bi = new BlockInfo(1);
+		bi.setBlockId(blockId);
+		BlockInfoTable bit = s.find(BlockInfoTable.class, blockId);
+		System.out.println("blockId is "+blockId);
+		Transaction tx = session.currentTransaction();
+		tx.begin();
+		s.deletePersistent(bit);
+		tx.commit();
+		if(bi!=null)
+			System.out.println("should see this print");
+		return bi;
+	}
+	
+	public static void removeTriplets(BlockInfo blockInfo, int index)
+	{
+		Session session = DBConnector.sessionFactory.getSession();
+		Transaction tx = session.currentTransaction();
+		Object[] pKey = new Object[2];
+		pKey[0]=blockInfo.getBlockId();
+		pKey[1]=index;
+		System.err.println("removeTriplets() on " + blockInfo.getBlockId() + " " + index);
+		TripletsTable triplet = session.find(TripletsTable.class, pKey);
+		tx.begin();
+		session.deletePersistent(triplet);
+		tx.commit();
+	}
 
-	public static Object[] setTripletsForBlock (BlockInfo blockinfo) {
+	public static Object[] getTripletsForBlock (BlockInfo blockinfo) {
 		Session session = DBConnector.sessionFactory.getSession();
 		List<TripletsTable> results = getTripletsListUsingField ("blockId", blockinfo.getBlockId(), session);
 		

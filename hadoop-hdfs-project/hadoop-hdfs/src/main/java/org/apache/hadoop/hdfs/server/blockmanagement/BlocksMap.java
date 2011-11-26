@@ -40,8 +40,6 @@ class BlocksMap {
     }
 
     public boolean hasNext() {
-    	System.err.println("Block id is: " + blockInfo.getBlockId());
-    	System.err.println("Datanode is: " + blockInfo.getDatanode(nextIdx));
       return blockInfo != null && nextIdx < blockInfo.getCapacity()
               && blockInfo.getDatanode(nextIdx) != null;
     }
@@ -133,10 +131,13 @@ class BlocksMap {
   void removeBlock(Block block) {
     BlockInfo blockInfo = blocks.remove(block);
     if (blockInfo == null)
+    {
       return;
-
+    }
     blockInfo.setINode(null);
+    System.out.println("remove block number: "+blockInfo.numNodes());
     for(int idx = blockInfo.numNodes()-1; idx >= 0; idx--) {
+    	System.out.println("in the remove loop with idx = "+idx);
       DatanodeDescriptor dn = blockInfo.getDatanode(idx);
       dn.removeBlock(blockInfo); // remove from the list and wipe the location
     }
@@ -218,6 +219,7 @@ class BlocksMap {
       dn.replaceBlock(currentBlock, newBlock);
     }
     // replace block in the map itself
+    System.out.println("newBlock host is "+newBlock.getBlockName());
     blocks.put(newBlock);
     return newBlock;
   }

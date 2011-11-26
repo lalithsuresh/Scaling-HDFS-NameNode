@@ -1150,7 +1150,7 @@ public class FSDirectory implements Closeable {
     // If INodeDirectory, then we've already cleared it from
     // the DB, so iterate through its children and clear the
     // associated blocks
-    int filesRemoved = 0;
+    int filesRemoved = 1;
     if (targetNode instanceof INodeDirectory || targetNode instanceof INodeDirectoryWithQuota){
     	for (INode child: tempChildren) {
     		filesRemoved += child.collectSubtreeBlocksAndClear(collectedBlocks);

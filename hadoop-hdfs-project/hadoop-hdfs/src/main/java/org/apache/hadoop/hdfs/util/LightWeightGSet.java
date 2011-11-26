@@ -206,7 +206,7 @@ public class LightWeightGSet<K, E extends K> implements GSet<K, E> {
 	 * @return If such element exists, return it.
 	 *         Otherwise, return null.
 	 */
-	private E remove(final int index, final K key) {
+/*	private E remove_old(final int index, final K key) {
 		if (entries[index] == null) {
 			return null;
 		} else if (entries[index].equals(key)) {
@@ -237,8 +237,15 @@ public class LightWeightGSet<K, E extends K> implements GSet<K, E> {
 			//element not found
 			return null;
 		}
-	}
+	}*/
 
+	@SuppressWarnings("unchecked")
+	private E remove(final int index, final K key) {
+		Block b = (Block)key;
+		BlockInfo bi = BlocksHelper.removeBlocks(b);
+		return (E)bi;
+	}
+	
 	@Override
 	public E remove(final K key) {
 		//validate key

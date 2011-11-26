@@ -91,313 +91,299 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	/*public void setINode_old(INodeFile inode) {
     this.inode = inode;
   }*/
+  
+  public void setINode(INodeFile inode) {
+	  this.inode = inode;
+	  if(inode!=null)
+	    BlocksHelper.updateINodeID(inode.getID(), this);
+	  }
 
-	public void setINode(INodeFile inode) {
-		this.inode = inode;
-		BlocksHelper.updateINodeID(inode.getID(), this);
+  public DatanodeDescriptor getDatanode(int index) {
+	  System.err.println("getDatanode invoked with index: " + index);
+    //assert this.triplets != null : "BlockInfo is not initialized";
+    assert index >= 0 && index*3 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
+    //DatanodeDescriptor node = (DatanodeDescriptor)triplets[index*3];
+    DatanodeDescriptor node = BlocksHelper.getDatanode(this.getBlockId(), index);
+    assert node == null || 
+        DatanodeDescriptor.class.getName().equals(node.getClass().getName()) : 
+              "DatanodeDescriptor is expected at " + index*3;
+    return node;
+  }
+
+  BlockInfo getPrevious(int index) {
+    //assert this.triplets != null : "BlockInfo is not initialized";
+    assert index >= 0 && index*3+1 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
+    //BlockInfo info = (BlockInfo)triplets[index*3+1];
+    BlockInfo info = null;
+	try {
+		info = BlocksHelper.getNextPrevious(this.getBlockId(), index, false);
+	} catch (IOException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
 	}
 
-	public DatanodeDescriptor getDatanode(int index) {
-		assert this.triplets != null : "BlockInfo is not initialized";
-		assert index >= 0 && index*3 < triplets.length : "Index is out of bound";
-		//DatanodeDescriptor node = (DatanodeDescriptor)triplets[index*3];
-		DatanodeDescriptor node = BlocksHelper.getDatanode(this.getBlockId(), index);
-		assert node == null || 
-				DatanodeDescriptor.class.getName().equals(node.getClass().getName()) : 
-					"DatanodeDescriptor is expected at " + index*3;
-				return node;
-	}
+    assert info == null || 
+        info.getClass().getName().startsWith(BlockInfo.class.getName()) : 
+              "BlockInfo is expected at " + index*3;
+    return info;
+  }
 
-	BlockInfo getPrevious(int index) {
-		assert this.triplets != null : "BlockInfo is not initialized";
-		assert index >= 0 && index*3+1 < triplets.length : "Index is out of bound";
-		//BlockInfo info = (BlockInfo)triplets[index*3+1];
-		BlockInfo info = null;
-		try {
-			info = BlocksHelper.getNextPrevious(this.getBlockId(), index, false);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+  BlockInfo getNext(int index) {
+    assert this.triplets != null : "BlockInfo is not initialized";
+    assert index >= 0 && index*3+2 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
+//    BlockInfo info = (BlockInfo)triplets[index*3+2];
+    BlockInfo info = null;
+  	try {
+  		info = BlocksHelper.getNextPrevious(this.getBlockId(), index, true);
+  	} catch (IOException e) {
+  		// TODO Auto-generated catch block
+  		e.printStackTrace();
+  	}
 
-		assert info == null || 
-				info.getClass().getName().startsWith(BlockInfo.class.getName()) : 
-					"BlockInfo is expected at " + index*3;
-				return info;
-	}
+    assert info == null || 
+        info.getClass().getName().startsWith(BlockInfo.class.getName()) : 
+              "BlockInfo is expected at " + index*3;
+    return info;
+  }
 
-	BlockInfo getNext(int index) {
-		assert this.triplets != null : "BlockInfo is not initialized";
-		assert index >= 0 && index*3+2 < triplets.length : "Index is out of bound";
-		//    BlockInfo info = (BlockInfo)triplets[index*3+2];
-		BlockInfo info = null;
-		try {
-			info = BlocksHelper.getNextPrevious(this.getBlockId(), index, true);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+  void setDatanode(int index, DatanodeDescriptor node) {
+    //assert this.triplets != null : "BlockInfo is not initialized";
+    assert index >= 0 && index*3 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
+    //triplets[index*3] = node;
+    if(node != null)
+    	BlocksHelper.setDatanode(this.getBlockId(), index, node.name);
+  }
 
-		assert info == null || 
-				info.getClass().getName().startsWith(BlockInfo.class.getName()) : 
-					"BlockInfo is expected at " + index*3;
-				return info;
-	}
+  void setPrevious(int index, BlockInfo to) {
+    //assert this.triplets != null : "BlockInfo is not initialized";
+    assert index >= 0 && index*3+1 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
+    //triplets[index*3+1] = to;
+    if(to != null)
+    	BlocksHelper.setNextPrevious(this.getBlockId(), index, to, false);
+    	
+  }
 
-	void setDatanode(int index, DatanodeDescriptor node) {
-		assert this.triplets != null : "BlockInfo is not initialized";
-		assert index >= 0 && index*3 < triplets.length : "Index is out of bound";
-		//triplets[index*3] = node;
-		if(node != null)
-			BlocksHelper.setDatanode(this.getBlockId(), index, node.name);		
-	}
+  void setNext(int index, BlockInfo to) {
+    //assert this.triplets != null : "BlockInfo is not initialized";
+    assert index >= 0 && index*3+2 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
+    //triplets[index*3+2] = to;
+    if(to != null)
+    	BlocksHelper.setNextPrevious( this.getBlockId(), index, to, true);
+  }
 
-	void setPrevious(int index, BlockInfo to) {
-		assert this.triplets != null : "BlockInfo is not initialized";
-		assert index >= 0 && index*3+1 < triplets.length : "Index is out of bound";
-		//triplets[index*3+1] = to;
-		if(to != null)
-			BlocksHelper.setNextPrevious(this.getBlockId(), index, to, false);
+  int getCapacity() {
+    //assert this.triplets != null : "BlockInfo is not initialized";
+    assert BlocksHelper.getTripletsForBlock(this).length % 3 == 0 : "Malformed BlockInfo";
+    return BlocksHelper.getTripletsForBlock(this).length / 3;
+  }
 
-	}
+  /**
+   * Ensure that there is enough  space to include num more triplets.
+   * @return first free triplet index.
+   */
+  private int ensureCapacity(int num) {
+    //assert this.triplets != null : "BlockInfo is not initialized";
+    int last = numNodes();
+    Object [] temptriplets = BlocksHelper.getTripletsForBlock(this);
+    if(temptriplets.length >= (last+num)*3)
+      return last;
+    /* Not enough space left. Create a new array. Should normally 
+     * happen only when replication is manually increased by the user. */
+    Object[] old = triplets;
+    triplets = new Object[(last+num)*3];
+    for(int i=0; i < last*3; i++) {
+      triplets[i] = old[i];
+    }
+    return last;
+  }
 
-	void setNext(int index, BlockInfo to) {
-		assert this.triplets != null : "BlockInfo is not initialized";
-		assert index >= 0 && index*3+2 < triplets.length : "Index is out of bound";
-		//triplets[index*3+2] = to;
-		if(to != null)
-			BlocksHelper.setNextPrevious( this.getBlockId(), index, to, true);
-	}
+  /**
+   * Count the number of data-nodes the block belongs to.
+   */
+  int numNodes() {
+    assert this.triplets != null : "BlockInfo is not initialized";
+    assert BlocksHelper.getTripletsForBlock(this).length % 3 == 0 : "Malformed BlockInfo";
+    for(int idx = getCapacity()-1; idx >= 0; idx--) {
+      if(getDatanode(idx) != null)
+        return idx+1;
+    }
+    return 0;
+  }
 
-	int getCapacity() {
-		assert this.triplets != null : "BlockInfo is not initialized";
-		assert triplets.length % 3 == 0 : "Malformed BlockInfo";
-		return BlocksHelper.setTripletsForBlock(this).length / 3;
-	}
+  /**
+   * Add data-node this block belongs to.
+   */
+  public boolean addNode(DatanodeDescriptor node) {
+    if(findDatanode(node) >= 0) // the node is already there
+      return false;
 
-	/**
-	 * Ensure that there is enough  space to include num more triplets.
-	 * @return first free triplet index.
-	 */
-	private int ensureCapacity(int num) {
-		assert this.triplets != null : "BlockInfo is not initialized";
-		int last = numNodes();
-		//triplets = BlocksHelper.setTripletsForBlock(this);
-		if(triplets.length >= (last+num)*3)
-			return last;
-		/* Not enough space left. Create a new array. Should normally 
-		 * happen only when replication is manually increased by the user. */
-		Object[] old = triplets;
-		triplets = new Object[(last+num)*3];
-		for(int i=0; i < last*3; i++) {
-			triplets[i] = old[i];
-		}
-		return last;
-	}
+    // find the last null node
+    int lastNode = ensureCapacity(1);
+    setDatanode(lastNode, node);
+    setNext(lastNode, null);
+    setPrevious(lastNode, null);
+    return true;
+  }
 
-	/**
-	 * Count the number of data-nodes the block belongs to.
-	 */
-	int numNodes() {
-		assert this.triplets != null : "BlockInfo is not initialized";
-		assert triplets.length % 3 == 0 : "Malformed BlockInfo";
-		for(int idx = getCapacity()-1; idx >= 0; idx--) {
-			if(getDatanode(idx) != null)
-				return idx+1;
-		}
-		return 0;
-	}
+  /**
+   * Remove data-node from the block.
+   */
+  public boolean removeNode(DatanodeDescriptor node) {
+    int dnIndex = findDatanode(node);
+    if(dnIndex < 0) // the node is not found
+      return false;
+    assert getPrevious(dnIndex) == null && getNext(dnIndex) == null : 
+      "Block is still in the list and must be removed first.";
+    // find the last not null node
+    int lastNode = numNodes()-1; 
+    // replace current node triplet by the lastNode one 
+    setDatanode(dnIndex, getDatanode(lastNode));
+    setNext(dnIndex, getNext(lastNode)); 
+    setPrevious(dnIndex, getPrevious(lastNode)); 
+    // set the last triplet to null
+    setDatanode(lastNode, null);
+    setNext(lastNode, null); 
+    setPrevious(lastNode, null); 
+    return true;
+  }
 
-	/**
-	 * Add data-node this block belongs to.
-	 */
-	public boolean addNode(DatanodeDescriptor node) {
-		if(findDatanode(node) >= 0) // the node is already there
-			return false;
-		// find the last null node
-		int lastNode = ensureCapacity(1);
-		setDatanode(lastNode, node);
-		setNext(lastNode, null);
-		setPrevious(lastNode, null);
-		return true;
-	}
+  /**
+   * Find specified DatanodeDescriptor.
+   * @param dn
+   * @return index or -1 if not found.
+   */
+  int findDatanode(DatanodeDescriptor dn) {
+    int len = getCapacity();
+    System.err.println("Capacity: " + len);
+    for(int idx = 0; idx < len; idx++) {
+      DatanodeDescriptor cur = getDatanode(idx);
+      if(cur == dn){
+        return idx;
+      }
+      if(cur == null){
+        break;
+      }
+    }
+    System.err.println("I'm a sissy");
+    return -1;
+  }
 
-	/**
-	 * Remove data-node from the block.
-	 */
-	public boolean removeNode(DatanodeDescriptor node) {
-		int dnIndex = findDatanode(node);
-		if(dnIndex < 0) // the node is not found
-			return false;
-		assert getPrevious(dnIndex) == null && getNext(dnIndex) == null : 
-			"Block is still in the list and must be removed first.";
-		// find the last not null node
-		int lastNode = numNodes()-1; 
-		// replace current node triplet by the lastNode one 
-		setDatanode(dnIndex, getDatanode(lastNode));
-		setNext(dnIndex, getNext(lastNode)); 
-		setPrevious(dnIndex, getPrevious(lastNode)); 
-		// set the last triplet to null
-		setDatanode(lastNode, null);
-		setNext(lastNode, null); 
-		setPrevious(lastNode, null); 
-		return true;
-	}
+  /**
+   * Insert this block into the head of the list of blocks 
+   * related to the specified DatanodeDescriptor.
+   * If the head is null then form a new list.
+   * @return current block as the new head of the list.
+   */
+  public BlockInfo listInsert(BlockInfo head, DatanodeDescriptor dn) {
+    int dnIndex = this.findDatanode(dn);
+    assert dnIndex >= 0 : "Data node is not found: current";
+    assert getPrevious(dnIndex) == null && getNext(dnIndex) == null : 
+            "Block is already in the list and cannot be inserted.";
+    this.setPrevious(dnIndex, null);
+    this.setNext(dnIndex, head);
+    if(head != null)
+      head.setPrevious(head.findDatanode(dn), this);
+    return this;
+  }
 
-	/**
-	 * Find specified DatanodeDescriptor.
-	 * @param dn
-	 * @return index or -1 if not found.
-	 */
-	int findDatanode(DatanodeDescriptor dn) {
-		int len = getCapacity();
-		System.err.println("Capacity: " + len);
-		for(int idx = 0; idx < len; idx++) {
-			DatanodeDescriptor cur = getDatanode(idx);
-			if(cur == dn){
-				return idx;
-			}
-			if(cur == null){
-				break;
-			}
-		}
-		System.err.println("I'm a sissy");
-		return -1;
-	}
+  /**
+   * Remove this block from the list of blocks 
+   * related to the specified DatanodeDescriptor.
+   * If this block is the head of the list then return the next block as 
+   * the new head.
+   * @return the new head of the list or null if the list becomes
+   * empty after deletion.
+   */
+  public BlockInfo listRemove(BlockInfo head, DatanodeDescriptor dn) {
+    if(head == null)
+      return null;
+    int dnIndex = this.findDatanode(dn);
+    if(dnIndex < 0) // this block is not on the data-node list
+      return head;
 
-	/**
-	 * Insert this block into the head of the list of blocks 
-	 * related to the specified DatanodeDescriptor.
-	 * If the head is null then form a new list.
-	 * @return current block as the new head of the list.
-	 */
-	public BlockInfo listInsert(BlockInfo head, DatanodeDescriptor dn) {
-		int dnIndex = this.findDatanode(dn);
-		assert dnIndex >= 0 : "Data node is not found: current";
-		assert getPrevious(dnIndex) == null && getNext(dnIndex) == null : 
-			"Block is already in the list and cannot be inserted.";
-		this.setPrevious(dnIndex, null);
-		this.setNext(dnIndex, head);
-		if(head != null)
-			head.setPrevious(head.findDatanode(dn), this);
-		return this;
-	}
+    BlockInfo next = this.getNext(dnIndex);
+    BlockInfo prev = this.getPrevious(dnIndex);
+    
+    this.setNext(dnIndex, null);
+    this.setPrevious(dnIndex, null);
+    
+    
+    if(prev != null)
+      prev.setNext(prev.findDatanode(dn), next);
+    if(next != null)
+      next.setPrevious(next.findDatanode(dn), prev);
+    if(this == head)  // removing the head
+      head = next;
+    BlocksHelper.removeTriplets(this,dnIndex);
+    System.out.println("printed once !!!!!!");
+    return head;
+  }
 
-	/**
-	 * Remove this block from the list of blocks 
-	 * related to the specified DatanodeDescriptor.
-	 * If this block is the head of the list then return the next block as 
-	 * the new head.
-	 * @return the new head of the list or null if the list becomes
-	 * empty after deletion.
-	 */
-	public BlockInfo listRemove(BlockInfo head, DatanodeDescriptor dn) {
-		if(head == null)
-			return null;
-		int dnIndex = this.findDatanode(dn);
-		if(dnIndex < 0) // this block is not on the data-node list
-			return head;
+  /**
+   * BlockInfo represents a block that is not being constructed.
+   * In order to start modifying the block, the BlockInfo should be converted
+   * to {@link BlockInfoUnderConstruction}.
+   * @return {@link BlockUCState#COMPLETE}
+   */
+  public BlockUCState getBlockUCState() {
+    return BlockUCState.COMPLETE;
+  }
 
-		BlockInfo next = this.getNext(dnIndex);
-		BlockInfo prev = this.getPrevious(dnIndex);
-		this.setNext(dnIndex, null);
-		this.setPrevious(dnIndex, null);
-		if(prev != null)
-			prev.setNext(prev.findDatanode(dn), next);
-		if(next != null)
-			next.setPrevious(next.findDatanode(dn), prev);
-		if(this == head)  // removing the head
-			head = next;
-		return head;
-	}
+  /**
+   * Is this block complete?
+   * 
+   * @return true if the state of the block is {@link BlockUCState#COMPLETE}
+   */
+  public boolean isComplete() {
+    return getBlockUCState().equals(BlockUCState.COMPLETE);
+  }
 
-	/**
-	 * BlockInfo represents a block that is not being constructed.
-	 * In order to start modifying the block, the BlockInfo should be converted
-	 * to {@link BlockInfoUnderConstruction}.
-	 * @return {@link BlockUCState#COMPLETE}
-	 */
-	public BlockUCState getBlockUCState() {
-		return BlockUCState.COMPLETE;
-	}
+  /**
+   * Convert a complete block to an under construction block.
+   * 
+   * @return BlockInfoUnderConstruction -  an under construction block.
+   */
+  public BlockInfoUnderConstruction convertToBlockUnderConstruction(
+      BlockUCState s, DatanodeDescriptor[] targets) {
+    if(isComplete()) {
+      return new BlockInfoUnderConstruction(
+          this, getINode().getReplication(), s, targets);
+    }
+    // the block is already under construction
+    BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction)this;
+    ucBlock.setBlockUCState(s);
+    ucBlock.setExpectedLocations(targets);
+    return ucBlock;
+  }
 
-	/**
-	 * Is this block complete?
-	 * 
-	 * @return true if the state of the block is {@link BlockUCState#COMPLETE}
-	 */
-	public boolean isComplete() {
-		return getBlockUCState().equals(BlockUCState.COMPLETE);
-	}
+  @Override
+  public int hashCode() {
+    // Super implementation is sufficient
+    return super.hashCode();
+  }
+  
+  @Override
+  public boolean equals(Object obj) {
+    // Sufficient to rely on super's implementation
+    return (this == obj) || super.equals(obj);
+  }
 
-	/**
-	 * Convert a complete block to an under construction block.
-	 * 
-	 * @return BlockInfoUnderConstruction -  an under construction block.
-	 */
-	public BlockInfoUnderConstruction convertToBlockUnderConstruction(
-			BlockUCState s, DatanodeDescriptor[] targets) {
-		if(isComplete()) {
-			return new BlockInfoUnderConstruction(
-					this, getINode().getReplication(), s, targets);
-		}
-		// the block is already under construction
-		BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction)this;
-		ucBlock.setBlockUCState(s);
-		ucBlock.setExpectedLocations(targets);
-		return ucBlock;
-	}
+  @Override
+  public LightWeightGSet.LinkedElement getNext() {
+    return nextLinkedElement;
+  }
 
-	@Override
-	public int hashCode() {
-		// Super implementation is sufficient
-		return super.hashCode();
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		// Sufficient to rely on super's implementation
-		return (this == obj) || super.equals(obj);
-	}
-
-	@Override
-	public LightWeightGSet.LinkedElement getNext() {
-		return nextLinkedElement;
-	}
-
-	@Override
-	public void setNext(LightWeightGSet.LinkedElement next) {
-		this.nextLinkedElement = next;
-	}
-	/*added for KTHFS*/
-	public void setTripletsKTH(Object[] trips) {
-		this.triplets = trips;
-	}
-	/*added for KTHFS*/
-	public Object[] getTripletsKTH() {
-		return this.triplets;
-	}
-
-	@Override // Comparable - added for sorting the blocks in an INodeFile - KTHFS
-	public int compareTo(Block b) {
-		BlockInfo binfo = (BlockInfo)b;
-		
-		return this.blockIndex < binfo.blockIndex ? -1 : 1; 
-	
-		/*	return (blockId < b.blockId) ? -1 :
-			blockId > b.blockId ? 1 : 0;*/
-			
-			
-	}
-
-	/*added for KTHFS*/
-	public void setBlockIndex(int index) {
-		this.blockIndex = index;
-	}
-	/*added for KTHFS*/
-	public int getBlockIndex() {
-		return this.blockIndex;
-	}
-
-
+  @Override
+  public void setNext(LightWeightGSet.LinkedElement next) {
+    this.nextLinkedElement = next;
+  }
+  /*added for KTHFS*/
+  public void setTripletsKTH(Object[] trips) {
+	  this.triplets = trips;
+  }
+  /*added for KTHFS*/
+  public Object[] getTripletsKTH() {
+	  return this.triplets;
+  }
+  
 }
