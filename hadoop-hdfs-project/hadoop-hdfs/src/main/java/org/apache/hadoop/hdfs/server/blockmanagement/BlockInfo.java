@@ -386,4 +386,13 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	  return this.triplets;
   }
   
+  /*added for KTHFS*/
+  public int getBlockIndex() {
+	  return this.blockIndex;
+  }
+  /*added for KTHFS*/
+  public void setBlockIndex(int bindex) {
+	  this.blockIndex = bindex;
+  }
+  
 }
