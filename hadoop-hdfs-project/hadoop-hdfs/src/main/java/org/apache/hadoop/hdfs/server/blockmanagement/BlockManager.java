@@ -929,7 +929,6 @@ public class BlockManager {
     // Choose the blocks to be replicated
     List<List<Block>> blocksToReplicate =
       chooseUnderReplicatedBlocks(blocksToProcess);
-
     // replicate blocks
     int scheduledReplicationCount = 0;
     for (int i=0; i<blocksToReplicate.size(); i++) {
@@ -1017,7 +1016,9 @@ public class BlockManager {
     DatanodeDescriptor srcNode;
     INodeFile fileINode = null;
     int additionalReplRequired;
-
+    
+    System.out.println("IN the computerReplicationWorkForBlock");
+    
     namesystem.writeLock();
     try {
       synchronized (neededReplications) {

@@ -164,7 +164,10 @@ public class BlocksHelper {
 
 			INodeFile node = (INodeFile)INodeTableHelper.getINode(bit.getINodeID());
 			if(node == null)
+			{
 				System.out.println("[NOTKTHFS] getBlockInfo node is null!!!!!!!!!!!!!");
+				return null;
+			}
 			node.setBlocksList(getBlocksArray(node));//circular?
 
 			blockInfo.setINode(node);
@@ -550,6 +553,21 @@ public class BlocksHelper {
 		query.setParameter("param", value); //the WHERE clause of SQL
 		return query.getResultList();
 
+	}
+	
+	public static BlockInfo removeBlocks(Block key)
+	{
+		System.out.println("removeBlocks called");
+		Session s = DBConnector.sessionFactory.getSession();
+		long blockId = key.getBlockId();
+		BlockInfo bi = getBlockInfo(blockId);
+		BlockInfoTable bit = s.find(BlockInfoTable.class, blockId);
+		System.out.println("blockId is "+blockId);
+		Transaction tx = session.currentTransaction();
+		tx.begin();
+		s.deletePersistent(bit);
+		tx.commit();
+		return bi;
 	}
 
 	public static Object[] getTripletsForBlock (BlockInfo blockinfo) {
