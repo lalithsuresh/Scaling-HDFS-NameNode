@@ -706,7 +706,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           "Negative length is not supported. File: " + src);
     }
     final LocatedBlocks ret = getBlockLocationsUpdateTimes(src,
-        offset, length, doAccessTime, needBlockToken);  
+        offset, length, doAccessTime, needBlockToken);
+    //System.err.println("Ret hehehe -> " + ret.get(0).getLocations()[0].name);
     if (auditLog.isInfoEnabled() && isExternalInvocation()) {
       logAuditEvent(UserGroupInformation.getCurrentUser(),
                     Server.getRemoteIp(),
@@ -1694,6 +1695,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * replication factor, then insert them into neededReplication
    */
   private void checkReplicationFactor(INodeFile file) {
+
     int numExpectedReplicas = file.getReplication();
     Block[] pendingBlocks = file.getBlocks();
     int nrBlocks = pendingBlocks.length;
@@ -1738,6 +1740,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         // check all blocks of the file.
         //
         for (BlockInfo block: v.getBlocks()) {
+        	System.err.println("I'm comparing it for a block: " + block.getBlockUCState());
           if (!block.isComplete()) {
             LOG.info("BLOCK* NameSystem.checkFileProgress: "
                 + "block " + block + " has not reached minimal replication "
@@ -2322,10 +2325,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     // Create permanent INode, update blocks
     INodeFile newFile = pendingFile.convertToInodeFile();
     dir.replaceNode(src, pendingFile, newFile);
-
+    
     // close file and persist block allocations for this file
     dir.closeFile(src, newFile);
-
+    
     checkReplicationFactor(newFile);
   }
 

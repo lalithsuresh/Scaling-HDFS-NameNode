@@ -17,9 +17,12 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import java.io.IOException;
+
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.namenode.BlocksHelper;
+import org.apache.hadoop.hdfs.server.namenode.DBConnector;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.KthFsHelper;
 import org.apache.hadoop.hdfs.util.LightWeightGSet;
@@ -61,7 +64,6 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   public BlockInfo(Block blk, int replication) {
     super(blk);
     this.triplets = new Object[3*replication];
-    this.tripletsKTH = new Object[3*replication];
     this.inode = null;
     
 	this.getBlockId(); 
@@ -94,11 +96,11 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	    BlocksHelper.updateINodeID(inode.getID(), this);
 	  }
 
-  DatanodeDescriptor getDatanode(int index) {
+  public DatanodeDescriptor getDatanode(int index) {
     assert this.triplets != null : "BlockInfo is not initialized";
     assert index >= 0 && index*3 < triplets.length : "Index is out of bound";
-    KthFsHelper.printKTH(BlocksHelper.getDatanode(this.getBlockId(), index));
-    DatanodeDescriptor node = (DatanodeDescriptor)triplets[index*3];
+    //DatanodeDescriptor node = (DatanodeDescriptor)triplets[index*3];
+    DatanodeDescriptor node = BlocksHelper.getDatanode(this.getBlockId(), index);
     assert node == null || 
         DatanodeDescriptor.class.getName().equals(node.getClass().getName()) : 
               "DatanodeDescriptor is expected at " + index*3;
@@ -108,7 +110,15 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   BlockInfo getPrevious(int index) {
     assert this.triplets != null : "BlockInfo is not initialized";
     assert index >= 0 && index*3+1 < triplets.length : "Index is out of bound";
-    BlockInfo info = (BlockInfo)triplets[index*3+1];
+    //BlockInfo info = (BlockInfo)triplets[index*3+1];
+    BlockInfo info = null;
+	try {
+		info = BlocksHelper.getNextPrevious(this.getBlockId(), index, false);
+	} catch (IOException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+
     assert info == null || 
         info.getClass().getName().startsWith(BlockInfo.class.getName()) : 
               "BlockInfo is expected at " + index*3;
@@ -118,7 +128,15 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   BlockInfo getNext(int index) {
     assert this.triplets != null : "BlockInfo is not initialized";
     assert index >= 0 && index*3+2 < triplets.length : "Index is out of bound";
-    BlockInfo info = (BlockInfo)triplets[index*3+2];
+//    BlockInfo info = (BlockInfo)triplets[index*3+2];
+    BlockInfo info = null;
+  	try {
+  		info = BlocksHelper.getNextPrevious(this.getBlockId(), index, true);
+  	} catch (IOException e) {
+  		// TODO Auto-generated catch block
+  		e.printStackTrace();
+  	}
+
     assert info == null || 
         info.getClass().getName().startsWith(BlockInfo.class.getName()) : 
               "BlockInfo is expected at " + index*3;
@@ -128,7 +146,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   void setDatanode(int index, DatanodeDescriptor node) {
     assert this.triplets != null : "BlockInfo is not initialized";
     assert index >= 0 && index*3 < triplets.length : "Index is out of bound";
-    triplets[index*3] = node;
+    //triplets[index*3] = node;
     if(node != null)
     	BlocksHelper.setDatanode(this.getBlockId(), index, node.name);		
   }
@@ -136,25 +154,24 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   void setPrevious(int index, BlockInfo to) {
     assert this.triplets != null : "BlockInfo is not initialized";
     assert index >= 0 && index*3+1 < triplets.length : "Index is out of bound";
-    triplets[index*3+1] = to;
+    //triplets[index*3+1] = to;
     if(to != null)
-    	BlocksHelper.setNextPrevious(this.getBlockId(), index, to, true);
+    	BlocksHelper.setNextPrevious(this.getBlockId(), index, to, false);
     	
   }
 
   void setNext(int index, BlockInfo to) {
     assert this.triplets != null : "BlockInfo is not initialized";
     assert index >= 0 && index*3+2 < triplets.length : "Index is out of bound";
-    triplets[index*3+2] = to;
+    //triplets[index*3+2] = to;
     if(to != null)
     	BlocksHelper.setNextPrevious( this.getBlockId(), index, to, true);
-
   }
 
   int getCapacity() {
     assert this.triplets != null : "BlockInfo is not initialized";
     assert triplets.length % 3 == 0 : "Malformed BlockInfo";
-    return triplets.length / 3;
+    return BlocksHelper.setTripletsForBlock(this).length / 3;
   }
 
   /**
@@ -164,6 +181,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   private int ensureCapacity(int num) {
     assert this.triplets != null : "BlockInfo is not initialized";
     int last = numNodes();
+    //triplets = BlocksHelper.setTripletsForBlock(this);
     if(triplets.length >= (last+num)*3)
       return last;
     /* Not enough space left. Create a new array. Should normally 
@@ -232,13 +250,17 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
    */
   int findDatanode(DatanodeDescriptor dn) {
     int len = getCapacity();
+    System.err.println("Capacity: " + len);
     for(int idx = 0; idx < len; idx++) {
       DatanodeDescriptor cur = getDatanode(idx);
-      if(cur == dn)
+      if(cur == dn){
         return idx;
-      if(cur == null)
+      }
+      if(cur == null){
         break;
+      }
     }
+    System.err.println("I'm a sissy");
     return -1;
   }
 
@@ -348,7 +370,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   }
   /*added for KTHFS*/
   public void setTripletsKTH(Object[] trips) {
-	  this.tripletsKTH = trips;
+	  this.triplets = trips;
   }
   /*added for KTHFS*/
   public Object[] getTripletsKTH() {

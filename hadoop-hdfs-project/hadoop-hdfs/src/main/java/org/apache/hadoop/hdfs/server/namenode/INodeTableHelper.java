@@ -607,15 +607,16 @@ public class INodeTableHelper {
 			inode.setModificationTime(inodetable.getModificationTime());
 		}
 		if (inodetable.getIsUnderConstruction()) {
-			/* FIXME: Handle blocks */
-			/* FIXME: Double check numbers later */
+			//Get the full list of blocks for this inodeID, 
+			// at this point no blocks have no INode reference
 			BlockInfo [] blocks = new BlockInfo [1];
-			blocks[0] = new BlockInfo(3);
+			blocks[0]= new BlockInfo(1);
+			//BlockInfo[] blocksArray = BlocksHelper.getBlocksArrayWithNoINodes(inodetable.getId());
 			//try {
 				inode = new INodeFileUnderConstruction(inodetable.getName().getBytes(),
-						(short) 1,
+						getReplicationFromHeader(inodetable.getHeader()),
 						inodetable.getModificationTime(),
-						64,
+						getPreferredBlockSize(inodetable.getHeader()),
 						blocks,
 						ps,
 						inodetable.getClientName(),
@@ -634,8 +635,9 @@ public class INodeTableHelper {
 						null);
 			}*/
 			//M: Might need finally here			
-			//W: not sure if we need to do this for INodeFileUnderConstruction
+			//W: not sure if we need to do this for INodeFileUnderConstruction			
 			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
+			
 			BlockInfo[] blocksArray = BlocksHelper.getBlocksArray((INodeFile)inode);
 			((INodeFile)(inode)).setBlocksList(blocksArray);
 		}
@@ -643,11 +645,14 @@ public class INodeTableHelper {
 			/* FIXME: Double check numbers later */
 			INodeFile tmp = new INodeFile(ps,
 					0,
-					(short)1,
+					getReplicationFromHeader(inodetable.getHeader()),
 					inodetable.getModificationTime(),
-					inodetable.getATime(), 64);
+					inodetable.getATime(), getPreferredBlockSize(inodetable.getHeader()));
+			
+			//Fixed the header after retrieving the object
 			tmp.setHeader(inodetable.getHeader());
 			inode = tmp;
+			
 			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
 			BlockInfo[] blocksArray = BlocksHelper.getBlocksArray((INodeFile)inode);
 			((INodeFile)(inode)).setBlocksList(blocksArray);
@@ -660,8 +665,30 @@ public class INodeTableHelper {
 		
 		return inode;
 	}
-
-	/*Returns an INode object which has iNodeID*/
+	
+	/** Get the replication value out of the header
+	 * 	useful to reconstruct InodeFileUnderConstruction from DB 
+	 */
+	private static short getReplicationFromHeader(long header) {
+		//Number of bits for Block size
+		final short blockBits = 48;
+		//Format: [16 bits for replication][48 bits for PreferredBlockSize]
+		final long headerMask = 0xffffL << blockBits;
+	    return (short) ((header & headerMask) >> blockBits);
+	  }
+	/**
+	 * Return preferredBlockSize for the file
+	 * @return
+	 */
+	private static long getPreferredBlockSize(long header) {
+		final short blockBits = 48;
+		//Format: [16 bits for replication][48 bits for PreferredBlockSize]
+		final long headerMask = 0xffffL << blockBits;
+        return header & ~headerMask;
+  }
+	/**
+	 * Returns an INode object which has iNodeID
+	 */
 	public static INode getINode(long iNodeID) {
 		Session session = DBConnector.sessionFactory.getSession();
 
@@ -686,9 +713,9 @@ public class INodeTableHelper {
 		if (inodetable.getIsUnderConstruction()) {
 
 			inode = new INodeFileUnderConstruction(inodetable.getName().getBytes(),
-					(short) 1,
+					getReplicationFromHeader(inodetable.getHeader()),
 					inodetable.getModificationTime(),
-					64,
+					getPreferredBlockSize(inodetable.getHeader()),
 					/*blocks,*/null, //we don't need to set blocks here
 					ps,
 					inodetable.getClientName(),
@@ -701,7 +728,7 @@ public class INodeTableHelper {
 			/* FIXME: Double check numbers later */
 			inode = new INodeFile(ps,
 					0,
-					(short)1,
+					getReplicationFromHeader(inodetable.getHeader()),
 					inodetable.getModificationTime(),
 					inodetable.getATime(), 64);
 

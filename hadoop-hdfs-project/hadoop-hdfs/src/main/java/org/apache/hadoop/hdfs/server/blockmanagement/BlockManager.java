@@ -452,14 +452,7 @@ public class BlockManager {
       throw new IOException("Cannot complete block: " +
           "block does not satisfy minimal replication requirement.");
     BlockInfo completeBlock = ucBlock.convertToCompleteBlock();
-    System.err.println("[KTHFS] numBytes here is: " + completeBlock.getNumBytes());
-	
-	Exception up = new Exception("completeBlock");
-	try {
-		throw up;
-	}catch (Exception e){
-		e.printStackTrace();
-	}
+    
     // replace penultimate block in file
     fileINode.setBlock(blkIndex, completeBlock);
     // replace block in the blocksMap
@@ -626,6 +619,7 @@ public class BlockManager {
     if (blocks == null) {
       return null;
     } else if (blocks.length == 0) {
+    	System.err.println("Blocks.length == 0? I mean, how? I don't understand");
       return new LocatedBlocks(0, isFileUnderConstruction,
           Collections.<LocatedBlock>emptyList(), null, false);
     } else {
@@ -2195,6 +2189,7 @@ public class BlockManager {
     Iterator<DatanodeDescriptor> nodeIter = blocksMap.nodeIterator(b);
     Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(b);
     while (nodeIter.hasNext()) {
+    	System.err.println("LOOOOOOOOOOOOOOOOOOL");
       DatanodeDescriptor node = nodeIter.next();
       if ((nodesCorrupt != null) && (nodesCorrupt.contains(node))) {
         corrupt++;

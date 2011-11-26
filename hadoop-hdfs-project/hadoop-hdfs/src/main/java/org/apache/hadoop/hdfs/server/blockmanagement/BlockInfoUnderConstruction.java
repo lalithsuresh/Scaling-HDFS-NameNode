@@ -200,7 +200,7 @@ public class BlockInfoUnderConstruction extends BlockInfo {
     return blockUCState;
   }
 
-  void setBlockUCState(BlockUCState s) {
+  public void setBlockUCState(BlockUCState s) {
     blockUCState = s;
   }
 
@@ -221,7 +221,6 @@ public class BlockInfoUnderConstruction extends BlockInfo {
           + block.getBlockId() + ", expected id = " + getBlockId());
     blockUCState = BlockUCState.COMMITTED;
     this.set(getBlockId(), block.getNumBytes(), block.getGenerationStamp());
-    System.err.println("commitBlock() is being executed");
     BlocksHelper.updateINodeID(this.getINode().getID(),this);
   }
   

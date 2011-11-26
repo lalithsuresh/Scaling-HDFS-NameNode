@@ -1220,7 +1220,10 @@ public class FSDirectory implements Closeable {
 	      rootDir.addNode(path, newnode);*/
 	      
 	      INodeFile newestNode =  INodeTableHelper.completeFileUnderConstruction(oldnode, newnode);
-
+	      
+	      newnode.setID(newestNode.getID());
+	      newnode.setFullPathName(newestNode.getFullPathName());
+	      
 	      int index = 0;
 	      for (BlockInfo b : newestNode.getBlocks()) {
 	        BlockInfo info = getBlockManager().addINode(b, newestNode);
