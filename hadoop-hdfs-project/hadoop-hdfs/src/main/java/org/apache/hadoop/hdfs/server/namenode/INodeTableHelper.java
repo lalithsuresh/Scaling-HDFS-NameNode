@@ -666,8 +666,13 @@ public class INodeTableHelper {
 		Session session = DBConnector.sessionFactory.getSession();
 
 		InodeTable inodetable = session.find(InodeTable.class, iNodeID);
-
+		System.out.println("iNodeId= "+iNodeID);
 		DataInputBuffer buffer = new DataInputBuffer();
+		if(inodetable==null)
+		{
+			System.out.println("inodetable == null");
+			return null;
+		}
 		buffer.reset(inodetable.getPermission(), inodetable.getPermission().length);
 		PermissionStatus ps;
 		try {

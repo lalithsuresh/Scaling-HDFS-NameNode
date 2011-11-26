@@ -1932,12 +1932,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         checkPermission(src, false, null, FsAction.WRITE, null, FsAction.ALL);
       }
       // Unlink the target directory from directory tree
+      
       if (!dir.delete(src, collectedBlocks)) {
-        return false;
+    	  return false;
       }
       deleteNow = collectedBlocks.size() <= BLOCK_DELETION_INCREMENT;
       if (deleteNow) { // Perform small deletes right away
-        removeBlocks(collectedBlocks);
+      	removeBlocks(collectedBlocks);
       }
     } finally {
       writeUnlock();

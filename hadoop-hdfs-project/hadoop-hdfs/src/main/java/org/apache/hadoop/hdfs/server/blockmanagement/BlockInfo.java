@@ -90,6 +90,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   
   public void setINode(INodeFile inode) {
 	  this.inode = inode;
+	  if(inode!=null)
 	    BlocksHelper.updateINodeID(inode.getID(), this);
 	  }
 
