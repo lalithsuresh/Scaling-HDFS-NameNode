@@ -2,6 +2,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.hadoop.hdfs.protocol.Block;
@@ -235,7 +236,8 @@ public class BlocksHelper {
 */
 			//blockInfo.setTripletsKTH(setTripletsForBlock (blockInfo));
 			//setTripletsForBlock (blockInfo);
-			
+	
+			blockInfo.setBlockIndex(bit.getBlockIndex()); 
 			return blockInfo;
 		}
 
@@ -408,10 +410,12 @@ public class BlocksHelper {
 		
 		try {
 			for(int i=0; i<blocksArray.length; i++) {
-
 				blocksArray[i] = getBlockInfoSingle(blocksList.get(i).getBlockId());
 				blocksArray[i].setINode(inode);
+				
 			}
+			//sorting the array in descending order w.r.t blockIndex
+			Arrays.sort(blocksArray); 
 			return blocksArray;
 			
 		} catch (IOException e) {
