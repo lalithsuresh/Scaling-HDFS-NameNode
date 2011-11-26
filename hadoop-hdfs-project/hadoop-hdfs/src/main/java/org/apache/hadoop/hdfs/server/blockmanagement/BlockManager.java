@@ -929,7 +929,6 @@ public class BlockManager {
     // Choose the blocks to be replicated
     List<List<Block>> blocksToReplicate =
       chooseUnderReplicatedBlocks(blocksToProcess);
-    System.out.println("blocks to process "+blocksToProcess+"  blocksToReplicate "+ blocksToReplicate.size());
     // replicate blocks
     int scheduledReplicationCount = 0;
     for (int i=0; i<blocksToReplicate.size(); i++) {
