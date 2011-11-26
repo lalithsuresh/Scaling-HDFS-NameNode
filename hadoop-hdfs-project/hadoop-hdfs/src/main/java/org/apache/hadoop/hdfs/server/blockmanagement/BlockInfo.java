@@ -149,7 +149,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
     assert index >= 0 && index*3 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
     //triplets[index*3] = node;
     if(node != null)
-    	BlocksHelper.setDatanode(this.getBlockId(), index, node.name);		
+    	BlocksHelper.setDatanode(this.getBlockId(), index, node.name);
   }
 
   void setPrevious(int index, BlockInfo to) {
@@ -214,6 +214,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   public boolean addNode(DatanodeDescriptor node) {
     if(findDatanode(node) >= 0) // the node is already there
       return false;
+
     // find the last null node
     int lastNode = ensureCapacity(1);
     setDatanode(lastNode, node);
@@ -300,14 +301,19 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 
     BlockInfo next = this.getNext(dnIndex);
     BlockInfo prev = this.getPrevious(dnIndex);
+    
     this.setNext(dnIndex, null);
     this.setPrevious(dnIndex, null);
+    
+    
     if(prev != null)
       prev.setNext(prev.findDatanode(dn), next);
     if(next != null)
       next.setPrevious(next.findDatanode(dn), prev);
     if(this == head)  // removing the head
       head = next;
+    BlocksHelper.removeTriplets(this,dnIndex);
+    System.out.println("printed once !!!!!!");
     return head;
   }
 

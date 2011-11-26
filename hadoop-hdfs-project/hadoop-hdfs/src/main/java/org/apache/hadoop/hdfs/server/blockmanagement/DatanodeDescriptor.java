@@ -233,6 +233,7 @@ public class DatanodeDescriptor extends DatanodeInfo {
    * Remove datanode from the block.
    */
   public boolean removeBlock(BlockInfo b) {
+	System.out.println("datanode descriptor = "+this);
     blockList = b.listRemove(blockList, this);
     if ( b.removeNode(this) ) {
       numBlocks--;
