@@ -355,6 +355,15 @@ public class INodeFile extends INode {
 		
 		BlockInfo [] tempblocks = BlocksHelper.getBlocksArray(this);
 		
+		/*
+		KthFsHelper.printKTH("\n\n");
+      	KthFsHelper.printKTH("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \t length of tempblocks in INodeFile.getLastBLock: " + tempblocks.length);
+      	
+      	for(int i=0;i<tempblocks.length;i++) {
+      	KthFsHelper.printKTH("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \t tempblocks["+i+"] = " + tempblocks[i]);
+      	}
+      	*/
+		
 		if (tempblocks == null || tempblocks.length == 0)
 			return null;
 		T returnBlock = null;
