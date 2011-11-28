@@ -734,6 +734,8 @@ public class INodeTableHelper {
 
 			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
 		}
+		
+		inode.setFullPathName(inodetable.getName());
 
 		return inode;
 		

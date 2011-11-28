@@ -1017,8 +1017,6 @@ public class BlockManager {
     INodeFile fileINode = null;
     int additionalReplRequired;
     
-    System.out.println("IN the computerReplicationWorkForBlock");
-    
     namesystem.writeLock();
     try {
       synchronized (neededReplications) {

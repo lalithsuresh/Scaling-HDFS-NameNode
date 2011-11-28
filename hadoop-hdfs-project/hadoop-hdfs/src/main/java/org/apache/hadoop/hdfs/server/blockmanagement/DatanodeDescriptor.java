@@ -99,7 +99,7 @@ public class DatanodeDescriptor extends DatanodeInfo {
     }
   }
 
-  private volatile BlockInfo blockList = null;
+  //private volatile BlockInfo blockList = null;
   private int numBlocks = 0;
   // isAlive == heartbeats.contains(this)
   // This is an optimization, because contains takes O(n) time on Arraylist
@@ -223,7 +223,7 @@ public class DatanodeDescriptor extends DatanodeInfo {
     if(!b.addNode(this))
       return false;
     // add to the head of the data-node list
-    blockList = b.listInsert(blockList, this);
+    //blockList = b.listInsert(blockList, this);
     numBlocks++;
     return true;
   }
@@ -234,7 +234,7 @@ public class DatanodeDescriptor extends DatanodeInfo {
    */
   public boolean removeBlock(BlockInfo b) {
 	System.out.println("datanode descriptor = "+this);
-    blockList = b.listRemove(blockList, this);
+    //blockList = b.listRemove(blockList, this);
     if ( b.removeNode(this) ) {
       numBlocks--;
       return true;
@@ -247,8 +247,8 @@ public class DatanodeDescriptor extends DatanodeInfo {
    * Move block to the head of the list of blocks belonging to the data-node.
    */
   void moveBlockToHead(BlockInfo b) {
-    blockList = b.listRemove(blockList, this);
-    blockList = b.listInsert(blockList, this);
+    //blockList = b.listRemove(blockList, this);
+    //blockList = b.listInsert(blockList, this);
   }
 
   /**
@@ -272,7 +272,7 @@ public class DatanodeDescriptor extends DatanodeInfo {
     this.blockPoolUsed = 0;
     this.dfsUsed = 0;
     this.xceiverCount = 0;
-    this.blockList = null;
+    //this.blockList = null;
     this.invalidateBlocks.clear();
     this.volumeFailures = 0;
   }
@@ -324,7 +324,8 @@ public class DatanodeDescriptor extends DatanodeInfo {
   }
 
   public Iterator<BlockInfo> getBlockIterator() {
-    return new BlockIterator(this.blockList, this);
+    //return new BlockIterator(this.blockList, this);
+	return new BlockIterator(null, this);
   }
   
   /**

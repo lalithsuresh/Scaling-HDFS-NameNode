@@ -707,7 +707,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
     final LocatedBlocks ret = getBlockLocationsUpdateTimes(src,
         offset, length, doAccessTime, needBlockToken);
-    //System.err.println("Ret hehehe -> " + ret.get(0).getLocations()[0].name);
     if (auditLog.isInfoEnabled() && isExternalInvocation()) {
       logAuditEvent(UserGroupInformation.getCurrentUser(),
                     Server.getRemoteIp(),
@@ -3957,7 +3956,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         Block blk = blkIterator.next();
         INode inode = blockManager.getINode(blk);
         if (inode != null && blockManager.countNodes(blk).liveReplicas() == 0) {
-          String src = FSDirectory.getFullPathName(inode);
+          String src = inode.getFullPathName();
           if (((startBlockAfter == null) || (blk.getBlockId() > startBlockId))
               && (src.startsWith(path))) {
             corruptFiles.add(new CorruptFileBlockInfo(src, blk));

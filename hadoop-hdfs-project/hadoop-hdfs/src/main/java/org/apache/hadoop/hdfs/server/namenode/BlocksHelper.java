@@ -618,6 +618,15 @@ public class BlocksHelper {
 		
 		return triplets;
 	}
+	
+	public static INode getInodeFromBlockId (long blockId) {
+		Session session = DBConnector.sessionFactory.getSession();
+		BlockInfoTable blockInfoTable = session.find(BlockInfoTable.class, blockId);
+
+		long inodeId = blockInfoTable.getINodeID();
+		
+		return INodeTableHelper.getINode(inodeId);
+	}
 }
 
 /*
