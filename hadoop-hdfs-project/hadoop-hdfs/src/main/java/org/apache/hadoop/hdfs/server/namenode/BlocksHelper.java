@@ -793,7 +793,7 @@ public class BlocksHelper {
 		// indices. Removal of an entry of an index X means that all entries
 		// with index greater than X needs to be corrected (decremented by 1
 		// basically).
-		List<TripletsTable> results = getTripletsListUsingField ("blockId", blockInfo.getBlockId(), session);
+		List<TripletsTable> results = getTripletsListUsingFieldInternal ("blockId", blockInfo.getBlockId(), session);
 		
 		for (TripletsTable t: results)	{
 			long oldIndex = t.getIndex();
