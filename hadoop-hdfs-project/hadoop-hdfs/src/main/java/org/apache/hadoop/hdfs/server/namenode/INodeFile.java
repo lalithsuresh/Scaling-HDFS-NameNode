@@ -325,11 +325,18 @@ public class INodeFile extends INode {
 	 * Return the penultimate allocated block for this file.
 	 */
 	//FIXME: KTHFSBLOCKS
+/*	BlockInfo getPenultimateBlock() {
+		BlockInfo blocksFromDB = BlocksHelper.getPenultimateBlock(this); 
+		return (blocksFromDB == null) ? null : blocksFromDB;
+	}
+*/
+	
 	BlockInfo getPenultimateBlock() {
-		if (blocks == null || blocks.length <= 1) {
+		BlockInfo [] tempblocks = BlocksHelper.getBlocksArray(this);
+		if (tempblocks == null || tempblocks.length <= 1) {
 			return null;
 		}
-		return blocks[blocks.length - 2];
+		return tempblocks[tempblocks.length - 2];
 	}
 
 	/**
@@ -337,6 +344,13 @@ public class INodeFile extends INode {
 	 * Make sure it has the right type.
 	 */
 	//FIXME: KTHFSBLOCKS
+	/*public <T extends BlockInfo> T getLastBlock() throws IOException {
+
+		@SuppressWarnings("unchecked")
+		T tBlock = (T) BlocksHelper.getLastBlock(this);
+		return tBlock;
+
+	}*/
 	public <T extends BlockInfo> T getLastBlock() throws IOException {
 		
 		BlockInfo [] tempblocks = BlocksHelper.getBlocksArray(this);

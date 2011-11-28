@@ -823,6 +823,85 @@ public class BlocksHelper {
 		
 		return INodeTableHelper.getINode(inodeId);
 	}
+	
+	/** Gets the second last block of an INodeFile
+	 * @param inodefile
+	 * @return
+	 */
+	public static BlockInfo getPenultimateBlock(INodeFile inodefile) {
+		List<BlockInfoTable> blocksFromDB = getResultListUsingField("iNodeID", inodefile.getID());
+		int max= -1;
+		long blockId = -1;
+
+		BlockInfo block = null;
+
+		if(blocksFromDB == null || blocksFromDB.size() <= 1) 
+			return null;
+
+
+		for (int i = 0; i < blocksFromDB.size(); i++) {
+			if (blocksFromDB.get(i).getBlockIndex() > max) {
+				max = blocksFromDB.get(i).getBlockIndex();
+				blockId = blocksFromDB.get(i).getBlockId();
+			}
+			else
+				continue;
+		}
+
+
+		try {
+
+			//Immature
+			BlockInfoTable bit = getResultListUsingField("blockIndex", max-1).get(0);
+			block = getBlockInfoSingle(bit.getBlockId());
+
+			return block;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		} 
+
+	}
+
+
+	/** Gets the last block of an INodeFile
+	 * @param inodefile
+	 * @return
+	 */
+	public static BlockInfo getLastBlock(INodeFile inodefile) {
+		List<BlockInfoTable> blocksFromDB = getResultListUsingField("iNodeID", inodefile.getID());
+		int max= -1;
+		long blockId = -1;
+
+		BlockInfo block = null;
+
+		try {
+		if(blocksFromDB == null || blocksFromDB.size() == 0) 
+			return null;
+		else if(blocksFromDB.size() == 1)
+			return getBlockInfoSingle(blocksFromDB.get(0).getBlockId());
+
+
+		for (int i = 0; i < blocksFromDB.size(); i++) {
+			if (blocksFromDB.get(i).getBlockIndex() > max) {
+				max = blocksFromDB.get(i).getBlockIndex();
+				blockId = blocksFromDB.get(i).getBlockId();
+			}
+			else
+				continue;
+		}
+
+		
+			//Immature
+			 return getBlockInfoSingle(blockId);
+
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		} 
+
+	}
+
 }
 
 /*
