@@ -1691,7 +1691,7 @@ public class FSDirectory implements Closeable {
         }
       }
     } catch (QuotaExceededException e) {
-      e.setPathName(getFullPathName(inodes, i));
+      e.setPathName(inodes[i].getFullPathName());
       throw e;
     }
   }
@@ -1756,7 +1756,7 @@ public class FSDirectory implements Closeable {
         }
       }
     } catch (FSLimitException e) {
-      String badPath = getFullPathName(pathComponents, pos-1);
+      String badPath = pathComponents[pos-1].getFullPathName();//getFullPathName(pathComponents, pos-1);
       if (includeChildName) {
         badPath += Path.SEPARATOR + child.getLocalName();
       }

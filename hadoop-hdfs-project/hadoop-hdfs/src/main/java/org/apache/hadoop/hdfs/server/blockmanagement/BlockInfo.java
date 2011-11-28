@@ -19,13 +19,13 @@ package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import java.io.IOException;
 
-import javax.sound.midi.SysexMessage;
 
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.namenode.BlocksHelper;
 import org.apache.hadoop.hdfs.server.namenode.DBConnector;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
+import org.apache.hadoop.hdfs.server.namenode.INodeTableHelper;
 import org.apache.hadoop.hdfs.server.namenode.KthFsHelper;
 import org.apache.hadoop.hdfs.util.LightWeightGSet;
 
@@ -87,7 +87,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	}
 
 	public INodeFile getINode() {
-		return inode;
+		return (INodeFile) BlocksHelper.getInodeFromBlockId(this.getBlockId());
 	}
 
 	/*public void setINode_old(INodeFile inode) {
@@ -103,7 +103,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   public DatanodeDescriptor getDatanode(int index) {
 	  System.err.println("getDatanode invoked with index: " + index);
     //assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
+    assert index >= 0;// && index*3 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
     //DatanodeDescriptor node = (DatanodeDescriptor)triplets[index*3];
     DatanodeDescriptor node = BlocksHelper.getDatanode(this.getBlockId(), index);
     assert node == null || 
@@ -114,7 +114,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 
   BlockInfo getPrevious(int index) {
     //assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3+1 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
+    assert index >= 0;// && index*3+1 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
     //BlockInfo info = (BlockInfo)triplets[index*3+1];
     BlockInfo info = null;
 	try {
@@ -132,7 +132,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 
   BlockInfo getNext(int index) {
     assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3+2 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
+    assert index >= 0;// && index*3+2 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
 //    BlockInfo info = (BlockInfo)triplets[index*3+2];
     BlockInfo info = null;
   	try {
@@ -149,8 +149,9 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   }
 
   void setDatanode(int index, DatanodeDescriptor node) {
+	  System.err.println("Index: ");
     //assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
+    assert index >= 0;// && index*3 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
     //triplets[index*3] = node;
     if(node != null)
     	BlocksHelper.setDatanode(this.getBlockId(), index, node.name);
@@ -158,7 +159,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 
   void setPrevious(int index, BlockInfo to) {
     //assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3+1 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
+    assert index >= 0;// && index*3+1 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
     //triplets[index*3+1] = to;
     if(to != null)
     	BlocksHelper.setNextPrevious(this.getBlockId(), index, to, false);
@@ -167,7 +168,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 
   void setNext(int index, BlockInfo to) {
     //assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3+2 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
+    assert index >= 0;// && index*3+2 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
     //triplets[index*3+2] = to;
     if(to != null)
     	BlocksHelper.setNextPrevious( this.getBlockId(), index, to, true);
@@ -246,6 +247,8 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
     setDatanode(lastNode, null);
     setNext(lastNode, null); 
     setPrevious(lastNode, null); 
+    
+    BlocksHelper.removeTriplets(this,dnIndex);
     return true;
   }
 
@@ -258,7 +261,6 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
     int len = getCapacity();
     System.err.println("Capacity: " + len);
     for(int idx = 0; idx < len; idx++) {
-    	System.err.println("Now in the loop ");
       DatanodeDescriptor cur = getDatanode(idx);
       if(cur == dn){
         return idx;
@@ -316,9 +318,6 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
       next.setPrevious(next.findDatanode(dn), prev);
     if(this == head)  // removing the head
       head = next;
-    //FIXME: Yings code removes triplets that are needed for this block later 
-    //BlocksHelper.removeTriplets(this,dnIndex);
-    System.out.println("printed once !!!!!!");
     return head;
   }
 
