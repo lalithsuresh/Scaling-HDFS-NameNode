@@ -600,6 +600,17 @@ public class BlocksHelper {
 		TripletsTable triplet = session.find(TripletsTable.class, pKey);
 		tx.begin();
 		session.deletePersistent(triplet);
+		
+		List<TripletsTable> results = getTripletsListUsingField ("blockId", blockInfo.getBlockId(), session);
+		
+		for (TripletsTable t: results)	{
+			if (index < t.getIndex())
+			{
+				t.setIndex(t.getIndex() - 1);
+				session.updatePersistent(t);
+			}
+		}
+
 		tx.commit();
 	}
 
@@ -608,10 +619,11 @@ public class BlocksHelper {
 		List<TripletsTable> results = getTripletsListUsingField ("blockId", blockinfo.getBlockId(), session);
 		
 		Object[] triplets = new Object[3 * results.size()];
+		System.err.println("Triplets is of size---------: " + triplets.length + " blockId: " + blockinfo.getBlockId());
 		for (TripletsTable t:results){
-			System.err.println("[0]:" + t.getDatanodeName() + " [1]:" + t.getPreviousBlockId() + " [2]:" + t.getNextBlockId());
+			System.err.println("[0]:" + t.getDatanodeName() + " [1]:" + t.getPreviousBlockId() + " [2]:" + t.getNextBlockId() + " Index:" + t.getIndex());
 			
-			triplets[3 * t.getIndex()] = ns.getBlockManager().getDatanodeManager().getDatanodeByHost(t.getDatanodeName());;
+			triplets[3 * t.getIndex()] = ns.getBlockManager().getDatanodeManager().getDatanodeByHost(t.getDatanodeName());
 			triplets[3 * t.getIndex() + 1] = t.getPreviousBlockId();
 			triplets[3 * t.getIndex() + 2] = t.getNextBlockId();
 		}
