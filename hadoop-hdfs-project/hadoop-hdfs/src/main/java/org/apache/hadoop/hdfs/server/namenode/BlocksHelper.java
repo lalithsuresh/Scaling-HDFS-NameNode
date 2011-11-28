@@ -3,6 +3,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.hadoop.hdfs.protocol.Block;
@@ -177,6 +178,8 @@ public class BlocksHelper {
 			
 			//blockInfo.setTripletsKTH(setTripletsForBlock (blockInfo));
 			//setTripletsForBlock (blockInfo);
+			blockInfo.setBlockIndex(bit.getBlockIndex());
+			blockInfo.setTimestamp(bit.getTimestamp());
 
 			return blockInfo;
 		}
@@ -243,6 +246,7 @@ public class BlocksHelper {
 			//setTripletsForBlock (blockInfo);
 	
 			blockInfo.setBlockIndex(bit.getBlockIndex()); 
+			blockInfo.setTimestamp(bit.getTimestamp());
 			return blockInfo;
 		}
 
@@ -260,6 +264,8 @@ public class BlocksHelper {
 		bit.setGenerationStamp(binfo.getGenerationStamp());
 		bit.setBlockUCState(binfo.getBlockUCState().ordinal());
 
+		bit.setTimestamp(System.currentTimeMillis()); //added by W - for sorting the blocks properly
+		
 		if(binfo.isComplete()) {
 			INodeFile ifile = binfo.getINode();
 			long nodeID = ifile.getID();
@@ -366,7 +372,7 @@ public class BlocksHelper {
 		bit.setBlockIndex(idx); //setting the index in the table
 		bit.setNumBytes(binfo.getNumBytes());
 		bit.setBlockUCState(binfo.getBlockUCState().ordinal());
-		s.savePersistent(bit);
+		s.updatePersistent(bit);
 		tx.commit();		
 
 		//System.err.println("[KTHFS] numBytes here in updateIndex is: " + binfo.getNumBytes());

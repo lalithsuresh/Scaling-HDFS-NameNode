@@ -416,21 +416,27 @@ public class BlockManager {
   public boolean commitOrCompleteLastBlock(INodeFileUnderConstruction fileINode, 
       Block commitBlock) throws IOException {
 
+	 ;
     if(commitBlock == null)
       return false; // not committing, this is a block allocation retry
     
     //KTHFSBLOCKS
     BlockInfo lastBlock = fileINode.getLastBlock();
         
-    if(lastBlock == null)
+    if(lastBlock == null) {
       return false; // no blocks in file yet
-    if(lastBlock.isComplete())
-      return false; // already completed (e.g. by syncBlock)
+      
+    }
+    if(lastBlock.isComplete()) {
+    	return false; // already completed (e.g. by syncBlock) 
+    }
     
     //KTHFSBLOCKS
     final boolean b = commitBlock((BlockInfoUnderConstruction)lastBlock, commitBlock);
-    if(countNodes(lastBlock).liveReplicas() >= minReplication)
+    if(countNodes(lastBlock).liveReplicas() >= minReplication) {
       completeBlock(fileINode,fileINode.numBlocks()-1);
+    }
+    
     return b;
   }
 
@@ -443,9 +449,11 @@ public class BlockManager {
    */
   private BlockInfo completeBlock(final INodeFile fileINode,
       final int blkIndex) throws IOException {
+	  
     if(blkIndex < 0)
       return null;
     BlockInfo curBlock = fileINode.getBlocks()[blkIndex];
+    KthFsHelper.printKTH("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\t completeBlock Called with blockId: " + curBlock.getBlockId());
     if(curBlock.isComplete())
       return curBlock;
     BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction)curBlock;

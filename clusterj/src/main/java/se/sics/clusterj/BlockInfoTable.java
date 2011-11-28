@@ -46,5 +46,10 @@ public interface BlockInfoTable {
       @Column(name = "BlockUCState")
     int getBlockUCState();
     void setBlockUCState(int blockUCState);
+
+      @Column(name = "timestamp")
+    long getTimestamp();
+    void setTimestamp(long ts);
+
     
 }
