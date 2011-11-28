@@ -606,21 +606,41 @@ public class BlocksHelper {
 	{
 		Session session = DBConnector.sessionFactory.getSession();
 		Transaction tx = session.currentTransaction();
+		tx.begin();
+		
 		Object[] pKey = new Object[2];
 		pKey[0]=blockInfo.getBlockId();
 		pKey[1]=index;
 		System.err.println("removeTriplets() on " + blockInfo.getBlockId() + " " + index);
 		TripletsTable triplet = session.find(TripletsTable.class, pKey);
-		tx.begin();
 		session.deletePersistent(triplet);
 		
+		// The triplets entries in the DB for a block have an ordered list of
+		// indices. Removal of an entry of an index X means that all entries
+		// with index greater than X needs to be corrected (decremented by 1
+		// basically).
 		List<TripletsTable> results = getTripletsListUsingField ("blockId", blockInfo.getBlockId(), session);
 		
 		for (TripletsTable t: results)	{
-			if (index < t.getIndex())
-			{
-				t.setIndex(t.getIndex() - 1);
-				session.updatePersistent(t);
+			long oldIndex = t.getIndex();
+			
+			// entry that needs its index corrected
+			if (index < oldIndex)
+			{				
+				// ClusterJ sucks royal ass, because we can't use auto-incrementing
+				// MySQL cluster indices. Thus, editing a primary key or a part of
+				// a composite key => we need to remove the entry, and re-insert it
+				// into the DB.
+				
+				TripletsTable replacementEntry = session.newInstance(TripletsTable.class);
+				replacementEntry.setBlockId(t.getBlockId());
+				replacementEntry.setDatanodeName(t.getDatanodeName());
+				replacementEntry.setIndex(t.getIndex() - 1); // Correct the index
+				replacementEntry.setNextBlockId(t.getNextBlockId());
+				replacementEntry.setPreviousBlockId(t.getPreviousBlockId());
+				
+				session.deletePersistent(t); // Delete old entry
+				session.makePersistent(replacementEntry); // Add new one
 			}
 		}
 
