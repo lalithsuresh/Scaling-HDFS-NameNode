@@ -194,7 +194,7 @@ public class BlocksHelper {
 				//setTripletsForBlock (blockInfo);
 			}
 			blockInfo.setBlockIndex(bit.getBlockIndex()); 
-			blockInfo.setTimestamp(bit.getTimestamp());
+			//blockInfo.setTimestamp(bit.getTimestamp());
 
 			return blockInfo;
 		}
@@ -255,7 +255,7 @@ public class BlocksHelper {
 		bit.setBlockId(binfo.getBlockId());
 		bit.setGenerationStamp(binfo.getGenerationStamp());
 		bit.setBlockUCState(binfo.getBlockUCState().ordinal());
-		bit.setTimestamp(System.currentTimeMillis()); //added by W - for sorting the blocks properly
+//		bit.setTimestamp(System.currentTimeMillis()); //added by W - for sorting the blocks properly
 
 		if(binfo.isComplete()) {
 			INodeFile ifile = binfo.getINode();
