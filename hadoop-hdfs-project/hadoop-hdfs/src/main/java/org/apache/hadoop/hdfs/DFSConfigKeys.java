@@ -30,6 +30,8 @@ import org.apache.hadoop.fs.CommonConfigurationKeys;
 @InterfaceAudience.Private
 public class DFSConfigKeys extends CommonConfigurationKeys {
 
+  public static final String DFS_DB_CONNECTOR_STRING_KEY = "dfs.dbconnector.string";
+  public static final String DFS_DB_DATABASE_KEY = "dfs.dbconnector.database";
   public static final String  DFS_BLOCK_SIZE_KEY = "dfs.blocksize";
   public static final long    DFS_BLOCK_SIZE_DEFAULT = 64*1024*1024;
   public static final String  DFS_REPLICATION_KEY = "dfs.replication";
