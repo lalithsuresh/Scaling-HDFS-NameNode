@@ -18,6 +18,7 @@
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import java.io.IOException;
+import java.util.Comparator;
 
 
 import org.apache.hadoop.hdfs.protocol.Block;
@@ -415,7 +416,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 
 	 */
 
-	@Override // Comparable - added for sorting the blocks in an INodeFile - KTHFS
+/*	@Override // Comparable - added for sorting the blocks in an INodeFile - KTHFS
 	public int compareTo(Block b) {
 
 		if (b instanceof BlockInfo) {
@@ -443,7 +444,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 		}
 
 	}
-
+*/
 
 
 	/*added for KTHFS*/
@@ -455,4 +456,6 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 		this.timestamp = ts;
 	}
 
+	
+	
 }
