@@ -693,7 +693,6 @@ public class INodeTableHelper {
 		Session session = DBConnector.sessionFactory.getSession();
 
 		InodeTable inodetable = session.find(InodeTable.class, iNodeID);
-		System.out.println("iNodeId= "+iNodeID);
 		DataInputBuffer buffer = new DataInputBuffer();
 		if(inodetable==null)
 		{

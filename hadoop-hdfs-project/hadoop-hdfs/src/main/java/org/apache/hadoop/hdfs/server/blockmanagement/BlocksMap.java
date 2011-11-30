@@ -216,11 +216,9 @@ class BlocksMap {
     // replace block in data-node lists
     for(int idx = currentBlock.numNodes()-1; idx >= 0; idx--) {
       DatanodeDescriptor dn = currentBlock.getDatanode(idx);
-      System.err.println("Current block Datanode ?" +currentBlock.findDatanode(dn) + "newNlock" +newBlock.getBlockId());
       dn.replaceBlock(currentBlock, newBlock);
     }
     // replace block in the map itself
-    System.out.println("newBlock host is "+newBlock.getBlockName());
     blocks.put(newBlock);
     return newBlock;
   }

@@ -602,7 +602,6 @@ class NameNodeRpcServer implements NamenodeProtocols {
   @Override // ClientProtocol
   public CorruptFileBlocks listCorruptFileBlocks(String path, String cookie)
       throws IOException {
-	  System.err.println("Thing in the NameNodeRpcServer.listCorruptFileBlocks()");
     Collection<FSNamesystem.CorruptFileBlockInfo> fbs =
       namesystem.listCorruptFileBlocks(path, cookie);
     

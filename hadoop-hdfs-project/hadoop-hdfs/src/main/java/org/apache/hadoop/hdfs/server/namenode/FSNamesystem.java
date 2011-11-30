@@ -1733,14 +1733,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   boolean checkFileProgress(INodeFile v, boolean checkall) {
     readLock();
-    KthFsHelper.printKTH("####### checkall: " + checkall);
     try {
       if (checkall) {
         //
         // check all blocks of the file.
         //
         for (BlockInfo block: v.getBlocks()) {
-        	System.err.println("I'm comparing it for a block: " + block.getBlockUCState());
           if (!block.isComplete()) {
             LOG.info("BLOCK* NameSystem.checkFileProgress: "
                 + "block " + block + " has not reached minimal replication "
@@ -2468,29 +2466,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     DirectoryListing dl;
     readLock();
     try {
-      
-    	/** W: Commenting this out for the time being. 
-    	if (isPermissionEnabled) {
-    	  KthFsHelper.printKTH("Permission is Enabled");
-        if (dir.isDir(src)) {
-          checkPathAccess(src, FsAction.READ_EXECUTE);
-        } else {
-          checkTraverse(src);
-        }
-      }*/
-      
-
     	//W: Not required at the moment
-      if (auditLog.isInfoEnabled() && isExternalInvocation()) {
-        logAuditEvent(UserGroupInformation.getCurrentUser(),
-                      Server.getRemoteIp(),
-                      "listStatus", src, null, null);
-      }
-      
-      dl = dir.getListing(src, startAfter, needLocation); 
-     
+    	if (auditLog.isInfoEnabled() && isExternalInvocation()) {
+    		logAuditEvent(UserGroupInformation.getCurrentUser(),
+    				Server.getRemoteIp(),
+    				"listStatus", src, null, null);
+    	}
+    	dl = dir.getListing(src, startAfter, needLocation); 
     } finally {
-      readUnlock();
+    	readUnlock();
     }
     
     for (int i = 0; i < dl.getPartialListing().length; i++) {

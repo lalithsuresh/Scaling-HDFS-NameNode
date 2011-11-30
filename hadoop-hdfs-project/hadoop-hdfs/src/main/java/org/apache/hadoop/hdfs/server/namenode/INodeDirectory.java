@@ -125,7 +125,6 @@ class INodeDirectory extends INode {
 		}
 		int low = Collections.binarySearch(children, name);
 		if (low >= 0) {
-			//KthFsHelper.printKTH("******************************* getChildINode: "+children.get(low));
 			return children.get(low);
 		}
 		return null;
@@ -276,7 +275,6 @@ class INodeDirectory extends INode {
 
 		
 		while (count < components.length && curNode != null) {
-			//KthFsHelper.printKTH("inside while loop currNode:"+curNode.getLocalName());
 			final boolean lastComp = (count == components.length - 1);      
 			if (index >= 0) {
 				existing[index] = curNode;
@@ -308,7 +306,6 @@ class INodeDirectory extends INode {
 
 		}
 
-		//KthFsHelper.printKTH("about to return count="+count + " and curNode is "+(curNode==null?"null":"not null"));
 		return count;
 	}
 

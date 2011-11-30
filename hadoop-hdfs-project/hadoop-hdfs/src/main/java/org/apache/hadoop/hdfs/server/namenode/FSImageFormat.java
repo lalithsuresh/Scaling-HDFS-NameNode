@@ -180,26 +180,6 @@ class FSImageFormat {
 
         LOG.info("Loading image file " + curFile + " using " + compression);
 
-        // KTHFS: Do not attempt to read Inodes from FsImage
-        /*
-        // load all inodes
-        LOG.info("Number of files = " + numFiles);
-        if (LayoutVersion.supports(Feature.FSIMAGE_NAME_OPTIMIZATION,
-            imgVersion)) {
-        	//System.err.println("[KTHFS] LayoutVersion.supports(Feature.FSIMAGE_NAME_OPTIMIZATION");
-        	loadLocalNameINodes(numFiles, in);
-          
-        } else {
-        	//System.err.println("[KTHFS] fullNameInodes");
-        	loadFullNameINodes(numFiles, in);
-        }
-
-        // load datanode info
-        this.loadDatanodes(in);
-
-        // load Files Under Construction
-        this.loadFilesUnderConstruction(in);
-        */
         this.loadSecretManagerState(in);
 
         // make sure to read to the end of file

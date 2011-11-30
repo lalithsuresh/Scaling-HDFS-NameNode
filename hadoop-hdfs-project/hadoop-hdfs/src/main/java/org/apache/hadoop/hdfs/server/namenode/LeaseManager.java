@@ -228,7 +228,6 @@ public class LeaseManager {
     private String findPath(INodeFileUnderConstruction pendingFile) {
       try {
         for (String src : paths) {
-        	//System.err.println("A: " + fsnamesystem.dir.getFileINode(src).getFullPathName() + " B: " + pendingFile.getFullPathName());
           if (fsnamesystem.dir.getFileINode(src).getFullPathName().equals(pendingFile.getFullPathName())) {
             return src;
           }

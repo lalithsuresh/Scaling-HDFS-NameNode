@@ -233,10 +233,8 @@ public class DatanodeDescriptor extends DatanodeInfo {
    * Remove datanode from the block.
    */
   public boolean removeBlock(BlockInfo b) {
-	System.out.println("datanode descriptor = "+this);
     //blockList = b.listRemove(blockList, this);
-    if ( b.removeNode(this) ) {
-    System.err.println("At this point is "+numBlocks+ "datanode");	
+    if ( b.removeNode(this) ) {	
       numBlocks--;
       return true;
     } else {
@@ -263,7 +261,6 @@ public class DatanodeDescriptor extends DatanodeInfo {
     boolean done = removeBlock(oldBlock);
     assert done : "Old block should belong to the data-node when replacing";
     done = addBlock(newBlock);
-    System.err.println("Addblocky done is "+done);
     assert done : "New block should not belong to the data-node when replacing";
     return newBlock;
   }

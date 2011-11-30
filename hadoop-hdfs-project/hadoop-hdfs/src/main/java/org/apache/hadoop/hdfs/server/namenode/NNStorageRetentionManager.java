@@ -50,7 +50,7 @@ public class NNStorageRetentionManager {
       NNStorageRetentionManager.class);
   private final NNStorage storage;
   private final StoragePurger purger;
-  private final FSEditLog editLog;
+  //private final FSEditLog editLog;
   
   public NNStorageRetentionManager(
       Configuration conf,
@@ -61,7 +61,7 @@ public class NNStorageRetentionManager {
         DFSConfigKeys.DFS_NAMENODE_NUM_CHECKPOINTS_RETAINED_KEY,
         DFSConfigKeys.DFS_NAMENODE_NUM_CHECKPOINTS_RETAINED_DEFAULT);
     this.storage = storage;
-    this.editLog = editLog;
+    //this.editLog = editLog;
     this.purger = purger;
   }
   
@@ -80,7 +80,7 @@ public class NNStorageRetentionManager {
     // If fsimage_N is the image we want to keep, then we need to keep
     // all txns > N. We can remove anything < N+1, since fsimage_N
     // reflects the state up to and including N.
-    editLog.purgeLogsOlderThan(minImageTxId + 1);
+    //editLog.purgeLogsOlderThan(minImageTxId + 1);
   }
   
   private void purgeCheckpointsOlderThan(

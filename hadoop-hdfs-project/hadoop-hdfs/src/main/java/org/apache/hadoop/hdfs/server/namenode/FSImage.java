@@ -582,7 +582,7 @@ public class FSImage implements Closeable {
       throw new IOException("Failed to load image from " + imageFile, ioe);
     }
     
-    long numLoaded = loadEdits(editStreams);
+    long numLoaded = 0;//loadEdits(editStreams);
     needToSave |= needsResaveBasedOnStaleCheckpoint(imageFile.getFile(),
                                                     numLoaded);
     
