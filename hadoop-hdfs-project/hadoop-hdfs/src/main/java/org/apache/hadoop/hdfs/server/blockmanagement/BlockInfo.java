@@ -415,24 +415,35 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 
 */
 	
-//	@Override // Comparable - added for sorting the blocks in an INodeFile - KTHFS
-//	public int compareTo(Block b) {
-//
-//		BlockInfo binfo = (BlockInfo)b;
-//		
-//			return this.timestamp < binfo.getTimestamp() ? -1 : 1; 
-//
-//	}
+	@Override // Comparable - added for sorting the blocks in an INodeFile - KTHFS
+	public int compareTo(Block b) {
+
+		Exception exe = new Exception("compareTo custom exception");
+		
+		try {
+			throw exe;
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		
+		
+		
+		BlockInfo binfo = (BlockInfo)b;
+		
+			return this.timestamp < binfo.getTimestamp() ? -1 : 1; 
+
+	}
 
 
 	
-//	/*added for KTHFS*/
-//	public long getTimestamp() {
-//		return this.timestamp;
-//	}
-//	/*added for KTHFS*/
-//	public void setTimestamp(long ts) {
-//		this.timestamp = ts;
-//	}
+	/*added for KTHFS*/
+	public long getTimestamp() {
+		return this.timestamp;
+	}
+	/*added for KTHFS*/
+	public void setTimestamp(long ts) {
+		this.timestamp = ts;
+	}
   
 }
