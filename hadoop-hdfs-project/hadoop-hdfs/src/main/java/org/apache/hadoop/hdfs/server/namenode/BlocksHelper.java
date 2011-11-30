@@ -21,6 +21,7 @@ import com.mysql.clusterj.Query;
 import com.mysql.clusterj.SessionFactory;
 import com.mysql.clusterj.Session;
 import com.mysql.clusterj.Transaction;
+import com.mysql.clusterj.query.Predicate;
 import com.mysql.clusterj.query.QueryBuilder;
 import com.mysql.clusterj.query.QueryDomainType;
 
@@ -394,6 +395,48 @@ public class BlocksHelper {
 		return 	query.getResultList();
 
 	}
+	
+	public static List<TripletsTable> getTripletsByFields(String datanodeName, String nextBlockId, String hostNameValue, long nextValue){
+		int tries = RETRY_COUNT;
+		boolean done = false;
+		Session session = DBConnector.sessionFactory.getSession();
+		//Transaction tx = session.currentTransaction();
+		while (done == false && tries > 0) {
+			try {
+				//tx.begin();
+				List <TripletsTable> ret = getTripletsByFieldsInternal(datanodeName, nextBlockId, hostNameValue,nextValue, session);
+				//tx.commit();
+				session.flush();
+				done=true;
+				return ret;
+			}
+			catch (ClusterJException e){
+				//tx.rollback();
+				System.err.println("updateIndex failed " + e.getMessage());
+				tries--;
+			}
+			finally {
+				session.close ();
+			}
+		}
+		return null;
+	}
+	
+	private static List<TripletsTable> getTripletsByFieldsInternal(String datanodeName, String nextBlockId, String hostNameValue, long nextValue, Session session){
+		QueryBuilder qb = session.getQueryBuilder();
+		QueryDomainType<TripletsTable> dobj = qb.createQueryDefinition(TripletsTable.class);
+		
+		Predicate pred = dobj.get(datanodeName).equal(dobj.param("param1"));
+		Predicate pred2 = dobj.get(nextBlockId).equal(dobj.param("param2"));
+		Predicate and = pred.and(pred2);
+		dobj.where(and);
+		Query<TripletsTable> query = session.createQuery(dobj);
+		query.setParameter("param1", hostNameValue); //the WHERE clause of SQL
+		query.setParameter("param2", nextValue);
+		return 	query.getResultList();
+
+	}
+	
 	public static BlockInfo[] getBlocksArray(INodeFile inode) {
 		int tries = RETRY_COUNT;
 		boolean done = false;
