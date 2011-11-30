@@ -102,7 +102,6 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	  }
 
   public DatanodeDescriptor getDatanode(int index) {
-	  System.err.println("getDatanode invoked with index: " + index);
     //assert this.triplets != null : "BlockInfo is not initialized";
     assert index >= 0;// && index*3 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
     //DatanodeDescriptor node = (DatanodeDescriptor)triplets[index*3];
@@ -150,7 +149,6 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   }
 
   void setDatanode(int index, DatanodeDescriptor node) {
-	  System.err.println("Index: ");
     //assert this.triplets != null : "BlockInfo is not initialized";
     assert index >= 0;// && index*3 < BlocksHelper.getTripletsForBlock(this).length : "Index is out of bound";
     //triplets[index*3] = node;
@@ -260,7 +258,6 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
    */
   int findDatanode(DatanodeDescriptor dn) {
     int len = getCapacity();
-    System.err.println("Capacity: " + len);
     for(int idx = 0; idx < len; idx++) {
       DatanodeDescriptor cur = getDatanode(idx);
       if(cur == dn){

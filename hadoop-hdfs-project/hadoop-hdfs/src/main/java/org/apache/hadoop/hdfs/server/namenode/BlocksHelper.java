@@ -580,7 +580,6 @@ public class BlocksHelper {
 			}
 			else
 			{
-				System.err.println("new triplets Datanode name at this point is: " + name);
 				TripletsTable newTriplet = session.newInstance(TripletsTable.class);
 				newTriplet.setBlockId(blockId);
 				newTriplet.setDatanodeName(name);
@@ -662,7 +661,6 @@ public class BlocksHelper {
 		Object[] pKey = new Object[2];
 		pKey[0]=blockId;
 		pKey[1]=index;
-		System.err.println("getNextPrevious() on " + blockId + " " + index);
 		TripletsTable triplet = session.find(TripletsTable.class, pKey);
 	
 		if (next == true)
@@ -787,7 +785,6 @@ public class BlocksHelper {
 		Object[] pKey = new Object[2];
 		pKey[0]=blockInfo.getBlockId();
 		pKey[1]=index;
-		System.err.println("removeTriplets() on " + blockInfo.getBlockId() + " " + index);
 		TripletsTable triplet = session.find(TripletsTable.class, pKey);
 		session.deletePersistent(triplet);
 		
