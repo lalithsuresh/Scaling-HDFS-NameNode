@@ -466,6 +466,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     
     LOG.info("fsOwner=" + fsOwner);
 
+    DBConnector.setConfiguration(conf);
     this.supergroup = conf.get(DFS_PERMISSIONS_SUPERUSERGROUP_KEY, 
                                DFS_PERMISSIONS_SUPERUSERGROUP_DEFAULT);
     this.isPermissionEnabled = conf.getBoolean(DFS_PERMISSIONS_ENABLED_KEY,
