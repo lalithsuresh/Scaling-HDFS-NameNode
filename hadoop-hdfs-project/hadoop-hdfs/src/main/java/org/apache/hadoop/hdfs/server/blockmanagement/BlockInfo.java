@@ -223,9 +223,19 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 
     // find the last null node
     int lastNode = ensureCapacity(1);
+    BlockInfo lastBlock = BlocksHelper.getLastRecord(node,this.getBlockId());
+    int lastBlockIndex = BlocksHelper.getLastRecordIndex(node,this.getBlockId());
+    if(lastBlock==null)
+    {
+    	lastBlock = BlocksHelper.getLastRecord(node,-1);
+        lastBlockIndex = BlocksHelper.getLastRecordIndex(node,-1);
+    }
     setDatanode(lastNode, node);
-    setNext(lastNode, null);
-    setPrevious(lastNode, null);
+    if(lastBlock!=null)
+    {
+    	setPrevious(lastNode, lastBlock);
+    	lastBlock.setNext(lastBlockIndex, this);
+    }
     return true;
   }
 
@@ -241,13 +251,13 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
     // find the last not null node
     int lastNode = numNodes()-1; 
     // replace current node triplet by the lastNode one 
-    setDatanode(dnIndex, getDatanode(lastNode));
+    /*setDatanode(dnIndex, getDatanode(lastNode));
     setNext(dnIndex, getNext(lastNode)); 
     setPrevious(dnIndex, getPrevious(lastNode)); 
     // set the last triplet to null
     setDatanode(lastNode, null);
     setNext(lastNode, null); 
-    setPrevious(lastNode, null); 
+    setPrevious(lastNode, null); */
     
     BlocksHelper.removeTriplets(this,dnIndex);
     return true;
@@ -279,7 +289,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
    * If the head is null then form a new list.
    * @return current block as the new head of the list.
    */
-  public BlockInfo listInsert(BlockInfo head, DatanodeDescriptor dn) {
+/*  public BlockInfo listInsert(BlockInfo head, DatanodeDescriptor dn) {
     int dnIndex = this.findDatanode(dn);
     assert dnIndex >= 0 : "Data node is not found: current";
     assert getPrevious(dnIndex) == null && getNext(dnIndex) == null : 
@@ -289,7 +299,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
     if(head != null)
       head.setPrevious(head.findDatanode(dn), this);
     return this;
-  }
+  }*/
 
   /**
    * Remove this block from the list of blocks 
@@ -299,7 +309,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
    * @return the new head of the list or null if the list becomes
    * empty after deletion.
    */
-  public BlockInfo listRemove(BlockInfo head, DatanodeDescriptor dn) {
+/*  public BlockInfo listRemove(BlockInfo head, DatanodeDescriptor dn) {
     if(head == null)
       return null;
     int dnIndex = this.findDatanode(dn);
@@ -320,7 +330,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
     if(this == head)  // removing the head
       head = next;
     return head;
-  }
+  }*/
 
   /**
    * BlockInfo represents a block that is not being constructed.

@@ -13,7 +13,7 @@ public class DBConnector {
 		 // [STATELESS]
 	    Properties p = new Properties();
 	    p.setProperty("com.mysql.clusterj.connectstring", "cloud3.sics.se:1186");
-	    p.setProperty("com.mysql.clusterj.database", "kthfs");
+	    p.setProperty("com.mysql.clusterj.database", "ying test");
 	    sessionFactory = ClusterJHelper.getSessionFactory(p);
 	}
 }
