@@ -3,6 +3,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.hadoop.hdfs.protocol.Block;
@@ -171,6 +172,7 @@ public class BlocksHelper {
 				blockInfo.setINode(node);
 			}
 			blockInfo.setBlockIndex(bit.getBlockIndex()); 
+			blockInfo.setTimestamp(bit.getTimestamp());
 
 			return blockInfo;
 		}
@@ -231,6 +233,7 @@ public class BlocksHelper {
 		bit.setBlockId(binfo.getBlockId());
 		bit.setGenerationStamp(binfo.getGenerationStamp());
 		bit.setBlockUCState(binfo.getBlockUCState().ordinal());
+		bit.setTimestamp(System.currentTimeMillis()); //added by W - for sorting the blocks properly
 
 		if(binfo.isComplete()) {
 			INodeFile ifile = binfo.getINode();
@@ -317,7 +320,7 @@ public class BlocksHelper {
 		bit.setBlockIndex(idx); //setting the index in the table
 		bit.setNumBytes(binfo.getNumBytes());
 		bit.setBlockUCState(binfo.getBlockUCState().ordinal());
-		s.savePersistent(bit);
+		s.updatePersistent(bit);
 		
 	}
 	public static void updateINodeID(long iNodeID, BlockInfo binfo){
@@ -432,7 +435,7 @@ public class BlocksHelper {
 				blocksArray[i].setINode(inode);
 			}
 			//sorting the array in descending order w.r.t blockIndex
-			Arrays.sort(blocksArray); 
+			Arrays.sort(blocksArray, new BlockInfoComparator());
 			return blocksArray;
 			
 		} catch (IOException e) {
@@ -441,6 +444,24 @@ public class BlocksHelper {
 
 		return blocksArray;
 	}
+	
+	
+	public static class BlockInfoComparator implements Comparator<BlockInfo> {
+
+		@Override
+		public int compare(BlockInfo o1, BlockInfo o2) {
+			
+			Exception exe = new Exception("custom exception Comparator");
+			try {
+				throw exe;
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
+			return o1.getTimestamp() < o2.getTimestamp() ? -1 : 1;
+		}
+		
+	}
+	
 
 	/** Update Previous or next block in the triplets table for a given BlockId.
 	 *  next=true: update nextBlockId, false: updatePrevious */

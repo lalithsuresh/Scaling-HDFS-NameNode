@@ -49,6 +49,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	private Object[] triplets;
 
 	private int blockIndex = -1; //added for KTHFS
+	private long timestamp = 1;
 
 	/**
 	 * Construct an entry for blocksmap
@@ -366,5 +367,13 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	public void setBlockIndex(int bindex) {
 		this.blockIndex = bindex;
 	}
-  
+ 
+	/*added for KTHFS*/
+	public long getTimestamp() {
+		return this.timestamp;
+	}
+	/*added for KTHFS*/
+	public void setTimestamp(long ts) {
+		this.timestamp = ts;
+	}
 }
