@@ -451,18 +451,18 @@ public class BlocksHelper {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		Session session = DBConnector.sessionFactory.getSession();
-		//Transaction tx = session.currentTransaction();
+		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
-				//tx.begin();
+				tx.begin();
 				List <TripletsTable> ret = getTripletsByFieldsInternal(datanodeName, nextBlockId, hostNameValue,nextValue, session);
-				//tx.commit();
+				tx.commit();
 				session.flush();
 				done=true;
 				return ret;
 			}
 			catch (ClusterJException e){
-				//tx.rollback();
+				tx.rollback();
 				System.err.println("updateIndex failed " + e.getMessage());
 				tries--;
 			}
@@ -707,11 +707,19 @@ public class BlocksHelper {
 		pKey[1]=index;
 		System.err.println("getNextPrevious() on " + blockId + " " + index);
 		TripletsTable triplet = session.find(TripletsTable.class, pKey);
-	
+		//TODO getBlockInfoSingle should call internal function
 		if (next == true)
-			return getBlockInfoSingle(triplet.getNextBlockId());
+		{
+			if(triplet.getNextBlockId()==-1)
+				return null;
+			else
+				return getBlockInfoSingle(triplet.getNextBlockId());
+		}
 		else
-			return getBlockInfoSingle(triplet.getPreviousBlockId());
+			if(triplet.getPreviousBlockId()==-1)
+				return null;
+			else
+				return getBlockInfoSingle(triplet.getPreviousBlockId());
 	}
 
 		public static DatanodeDescriptor[] getDataNodesFromBlock (long blockId){
@@ -953,6 +961,33 @@ public class BlocksHelper {
 		while (done == false && tries > 0) {
 			try {
 				List<TripletsTable> triplets = getTripletsByFields("datanodeName","nextBlockId",node.getName(), blockId);
+				if(triplets!=null && triplets.size()==1)
+				{	
+					blockIndex = triplets.get(0).getIndex();
+					done=true;
+					return blockIndex;
+				}
+				else
+					return -1;
+			}
+			catch (ClusterJException e){
+				System.err.println("getLastRecord failed " + e.getMessage());
+				tries--;
+			}
+			finally {
+			}
+		}
+		return -1;
+	}
+	
+	public static int getTripletsIndex(DatanodeDescriptor node, long blockId)
+	{
+		int blockIndex;
+		int tries = RETRY_COUNT;
+		boolean done = false;
+		while (done == false && tries > 0) {
+			try {
+				List<TripletsTable> triplets = getTripletsByFields("datanodeName","blockId",node.getName(), blockId);
 				if(triplets!=null && triplets.size()==1)
 				{	
 					blockIndex = triplets.get(0).getIndex();
