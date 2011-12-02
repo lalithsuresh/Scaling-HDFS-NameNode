@@ -400,18 +400,18 @@ public class BlocksHelper {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		Session session = DBConnector.sessionFactory.getSession();
-		//Transaction tx = session.currentTransaction();
+		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
-				//tx.begin();
+				tx.begin();
 				List <TripletsTable> ret = getTripletsByFieldsInternal(datanodeName, nextBlockId, hostNameValue,nextValue, session);
-				//tx.commit();
+				tx.commit();
 				session.flush();
 				done=true;
 				return ret;
 			}
 			catch (ClusterJException e){
-				//tx.rollback();
+				tx.rollback();
 				System.err.println("updateIndex failed " + e.getMessage());
 				tries--;
 			}
@@ -670,11 +670,19 @@ public class BlocksHelper {
 		pKey[0]=blockId;
 		pKey[1]=index;
 		TripletsTable triplet = session.find(TripletsTable.class, pKey);
-	
+		//TODO getBlockInfoSingle should call internal function
 		if (next == true)
-			return getBlockInfoSingle(triplet.getNextBlockId());
+		{
+			if(triplet.getNextBlockId()==-1)
+				return null;
+			else
+				return getBlockInfoSingle(triplet.getNextBlockId());
+		}
 		else
-			return getBlockInfoSingle(triplet.getPreviousBlockId());
+			if(triplet.getPreviousBlockId()==-1)
+				return null;
+			else
+				return getBlockInfoSingle(triplet.getPreviousBlockId());
 	}
 
 	
