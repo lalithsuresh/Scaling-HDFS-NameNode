@@ -189,44 +189,84 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 		return 0;
 	}
 
-	/**
-	 * Add data-node this block belongs to.
-	 */
-	public boolean addNode(DatanodeDescriptor node) {
-		if(findDatanode(node) >= 0) // the node is already there
-			return false;
 
-		// find the last null node
-		int lastNode = ensureCapacity(1);
-		setDatanode(lastNode, node);
-		setNext(lastNode, null);
-		setPrevious(lastNode, null);
-		return true;
-	}
+	  /**
+	* Add data-node this block belongs to.
+	*/
+	  public boolean addNode(DatanodeDescriptor node) {
+	    if(findDatanode(node) >= 0) // the node is already there
+	      return false;
 
-	/**
-	 * Remove data-node from the block.
-	 */
-	public boolean removeNode(DatanodeDescriptor node) {
-		int dnIndex = findDatanode(node);
-		if(dnIndex < 0) // the node is not found
-			return false;
-		assert getPrevious(dnIndex) == null && getNext(dnIndex) == null : 
-			"Block is still in the list and must be removed first.";
-		// find the last not null node
-		int lastNode = numNodes()-1; 
-		// replace current node triplet by the lastNode one 
-		setDatanode(dnIndex, getDatanode(lastNode));
-		setNext(dnIndex, getNext(lastNode)); 
-		setPrevious(dnIndex, getPrevious(lastNode)); 
-		// set the last triplet to null
-		setDatanode(lastNode, null);
-		setNext(lastNode, null); 
-		setPrevious(lastNode, null); 
+	    // find the last available datanode index
+	    int lastNode = ensureCapacity(1);
+	    BlockInfo lastBlock = BlocksHelper.getLastRecord(node,this.getBlockId());
+	    int lastBlockIndex = BlocksHelper.getLastRecordIndex(node,this.getBlockId());
+	    if(lastBlock==null)
+	    {
+	     lastBlock = BlocksHelper.getLastRecord(node,-1);
+	        lastBlockIndex = BlocksHelper.getLastRecordIndex(node,-1);
+	    }
+	    setDatanode(lastNode, node);
+	    if(lastBlock!=null)
+	    {
+	     //set the previous pointer to the last block just found
+	     setPrevious(lastNode, lastBlock);
+	     //reset the last block next pointer to me
+	     lastBlock.setNext(lastBlockIndex, this);
+	    }
+	    return true;
+	  }
 
-		BlocksHelper.removeTriplets(this,dnIndex);
-		return true;
-	}
+	  /**
+	* Remove data-node from the block.
+	*/
+	  public boolean removeNode(DatanodeDescriptor node) {
+	    int dnIndex = findDatanode(node);
+	    if(dnIndex < 0) // the node is not found
+	      return false;
+	    assert getPrevious(dnIndex) == null && getNext(dnIndex) == null :
+	      "Block is still in the list and must be removed first.";
+	    // find the last not null node
+	    //int lastNode = numNodes()-1;
+	    // replace current node triplet by the lastNode one
+	    /*setDatanode(dnIndex, getDatanode(lastNode));
+	setNext(dnIndex, getNext(lastNode));
+	setPrevious(dnIndex, getPrevious(lastNode));
+	// set the last triplet to null
+	setDatanode(lastNode, null);
+	setNext(lastNode, null);
+	setPrevious(lastNode, null); */
+	    BlockInfo previous = getPrevious(dnIndex);
+	    BlockInfo next = getNext(dnIndex);
+	    if(next == null && previous != null)
+	    {
+	     int previousIndex = BlocksHelper.getTripletsIndex(node,previous.getBlockId());
+	     System.err.println("remove tail!!!!!!!!!!!!!!!!!");
+	     // mock blockInfo object, we only need its id
+	     BlockInfo nextBlockInfo = new BlockInfo(1);
+	     nextBlockInfo.setBlockId(-1);
+	     previous.setNext(previousIndex, nextBlockInfo);
+	    }
+	    else if (previous == null && next != null)
+	    {
+	     System.err.println("remove head!!!!!!!!!!!!!!!!!");
+	     int nextIndex = BlocksHelper.getTripletsIndex(node,next.getBlockId());
+	     BlockInfo previousBlockInfo = new BlockInfo(1);
+	     previousBlockInfo.setBlockId(-1);
+	     next.setPrevious(nextIndex, previousBlockInfo);
+	    }
+	    else if (previous != null && next != null)
+	    {
+	     System.err.println("remove in the middle!!!!!!!!!!!!!!!!!");
+	     int previousIndex = BlocksHelper.getTripletsIndex(node,previous.getBlockId());
+	     int nextIndex = BlocksHelper.getTripletsIndex(node,next.getBlockId());
+	     previous.setNext(previousIndex, next);
+	     next.setPrevious(nextIndex, previous);
+	    }
+	    BlocksHelper.removeTriplets(this,dnIndex);
+	    return true;
+	  }
+
 
 	/**
 	 * Find specified DatanodeDescriptor.
