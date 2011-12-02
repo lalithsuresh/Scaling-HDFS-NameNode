@@ -493,13 +493,6 @@ public class BlocksHelper {
 
 		@Override
 		public int compare(BlockInfo o1, BlockInfo o2) {
-			
-			Exception exe = new Exception("custom exception Comparator");
-			try {
-				throw exe;
-			} catch(Exception e) {
-				e.printStackTrace();
-			}
 			return o1.getTimestamp() < o2.getTimestamp() ? -1 : 1;
 		}
 		
