@@ -446,7 +446,7 @@ public class INodeTableHelper {
 			try{
 				//see if this works!?
 				newChild = (INodeFile)convertINodeTableToINode(inode);
-				BlockInfo blklist[] = BlocksHelper.getBlocksArray(newChild);
+				BlockInfo blklist[] = BlocksHelper.getBlocksArrayInternal(newChild, session);
 				
 				newChild.setBlocksList(blklist);
 				nodeToBeReturned = newChild;
@@ -466,7 +466,7 @@ public class INodeTableHelper {
 			try{
 				//see if this works!?
 				newChild = (INodeFileUnderConstruction)convertINodeTableToINode(inode);
-				BlockInfo blklist[] = BlocksHelper.getBlocksArray(newChild);
+				BlockInfo blklist[] = BlocksHelper.getBlocksArrayInternal(newChild, session);
 				
 				newChild.setBlocksList(blklist);
 				nodeToBeReturned = newChild;
@@ -590,7 +590,6 @@ public class INodeTableHelper {
 			// at this point no blocks have no INode reference
 			BlockInfo [] blocks = new BlockInfo [1];
 			blocks[0]= new BlockInfo(1);
-			//BlockInfo[] blocksArray = BlocksHelper.getBlocksArrayWithNoINodes(inodetable.getId());
 			//try {
 				inode = new INodeFileUnderConstruction(inodetable.getName().getBytes(),
 						getReplicationFromHeader(inodetable.getHeader()),
@@ -617,7 +616,7 @@ public class INodeTableHelper {
 			//W: not sure if we need to do this for INodeFileUnderConstruction			
 			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
 			
-			BlockInfo[] blocksArray = BlocksHelper.getBlocksArray((INodeFile)inode);
+			BlockInfo[] blocksArray = BlocksHelper.getBlocksArrayInternal((INodeFile)inode, session);
 			((INodeFile)(inode)).setBlocksList(blocksArray);
 		}
 		if (inodetable.getIsClosedFile()) {
@@ -633,7 +632,7 @@ public class INodeTableHelper {
 			inode = tmp;
 			
 			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
-			BlockInfo[] blocksArray = BlocksHelper.getBlocksArray((INodeFile)inode);
+			BlockInfo[] blocksArray = BlocksHelper.getBlocksArrayInternal((INodeFile)inode, session);
 			((INodeFile)(inode)).setBlocksList(blocksArray);
 		}
 

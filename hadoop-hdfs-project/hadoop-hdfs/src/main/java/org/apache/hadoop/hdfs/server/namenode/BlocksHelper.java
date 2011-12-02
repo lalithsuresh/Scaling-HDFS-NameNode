@@ -393,7 +393,7 @@ public class BlocksHelper {
 		}
 		return null;
 	}
-	private static BlockInfo[] getBlocksArrayInternal(INodeFile inode, Session session){
+	public static BlockInfo[] getBlocksArrayInternal(INodeFile inode, Session session){
 		if(inode==null)
 			return null;
 		
