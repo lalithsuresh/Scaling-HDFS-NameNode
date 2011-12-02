@@ -224,8 +224,8 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	    int dnIndex = findDatanode(node);
 	    if(dnIndex < 0) // the node is not found
 	      return false;
-	    assert getPrevious(dnIndex) == null && getNext(dnIndex) == null :
-	      "Block is still in the list and must be removed first.";
+	    //assert getPrevious(dnIndex) == null && getNext(dnIndex) == null :
+	    //  "Block is still in the list and must be removed first.";
 	    // find the last not null node
 	    //int lastNode = numNodes()-1;
 	    // replace current node triplet by the lastNode one
