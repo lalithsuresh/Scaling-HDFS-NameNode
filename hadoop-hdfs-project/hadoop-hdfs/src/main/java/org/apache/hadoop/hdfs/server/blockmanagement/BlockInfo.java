@@ -90,6 +90,10 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 		if(inode!=null)
 			BlocksHelper.updateINodeID(inode.getID(), this);
 	}
+	
+	public void setINodeWithoutTransaction(INodeFile inode) {	
+		this.inode = inode;	
+	}
 
 	public DatanodeDescriptor getDatanode(int index) {
 		assert index >= 0;
