@@ -24,7 +24,7 @@ import com.mysql.clusterj.query.QueryBuilder;
 import com.mysql.clusterj.query.QueryDomainType;
 
 public class INodeTableHelper {
-	//public static Session session = DBConnector.sessionFactory.getSession();
+	public static Session session = DBConnector.sessionFactory.getSession();
 	static final int MAX_DATA = 128;
 	public static FSNamesystem ns = null;
 	static final int RETRY_COUNT = 3; 
@@ -37,7 +37,7 @@ public class INodeTableHelper {
 	public static void addChild(INode node){
 		boolean done = false;
 		int tries = RETRY_COUNT;
-		Session session = DBConnector.sessionFactory.getSession();
+
 		Transaction tx = session.currentTransaction();
 		
 		while (done == false && tries > 0) {
@@ -54,9 +54,6 @@ public class INodeTableHelper {
 				tx.rollback();
 				System.err.println("InodeTableHelper.addChild() threw error " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 	}
@@ -151,7 +148,7 @@ public class INodeTableHelper {
 	public static List<INode> getChildren(String parentDir) throws IOException {
 		boolean done = false;
 		int tries = RETRY_COUNT;
-		Session session = DBConnector.sessionFactory.getSession();
+
 		Transaction tx = session.currentTransaction();
 		List<INode> ret = null;
 		
@@ -170,9 +167,6 @@ public class INodeTableHelper {
 				tx.rollback();
 				System.err.println("InodeTableHelper.getChildren() threw error " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 		
@@ -199,7 +193,7 @@ public class INodeTableHelper {
 	public static INode removeChild(INode node) throws ClusterJDatastoreException {
 		boolean done = false;
 		int tries = RETRY_COUNT;
-		Session session = DBConnector.sessionFactory.getSession();
+
 		Transaction tx = session.currentTransaction();
 		
 		while (done == false && tries > 0) {
@@ -217,9 +211,6 @@ public class INodeTableHelper {
 				tx.rollback();
 				System.err.println("InodeTableHelper.removeChild() threw error " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close();
 			}
 		}
 		
@@ -244,7 +235,7 @@ public class INodeTableHelper {
 	public static void updateParentAcrossSubTree (String oldFullPathOfParent, String newFullPathOfParent) {
 		boolean done = false;
 		int tries = RETRY_COUNT;
-		Session session = DBConnector.sessionFactory.getSession();
+
 		Transaction tx = session.currentTransaction();
 		
 		while (done == false && tries > 0) {
@@ -261,9 +252,6 @@ public class INodeTableHelper {
 				tx.rollback();
 				System.err.println("InodeTableHelper.updateParentAcrossSubTreeInternal() threw error " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close();
 			}
 		}
 	}
@@ -312,7 +300,7 @@ public class INodeTableHelper {
 	public static void replaceChild (INode thisInode, INode newChild){
 		boolean done = false;
 		int tries = RETRY_COUNT;
-		Session session = DBConnector.sessionFactory.getSession();
+
 		Transaction tx = session.currentTransaction();
 		
 		while (done == false && tries > 0) {
@@ -329,9 +317,6 @@ public class INodeTableHelper {
 				tx.rollback();
 				System.err.println("InodeTableHelper.replaceChild() threw error " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 	}
@@ -382,7 +367,7 @@ public class INodeTableHelper {
 	public static INodeFile completeFileUnderConstruction(INode thisInode, INodeFile newChild){
 		boolean done = false;
 		int tries = RETRY_COUNT;
-		Session session = DBConnector.sessionFactory.getSession();
+
 		Transaction tx = session.currentTransaction();
 		
 		while (done == false && tries > 0) {
@@ -400,9 +385,6 @@ public class INodeTableHelper {
 				System.err.println("InodeTableHelper.replaceChild() threw error " + e.getMessage());
 				tries--;
 				return null;
-			}
-			finally {
-				session.close ();
 			}
 		}
 		//Silence
@@ -464,7 +446,7 @@ public class INodeTableHelper {
 			try{
 				//see if this works!?
 				newChild = (INodeFile)convertINodeTableToINode(inode);
-				BlockInfo blklist[] = BlocksHelper.getBlocksArray(newChild);
+				BlockInfo blklist[] = BlocksHelper.getBlocksArrayInternal(newChild, session);
 				
 				newChild.setBlocksList(blklist);
 				nodeToBeReturned = newChild;
@@ -484,7 +466,7 @@ public class INodeTableHelper {
 			try{
 				//see if this works!?
 				newChild = (INodeFileUnderConstruction)convertINodeTableToINode(inode);
-				BlockInfo blklist[] = BlocksHelper.getBlocksArray(newChild);
+				BlockInfo blklist[] = BlocksHelper.getBlocksArrayInternal(newChild, session);
 				
 				newChild.setBlocksList(blklist);
 				nodeToBeReturned = newChild;
@@ -504,7 +486,7 @@ public class INodeTableHelper {
 	public static INode getChildDirectory(String parentDir, String searchDir) throws IOException {
 		boolean done = false;
 		int tries = RETRY_COUNT;
-		Session session = DBConnector.sessionFactory.getSession();
+
 		Transaction tx = session.currentTransaction();
 		
 		while (done == false && tries > 0) {
@@ -522,9 +504,6 @@ public class INodeTableHelper {
 				tx.rollback();
 				System.err.println("InodeTableHelper.removeChild() threw error " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close();
 			}
 		}
 		
@@ -611,7 +590,6 @@ public class INodeTableHelper {
 			// at this point no blocks have no INode reference
 			BlockInfo [] blocks = new BlockInfo [1];
 			blocks[0]= new BlockInfo(1);
-			//BlockInfo[] blocksArray = BlocksHelper.getBlocksArrayWithNoINodes(inodetable.getId());
 			//try {
 				inode = new INodeFileUnderConstruction(inodetable.getName().getBytes(),
 						getReplicationFromHeader(inodetable.getHeader()),
@@ -638,7 +616,7 @@ public class INodeTableHelper {
 			//W: not sure if we need to do this for INodeFileUnderConstruction			
 			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
 			
-			BlockInfo[] blocksArray = BlocksHelper.getBlocksArray((INodeFile)inode);
+			BlockInfo[] blocksArray = BlocksHelper.getBlocksArrayInternal((INodeFile)inode, session);
 			((INodeFile)(inode)).setBlocksList(blocksArray);
 		}
 		if (inodetable.getIsClosedFile()) {
@@ -654,7 +632,7 @@ public class INodeTableHelper {
 			inode = tmp;
 			
 			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
-			BlockInfo[] blocksArray = BlocksHelper.getBlocksArray((INodeFile)inode);
+			BlockInfo[] blocksArray = BlocksHelper.getBlocksArrayInternal((INodeFile)inode, session);
 			((INodeFile)(inode)).setBlocksList(blocksArray);
 		}
 
@@ -690,7 +668,7 @@ public class INodeTableHelper {
 	 * Returns an INode object which has iNodeID
 	 */
 	public static INode getINode(long iNodeID) {
-		Session session = DBConnector.sessionFactory.getSession();
+
 
 		InodeTable inodetable = session.find(InodeTable.class, iNodeID);
 		DataInputBuffer buffer = new DataInputBuffer();
@@ -762,7 +740,7 @@ public class INodeTableHelper {
 	public static INode updateSrcDst(String src, String dst){
 		boolean done = false;
 		int tries = RETRY_COUNT;
-		Session session = DBConnector.sessionFactory.getSession();
+
 		Transaction tx = session.currentTransaction();
 		
 		while (done == false && tries > 0) {
@@ -780,9 +758,6 @@ public class INodeTableHelper {
 				tx.rollback();
 				System.err.println("InodeTableHelper.addChild() threw error " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close();
 			}
 		}
 		
@@ -816,7 +791,7 @@ public class INodeTableHelper {
 	public static boolean updateHeader (String name ,long header) throws IOException{
 		boolean done = false;
 		int tries = RETRY_COUNT;
-		Session session = DBConnector.sessionFactory.getSession();
+
 		List<InodeTable> list =  getResultListUsingField("name", name, session);
 		assert list != null : "InodeTable object not found";
 		InodeTable inode = list.get(0); 
@@ -835,9 +810,6 @@ public class INodeTableHelper {
 				tx.rollback();
 				System.err.println("InodeTableHelper.addChild() threw error " + e.getMessage());
 				tries--;
-			}
-			finally{
-				session.close();
 			}
 		}
 		
