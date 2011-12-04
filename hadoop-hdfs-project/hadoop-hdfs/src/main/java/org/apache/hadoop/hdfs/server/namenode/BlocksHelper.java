@@ -53,9 +53,6 @@ public class BlocksHelper {
 				System.err.println("InodeTableHelper.addChild() threw error " + e.getMessage());
 				tries--;
 			}
-			finally {
-				session.close ();
-			}
 		}
 		
 	}
@@ -108,7 +105,7 @@ public class BlocksHelper {
 	public static BlockInfo getBlockInfo(long blockId)  {
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -123,9 +120,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("getBlockInfo failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 		return null;
@@ -182,7 +176,7 @@ public class BlocksHelper {
 	public static BlockInfo getBlockInfoSingle(long blockId) throws IOException {
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -198,9 +192,6 @@ public class BlocksHelper {
 				System.err.println("getBlockInfo failed " + e.getMessage());
 				tries--;
 			}
-			finally {
-				session.close ();
-			}
 		}
 		return null;
 	}
@@ -208,7 +199,7 @@ public class BlocksHelper {
 	public static void putBlockInfo(BlockInfo binfo) {
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -222,9 +213,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("putBlockInfo failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 	}
@@ -292,7 +280,7 @@ public class BlocksHelper {
 	public static void updateIndex(int idx, BlockInfo binfo) {
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -306,9 +294,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("updateIndex failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 	}
@@ -326,7 +311,7 @@ public class BlocksHelper {
 	public static void updateINodeID(long iNodeID, BlockInfo binfo){
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -340,9 +325,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("updateINodeID failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 	}
@@ -360,7 +342,7 @@ public class BlocksHelper {
 	public static List<BlockInfoTable> getResultListUsingField(String field, long value){
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -375,9 +357,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("updateIndex failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 		return null;
@@ -395,7 +374,7 @@ public class BlocksHelper {
 	public static BlockInfo[] getBlocksArray(INodeFile inode) {
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -410,9 +389,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("getBlocksArray failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 		return null;
@@ -461,7 +437,7 @@ public class BlocksHelper {
 	public static void setNextPrevious(long blockid, int idx, BlockInfo nextBlock, boolean next){
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -475,9 +451,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("setNextPrevious failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 	}
@@ -503,7 +476,7 @@ public class BlocksHelper {
 	public static void setDatanode(long blockId, int index, String name) {
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -517,9 +490,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("setDataNode failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 	}	
@@ -548,7 +518,7 @@ public class BlocksHelper {
 	public static DatanodeDescriptor getDatanode (long blockId, int index){
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -563,9 +533,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("setDataNode failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 		return null;
@@ -589,7 +556,7 @@ public class BlocksHelper {
 	public static BlockInfo getNextPrevious (long blockId, int index, boolean next) throws IOException{
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -604,9 +571,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("setDataNode failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 		return null;
@@ -628,7 +592,7 @@ public class BlocksHelper {
 	public static DatanodeDescriptor[] getDataNodesFromBlock (long blockId){
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -643,9 +607,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("getDataNodesFromBlock failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 		return null;
@@ -667,7 +628,7 @@ public class BlocksHelper {
 	public static List<TripletsTable> getTripletsListUsingField(String field, long value){
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -682,9 +643,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("getDataNodesFromBlock failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 		return null;
@@ -705,7 +663,7 @@ public class BlocksHelper {
 	public static BlockInfo removeBlocks(Block key){
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -720,9 +678,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("removeBlocks failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 		return null;
@@ -743,7 +698,7 @@ public class BlocksHelper {
 	
 	public static void removeTriplets(BlockInfo blockInfo, int index)
 	{
-		Session session = DBConnector.sessionFactory.getSession();
+		
 		Transaction tx = session.currentTransaction();
 		tx.begin();
 		
@@ -790,7 +745,7 @@ public class BlocksHelper {
 	public static Object[] getTripletsForBlock (BlockInfo blockinfo) {
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -805,9 +760,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("removeBlocks failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 		return null;
@@ -830,7 +782,7 @@ public class BlocksHelper {
 	
 	
 	public static INode getInodeFromBlockId (long blockId) {
-		Session session = DBConnector.sessionFactory.getSession();
+		
 		BlockInfoTable blockInfoTable = session.find(BlockInfoTable.class, blockId);
 
 		long inodeId = blockInfoTable.getINodeID();
