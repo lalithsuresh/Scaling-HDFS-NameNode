@@ -325,10 +325,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     setConfigurationParameters(conf);
     dtSecretManager = createDelegationTokenSecretManager(conf);
     this.registerMBean(); // register the MBean for the FSNamesystemState
-    INodeTableHelper.ns = this;
-    BlocksHelper.ns = this;
     
     if(fsImage == null) {
+      DBConnector.setConfiguration(conf);
+      INodeTableHelper.ns = this;
+      BlocksHelper.ns = this;
+      
       this.dir = new FSDirectory(this, conf);
 
       // [STATELESS] Add rootDir to DBMS
@@ -342,6 +344,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       NameNode.getNameNodeMetrics().setFsImageLoadTime(
                                 (int) timeTakenToLoadFSImage);
     } else {
+      DBConnector.setConfiguration(conf);
+      INodeTableHelper.ns = this;
+      BlocksHelper.ns = this;
+        
       this.dir = new FSDirectory(fsImage, this, conf);
 
       // [STATELESS] Add rootDir to DBMS
@@ -466,7 +472,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     
     LOG.info("fsOwner=" + fsOwner);
 
-    DBConnector.setConfiguration(conf);
     this.supergroup = conf.get(DFS_PERMISSIONS_SUPERUSERGROUP_KEY, 
                                DFS_PERMISSIONS_SUPERUSERGROUP_DEFAULT);
     this.isPermissionEnabled = conf.getBoolean(DFS_PERMISSIONS_ENABLED_KEY,
