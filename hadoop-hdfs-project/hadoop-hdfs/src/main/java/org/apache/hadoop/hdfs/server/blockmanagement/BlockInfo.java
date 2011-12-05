@@ -120,6 +120,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 				return info;
 	}
 
+
 	BlockInfo getNext(int index) {
 		//assert this.triplets != null : "BlockInfo is not initialized";
 		assert index >= 0;
