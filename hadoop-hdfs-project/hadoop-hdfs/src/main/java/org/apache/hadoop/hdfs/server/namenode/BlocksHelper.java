@@ -811,6 +811,7 @@ public class BlocksHelper {
 				replacementEntry.setPreviousBlockId(t.getPreviousBlockId());
 				
 				session.deletePersistent(t); // Delete old entry
+				session.flush();
 				session.makePersistent(replacementEntry); // Add new one
 				System.err.println("Triplet being replaced: " + replacementEntry.getBlockId() + " " + replacementEntry.getIndex() + " " + t.getBlockId() + " " + t.getIndex());
 			}
