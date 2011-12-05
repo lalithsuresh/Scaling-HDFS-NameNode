@@ -330,7 +330,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       DBConnector.setConfiguration(conf);
       INodeTableHelper.ns = this;
       BlocksHelper.ns = this;
+
       this.dir = new FSDirectory(this, conf);
+
       // [STATELESS] Add rootDir to DBMS
       this.dir.rootDir.setFullPathName(Path.SEPARATOR);
   	  INodeTableHelper.addChild(this.dir.rootDir);
@@ -345,6 +347,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       DBConnector.setConfiguration(conf);
       INodeTableHelper.ns = this;
       BlocksHelper.ns = this;
+        
       this.dir = new FSDirectory(fsImage, this, conf);
       // [STATELESS] Add rootDir to DBMS
       this.dir.rootDir.setFullPathName(Path.SEPARATOR);
