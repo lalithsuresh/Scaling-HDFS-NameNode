@@ -777,6 +777,7 @@ public class BlocksHelper {
 		pKey[1]=index;
 		TripletsTable triplet = session.find(TripletsTable.class, pKey);
 		session.deletePersistent(triplet);
+		System.err.println("Triplet being deleted: " + triplet.getBlockId() + " " + triplet.getIndex() + " " + pKey[0] + " " + pKey[1]);
 		//session.flush();
 		
 		// The triplets entries in the DB for a block have an ordered list of
@@ -805,6 +806,7 @@ public class BlocksHelper {
 				
 				session.deletePersistent(t); // Delete old entry
 				session.makePersistent(replacementEntry); // Add new one
+				System.err.println("Triplet being replaced: " + replacementEntry.getBlockId() + " " + replacementEntry.getIndex() + " " + t.getBlockId() + " " + t.getIndex());
 			}
 		}
 		tx.commit();
