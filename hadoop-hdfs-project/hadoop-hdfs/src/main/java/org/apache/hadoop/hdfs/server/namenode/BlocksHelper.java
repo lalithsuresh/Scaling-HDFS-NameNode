@@ -785,6 +785,7 @@ public class BlocksHelper {
 		
 		
 		Transaction tx_final = session.currentTransaction();
+		tx_final.begin();
 		// The triplets entries in the DB for a block have an ordered list of
 		// indices. Removal of an entry of an index X means that all entries
 		// with index greater than X needs to be corrected (decremented by 1
