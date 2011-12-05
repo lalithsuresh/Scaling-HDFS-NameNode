@@ -3,6 +3,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -786,6 +787,8 @@ public class BlocksHelper {
 		// basically).
 		List<TripletsTable> results = getTripletsListUsingFieldInternal ("blockId", blockInfo.getBlockId(), session);
 		
+		Collections.sort(results, new TripletsTableComparator());
+		
 		for (TripletsTable t: results)	{
 			long oldIndex = t.getIndex();
 			
@@ -810,6 +813,17 @@ public class BlocksHelper {
 			}
 		}
 		tx.commit();
+	}
+	
+	
+	
+	public static class TripletsTableComparator implements Comparator<TripletsTable> {
+
+		@Override
+		public int compare(TripletsTable o1, TripletsTable o2) {
+			return o1.getIndex() < o2.getIndex() ? -1 : 1;
+		}
+		
 	}
 	
 	
