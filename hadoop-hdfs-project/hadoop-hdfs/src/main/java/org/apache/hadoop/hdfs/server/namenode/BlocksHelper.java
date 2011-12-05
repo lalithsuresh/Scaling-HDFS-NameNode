@@ -628,8 +628,7 @@ public class BlocksHelper {
 		TripletsTable triplet = session.find(TripletsTable.class, pKey);
 		
 		if (triplet != null && triplet.getDatanodeName() != null) {
-			String hostname = triplet.getDatanodeName().split(":")[0];
-			DatanodeDescriptor ret = ns.getBlockManager().getDatanodeManager().getDatanodeByHost(hostname);
+			DatanodeDescriptor ret = ns.getBlockManager().getDatanodeManager().getDatanodeByName(triplet.getDatanodeName());
 			return ret;
 		}
 		
@@ -877,8 +876,9 @@ public class BlocksHelper {
 		
 		Object[] triplets = new Object[3 * results.size()];
 		
-		for (TripletsTable t:results){			
-			triplets[3 * t.getIndex()] = ns.getBlockManager().getDatanodeManager().getDatanodeByHost(t.getDatanodeName());
+		for (TripletsTable t:results){
+			
+			triplets[3 * t.getIndex()] = ns.getBlockManager().getDatanodeManager().getDatanodeByName(t.getDatanodeName());
 			triplets[3 * t.getIndex() + 1] = t.getPreviousBlockId();
 			triplets[3 * t.getIndex() + 2] = t.getNextBlockId();
 		}
