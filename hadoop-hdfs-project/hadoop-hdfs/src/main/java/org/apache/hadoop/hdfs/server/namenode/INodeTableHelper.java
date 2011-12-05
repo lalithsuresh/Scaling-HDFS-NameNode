@@ -24,7 +24,6 @@ import com.mysql.clusterj.query.QueryBuilder;
 import com.mysql.clusterj.query.QueryDomainType;
 
 public class INodeTableHelper {
-	public static Session session = DBConnector.sessionFactory.getSession();
 	static final int MAX_DATA = 128;
 	public static FSNamesystem ns = null;
 	static final int RETRY_COUNT = 3; 
@@ -38,6 +37,7 @@ public class INodeTableHelper {
 		boolean done = false;
 		int tries = RETRY_COUNT;
 
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		
 		while (done == false && tries > 0) {
@@ -149,6 +149,7 @@ public class INodeTableHelper {
 		boolean done = false;
 		int tries = RETRY_COUNT;
 
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		List<INode> ret = null;
 		
@@ -194,6 +195,7 @@ public class INodeTableHelper {
 		boolean done = false;
 		int tries = RETRY_COUNT;
 
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		
 		while (done == false && tries > 0) {
@@ -236,6 +238,7 @@ public class INodeTableHelper {
 		boolean done = false;
 		int tries = RETRY_COUNT;
 
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		
 		while (done == false && tries > 0) {
@@ -301,6 +304,7 @@ public class INodeTableHelper {
 		boolean done = false;
 		int tries = RETRY_COUNT;
 
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		
 		while (done == false && tries > 0) {
@@ -368,6 +372,7 @@ public class INodeTableHelper {
 		boolean done = false;
 		int tries = RETRY_COUNT;
 
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		
 		while (done == false && tries > 0) {
@@ -487,6 +492,7 @@ public class INodeTableHelper {
 		boolean done = false;
 		int tries = RETRY_COUNT;
 
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		
 		while (done == false && tries > 0) {
@@ -616,7 +622,7 @@ public class INodeTableHelper {
 			//W: not sure if we need to do this for INodeFileUnderConstruction			
 			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
 			
-			BlockInfo[] blocksArray = BlocksHelper.getBlocksArrayInternal((INodeFile)inode, session);
+			BlockInfo[] blocksArray = BlocksHelper.getBlocksArrayInternal((INodeFile)inode, DBConnector.obtainSession());
 			((INodeFile)(inode)).setBlocksList(blocksArray);
 		}
 		if (inodetable.getIsClosedFile()) {
@@ -632,7 +638,7 @@ public class INodeTableHelper {
 			inode = tmp;
 			
 			((INodeFile)(inode)).setID(inodetable.getId()); //W: ugly cast - not sure if we should do this
-			BlockInfo[] blocksArray = BlocksHelper.getBlocksArrayInternal((INodeFile)inode, session);
+			BlockInfo[] blocksArray = BlocksHelper.getBlocksArrayInternal((INodeFile)inode, DBConnector.obtainSession());
 			((INodeFile)(inode)).setBlocksList(blocksArray);
 		}
 
@@ -669,7 +675,7 @@ public class INodeTableHelper {
 	 */
 	public static INode getINode(long iNodeID) {
 
-
+		Session session = DBConnector.obtainSession();
 		InodeTable inodetable = session.find(InodeTable.class, iNodeID);
 		DataInputBuffer buffer = new DataInputBuffer();
 		if(inodetable==null)
@@ -741,6 +747,7 @@ public class INodeTableHelper {
 		boolean done = false;
 		int tries = RETRY_COUNT;
 
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		
 		while (done == false && tries > 0) {
@@ -791,7 +798,8 @@ public class INodeTableHelper {
 	public static boolean updateHeader (String name ,long header) throws IOException{
 		boolean done = false;
 		int tries = RETRY_COUNT;
-
+		
+		Session session = DBConnector.obtainSession();
 		List<InodeTable> list =  getResultListUsingField("name", name, session);
 		assert list != null : "InodeTable object not found";
 		InodeTable inode = list.get(0); 
