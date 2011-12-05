@@ -30,7 +30,6 @@ import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 public class BlocksHelper {
 
 	public static FSNamesystem ns = null;
-	public static Session session= DBConnector.sessionFactory.getSession();
 	static final int RETRY_COUNT = 3; 
 
 	/**
@@ -40,6 +39,8 @@ public class BlocksHelper {
 	public static void appendBlocks(INodeFile thisNode, INodeFile [] inodes, int totalAddedBlocks) {
 		int tries=RETRY_COUNT;
 		boolean done = false;
+		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0 ){
 			try{	
@@ -107,6 +108,7 @@ public class BlocksHelper {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 				
 		while (done == false && tries > 0) {
@@ -180,6 +182,7 @@ public class BlocksHelper {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 				
 		while (done == false && tries > 0) {
@@ -204,6 +207,7 @@ public class BlocksHelper {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -236,7 +240,7 @@ public class BlocksHelper {
 		bit.setNumBytes(binfo.getNumBytes());
 		//FIXME: KTHFS: Ying and Wasif: replication is null at the moment - remove the column if not required later on
 		
-		List<TripletsTable> results = getTripletsListUsingFieldInternal ("blockId", binfo.getBlockId(), session);
+		List<TripletsTable> results = getTripletsListUsingFieldInternal ("blockId", binfo.getBlockId(), s);
 		if (results.isEmpty())
 		{
 			//Getting triplets from Memory, before saving to DB
@@ -285,6 +289,7 @@ public class BlocksHelper {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		
 		while (done == false && tries > 0) {
@@ -317,6 +322,7 @@ public class BlocksHelper {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 						
 		while (done == false && tries > 0) {
@@ -353,6 +359,7 @@ public class BlocksHelper {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -427,6 +434,7 @@ public class BlocksHelper {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -486,6 +494,7 @@ public class BlocksHelper {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -525,6 +534,7 @@ public class BlocksHelper {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -567,6 +577,7 @@ public class BlocksHelper {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -604,6 +615,7 @@ public class BlocksHelper {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -648,6 +660,7 @@ public class BlocksHelper {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -684,6 +697,7 @@ public class BlocksHelper {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -719,6 +733,7 @@ public class BlocksHelper {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -753,7 +768,7 @@ public class BlocksHelper {
 	
 	public static void removeTriplets(BlockInfo blockInfo, int index)
 	{
-		
+		Session session = DBConnector.obtainSession();	
 		Transaction tx = session.currentTransaction();
 		tx.begin();
 		
@@ -761,7 +776,6 @@ public class BlocksHelper {
 		pKey[0]=blockInfo.getBlockId();
 		pKey[1]=index;
 		TripletsTable triplet = session.find(TripletsTable.class, pKey);
-		System.err.println("Triplet being deleted: " + triplet.getBlockId() + " " + triplet.getIndex() + " " + pKey[0] + " " + pKey[1]);
 		session.deletePersistent(triplet);
 		//session.flush();
 		
@@ -791,7 +805,6 @@ public class BlocksHelper {
 				
 				session.deletePersistent(t); // Delete old entry
 				session.makePersistent(replacementEntry); // Add new one
-				System.err.println("Triplet being corrected: " + replacementEntry.getBlockId() + " " + replacementEntry.getIndex() + " " + t.getBlockId() + " " + t.getIndex());
 			}
 		}
 		tx.commit();
@@ -803,6 +816,7 @@ public class BlocksHelper {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -841,6 +855,7 @@ public class BlocksHelper {
 	
 	public static INode getInodeFromBlockId (long blockId) {
 		
+		Session session = DBConnector.obtainSession();
 		BlockInfoTable blockInfoTable = session.find(BlockInfoTable.class, blockId);
 
 		long inodeId = blockInfoTable.getINodeID();
@@ -859,7 +874,7 @@ public class BlocksHelper {
 				List<TripletsTable> triplets = getTripletsByFields("datanodeName","nextBlockId",node.getName(), blockId);
 				if(triplets != null && triplets.size()==1)
 				{
-					blockInfo = getBlockInfoInternal(triplets.get(0).getBlockId(),session,true);
+					blockInfo = getBlockInfoInternal(triplets.get(0).getBlockId(), DBConnector.obtainSession(), true);
 					done=true;
 					return blockInfo;
 				}
