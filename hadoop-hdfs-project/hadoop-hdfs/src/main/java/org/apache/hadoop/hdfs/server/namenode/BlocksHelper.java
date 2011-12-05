@@ -30,7 +30,7 @@ import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 public class BlocksHelper {
 
 	public static FSNamesystem ns = null;
-	public static Session session= DBConnector.sessionFactory.getSession() ;
+	public static Session session= DBConnector.sessionFactory.getSession();
 	static final int RETRY_COUNT = 3; 
 
 	/**
@@ -761,6 +761,7 @@ public class BlocksHelper {
 		pKey[0]=blockInfo.getBlockId();
 		pKey[1]=index;
 		TripletsTable triplet = session.find(TripletsTable.class, pKey);
+		System.err.println("Triplet being deleted: " + triplet.getBlockId() + " " + triplet.getIndex() + " " + pKey[0] + " " + pKey[1]);
 		session.deletePersistent(triplet);
 		session.flush();
 		
@@ -790,6 +791,7 @@ public class BlocksHelper {
 				
 				session.deletePersistent(t); // Delete old entry
 				session.makePersistent(replacementEntry); // Add new one
+				System.err.println("Triplet being corrected: " + replacementEntry.getBlockId() + " " + replacementEntry.getIndex() + " " + t.getBlockId() + " " + t.getIndex());
 			}
 		}
 		tx.commit();
