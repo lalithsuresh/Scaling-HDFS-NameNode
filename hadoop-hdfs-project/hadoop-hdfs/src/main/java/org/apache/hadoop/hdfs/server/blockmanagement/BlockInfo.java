@@ -121,7 +121,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	}
 
 	BlockInfo getNext(int index) {
-		assert this.triplets != null : "BlockInfo is not initialized";
+		//assert this.triplets != null : "BlockInfo is not initialized";
 		assert index >= 0;
 		BlockInfo info = null;
 		try {
@@ -172,11 +172,11 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 			return last;
 		/* Not enough space left. Create a new array. Should normally 
 		 * happen only when replication is manually increased by the user. */
-		Object[] old = triplets;
+		/*Object[] old = triplets;
 		triplets = new Object[(last+num)*3];
 		for(int i=0; i < last*3; i++) {
 			triplets[i] = old[i];
-		}
+		}*/
 		return last;
 	}
 
@@ -184,7 +184,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	 * Count the number of data-nodes the block belongs to.
 	 */
 	int numNodes() {
-		assert this.triplets != null : "BlockInfo is not initialized";
+		//assert this.triplets != null : "BlockInfo is not initialized";
 		assert BlocksHelper.getTripletsForBlock(this).length % 3 == 0 : "Malformed BlockInfo";
 		for(int idx = getCapacity()-1; idx >= 0; idx--) {
 			if(getDatanode(idx) != null)
