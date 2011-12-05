@@ -769,8 +769,8 @@ public class BlocksHelper {
 	public static void removeTriplets(BlockInfo blockInfo, int index)
 	{
 		Session session = DBConnector.obtainSession();	
-		Transaction tx_initial = session.currentTransaction();
-		tx_initial.begin();
+		Transaction tx = session.currentTransaction();
+		tx.begin();
 		
 		Object[] pKey = new Object[2];
 		pKey[0]=blockInfo.getBlockId();
@@ -780,12 +780,6 @@ public class BlocksHelper {
 		
 		System.err.println("Triplet being deleted: " + triplet.getBlockId() + " " + triplet.getIndex() + " " + pKey[0] + " " + pKey[1]);
 
-		session.flush();
-		tx_initial.commit();
-		
-		
-		Transaction tx_final = session.currentTransaction();
-		tx_final.begin();
 		// The triplets entries in the DB for a block have an ordered list of
 		// indices. Removal of an entry of an index X means that all entries
 		// with index greater than X needs to be corrected (decremented by 1
@@ -811,12 +805,11 @@ public class BlocksHelper {
 				replacementEntry.setPreviousBlockId(t.getPreviousBlockId());
 				
 				session.deletePersistent(t); // Delete old entry
-				session.flush();
 				session.makePersistent(replacementEntry); // Add new one
 				System.err.println("Triplet being replaced: " + replacementEntry.getBlockId() + " " + replacementEntry.getIndex() + " " + t.getBlockId() + " " + t.getIndex());
 			}
 		}
-		tx_final.commit();
+		tx.commit();
 	}
 	
 	
