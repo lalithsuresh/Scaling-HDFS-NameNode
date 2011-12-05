@@ -344,7 +344,7 @@ class INodeDirectory extends INode {
 		if (name.length == 0) { // empty name
 			return 0;
 		}
-		int nextPos = Collections.binarySearch(children, name) + 1;
+		int nextPos = Collections.binarySearch(getChildrenFromDB(), name) + 1;
 		if (nextPos >= 0) {
 			return nextPos;
 		}
