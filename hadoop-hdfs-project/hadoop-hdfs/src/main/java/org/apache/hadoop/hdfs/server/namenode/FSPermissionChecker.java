@@ -189,6 +189,7 @@ class FSPermissionChecker {
 
   private void check(INode inode, FsAction access
       ) throws AccessControlException {
+	System.err.println("Permission check on: " + inode + " as:" + access);
     if (inode == null) {
       return;
     }

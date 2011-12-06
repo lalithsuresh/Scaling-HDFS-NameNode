@@ -52,7 +52,7 @@ public class TestPermission extends TestCase {
   static FsPermission checkPermission(FileSystem fs,
       String path, FsPermission expected) throws IOException {
     FileStatus s = fs.getFileStatus(new Path(path));
-    LOG.info(s.getPath() + ": " + s.isDirectory() + " " + s.getPermission()
+    LOG.info("TestPermission.checkPermission: " + s.getPath() + ": " + s.isDirectory() + " " + s.getPermission()
         + ":" + s.getOwner() + ":" + s.getGroup());
     if (expected != null) {
       assertEquals(expected, s.getPermission());
@@ -240,6 +240,7 @@ public class TestPermission extends TestCase {
 
   static boolean canOpen(FileSystem fs, Path p) throws IOException {
     try {
+      LOG.info ("canOpen() called on " + p );
       fs.open(p);
       return true;
     } catch(AccessControlException e) {

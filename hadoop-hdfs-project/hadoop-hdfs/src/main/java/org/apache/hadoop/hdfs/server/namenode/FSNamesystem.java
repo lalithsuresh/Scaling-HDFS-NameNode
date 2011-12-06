@@ -2009,13 +2009,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     readLock();
     try {
       
-    	/*FIXME: W: Commented out for the time being
-    	 * if (!DFSUtil.isValidName(src)) {
+    	/*FIXME: W: Commented out for the time being*/
+      if (!DFSUtil.isValidName(src)) {
         throw new InvalidPathException("Invalid file name: " + src);
       }
       if (isPermissionEnabled) {
         checkTraverse(src);
-      }*/
+      }
 
       return dir.getFileInfo(src, resolveLink);
     } finally {
