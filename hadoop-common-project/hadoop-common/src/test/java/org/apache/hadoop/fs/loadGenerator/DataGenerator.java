@@ -134,16 +134,18 @@ public class DataGenerator extends Configured implements Tool {
       long fileSize = (long)(BLOCK_SIZE*Double.parseDouble(tokens[1]));
       genFile(new Path(fileName), fileSize);
     }
+    System.err.println("Outside the while loop");
   }
   
   /** Create a file with the name <code>file</code> and 
    * a length of <code>fileSize</code>. The file is filled with character 'a'.
    */
   private void genFile(Path file, long fileSize) throws IOException {
-    FSDataOutputStream out = fc.create(file,
+    System.err.println("File about to be created: " + file.toString());
+	  FSDataOutputStream out = fc.create(file,
         EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE),
         CreateOpts.createParent(), CreateOpts.bufferSize(4096),
-        CreateOpts.repFac((short) 3));
+        CreateOpts.repFac((short) 1));
     for(long i=0; i<fileSize; i++) {
       out.writeByte('a');
     }

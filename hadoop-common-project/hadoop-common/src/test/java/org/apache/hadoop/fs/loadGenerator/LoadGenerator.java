@@ -115,7 +115,7 @@ public class LoadGenerator extends Configured implements Tool {
   private Path root = DataGenerator.DEFAULT_ROOT;
   private FileContext fc;
   private int maxDelayBetweenOps = 0;
-  private int numOfThreads = 200;
+  private int numOfThreads = 200; //FIXME: change to 200 (default)
   private long [] durations = {0};
   private double [] readProbs = {0.3333};
   private double [] writeProbs = {0.3333};
@@ -248,14 +248,18 @@ public class LoadGenerator extends Configured implements Tool {
      * Immediately after the file creation completes, the file is deleted
      * from the test space.
      */
+    
     private void write() throws IOException {
       String dirName = dirs.get(r.nextInt(dirs.size()));
       Path file = new Path(dirName, hostname+id);
       double fileSize = 0;
       while ((fileSize = r.nextGaussian()+2)<=0) {}
+      printKTH("About to generate file: " + file.toString());
       genFile(file, (long)(fileSize*BLOCK_SIZE));
+      printKTH("Generated!");
       long startTime = System.currentTimeMillis();
       fc.delete(file, true);
+      printKTH("Deleted!");
       executionTime[DELETE] += (System.currentTimeMillis()-startTime);
       totalNumOfOps[DELETE]++;
     }
@@ -583,21 +587,26 @@ public class LoadGenerator extends Configured implements Tool {
    * The file is filled with 'a'.
    */
   private void genFile(Path file, long fileSize) throws IOException {
+	  
     long startTime = System.currentTimeMillis();
     FSDataOutputStream out = fc.create(file,
         EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE),
         CreateOpts.createParent(), CreateOpts.bufferSize(4096),
-        CreateOpts.repFac((short) 3));
+        CreateOpts.repFac((short) 1));
     executionTime[CREATE] += (System.currentTimeMillis()-startTime);
     totalNumOfOps[CREATE]++;
-
+    printKTH("After fc.create()");
     for (long i=0; i<fileSize; i++) {
       out.writeByte('a');
+      printKTH("Byte written");
     }
     startTime = System.currentTimeMillis();
+    printKTH("Before out.close()");
     out.close();
+    printKTH("After out.close()");
     executionTime[WRITE_CLOSE] += (System.currentTimeMillis()-startTime);
     totalNumOfOps[WRITE_CLOSE]++;
+    
   }
   
   /** Main program
@@ -611,4 +620,9 @@ public class LoadGenerator extends Configured implements Tool {
     System.exit(res);
   }
 
+  /*Added for kthfs debugging*/
+	public void printKTH(String msg) {
+		System.err.println("[KTHFS] (tid:" + Thread.currentThread().getId() + ") " + msg);
+	}
+  
 }

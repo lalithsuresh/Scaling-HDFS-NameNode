@@ -27,7 +27,7 @@ public class DBConnector {
 		 // [STATELESS]
 	    Properties p = new Properties();
 	    p.setProperty("com.mysql.clusterj.connectstring", conf.get(DFS_DB_CONNECTOR_STRING_KEY, "cloud3.sics.se"));
-	    p.setProperty("com.mysql.clusterj.database", conf.get(DFS_DB_DATABASE_KEY, "lalithtest"));
+	    p.setProperty("com.mysql.clusterj.database", conf.get(DFS_DB_DATABASE_KEY, "kthfs"));
 	    sessionFactory = ClusterJHelper.getSessionFactory(p);
 	}
 	
