@@ -254,12 +254,9 @@ public class LoadGenerator extends Configured implements Tool {
       Path file = new Path(dirName, hostname+id);
       double fileSize = 0;
       while ((fileSize = r.nextGaussian()+2)<=0) {}
-      printKTH("About to generate file: " + file.toString());
       genFile(file, (long)(fileSize*BLOCK_SIZE));
-      printKTH("Generated!");
       long startTime = System.currentTimeMillis();
       fc.delete(file, true);
-      printKTH("Deleted!");
       executionTime[DELETE] += (System.currentTimeMillis()-startTime);
       totalNumOfOps[DELETE]++;
     }
@@ -595,15 +592,11 @@ public class LoadGenerator extends Configured implements Tool {
         CreateOpts.repFac((short) 1));
     executionTime[CREATE] += (System.currentTimeMillis()-startTime);
     totalNumOfOps[CREATE]++;
-    printKTH("After fc.create()");
     for (long i=0; i<fileSize; i++) {
       out.writeByte('a');
-      printKTH("Byte written");
     }
     startTime = System.currentTimeMillis();
-    printKTH("Before out.close()");
     out.close();
-    printKTH("After out.close()");
     executionTime[WRITE_CLOSE] += (System.currentTimeMillis()-startTime);
     totalNumOfOps[WRITE_CLOSE]++;
     

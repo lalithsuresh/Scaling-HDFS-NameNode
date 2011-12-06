@@ -779,7 +779,6 @@ public class BlocksHelper {
 		TripletsTable triplet = session.find(TripletsTable.class, pKey);
 		session.deletePersistent(triplet);
 		
-		System.err.println("Triplet being deleted: " + triplet.getBlockId() + " " + triplet.getIndex() + " " + pKey[0] + " " + pKey[1]);
 
 		// The triplets entries in the DB for a block have an ordered list of
 		// indices. Removal of an entry of an index X means that all entries
