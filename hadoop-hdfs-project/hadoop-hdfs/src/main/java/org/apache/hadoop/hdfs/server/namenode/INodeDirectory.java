@@ -379,23 +379,9 @@ class INodeDirectory extends INode {
 			return null;
 		}
 		node.parent = this;
-		
-		Session session = DBConnector.sessionFactory.getSession();    
-		Transaction tx = session.currentTransaction();
-		tx.begin();
-		
-		List<InodeTable> results = INodeTableHelper.getResultListUsingField ("name", this.getFullPathName(), session);
-		assert ! results.isEmpty(): "[KTHFS] This Inode doesn't exist in DB";
-		InodeTable inode = results.get(0);
-		
-		inode.setModificationTime(node.getModificationTime());
-		session.updatePersistent(inode);
-		tx.commit();
-		session.flush();
-		
-		// update modification time of the parent directory
-		//if (setModTime)
-		//	setModificationTime(node.getModificationTime());
+		//Update its parent's modification time
+		INodeTableHelper.updateModificationTime(this.getFullPathName(),node.getModificationTime());
+
 		if (node.getGroupName() == null) {
 			node.setGroup(getGroupName());
 		}
