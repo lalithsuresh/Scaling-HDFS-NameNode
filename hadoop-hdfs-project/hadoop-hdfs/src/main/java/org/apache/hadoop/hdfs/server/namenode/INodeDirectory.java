@@ -374,6 +374,11 @@ class INodeDirectory extends INode {
 			node.setPermission(p);
 		}
 		
+		if (node instanceof INodeFileUnderConstruction) {
+			INodeFileUnderConstruction infu = (INodeFileUnderConstruction) node;
+			KthFsHelper.printKTH("@@@@@@ machine + name " + infu.getClientMachine() + " + " +  infu.getClientName());
+		}
+		
 		int low = Collections.binarySearch(getChildrenFromDB(), node.name);
 		if(low >= 0){
 			return null;
