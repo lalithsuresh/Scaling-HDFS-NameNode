@@ -125,14 +125,16 @@ public class INodeTableHelper {
 			inode.setIsDir(false);
 			inode.setIsDirWithQuota(false);
 			inode.setIsUnderConstruction(true);
+			inode.setClientName(((INodeFileUnderConstruction) node).getClientName());
+			inode.setClientMachine(((INodeFileUnderConstruction) node).getClientMachine());
 			try {
-				inode.setClientName(((INodeFileUnderConstruction) node).getClientName());
-				inode.setClientMachine(((INodeFileUnderConstruction) node).getClientMachine());
 				inode.setClientNode(((INodeFileUnderConstruction) node).getClientNode().getName());
 			} catch (NullPointerException e) { // Can trigger when NN is also the client
+				/*  This values should not be set to null at any time
 				inode.setClientName(null);
 				inode.setClientMachine(null);
 				inode.setClientNode(null);
+				*/
 			}
 		}
 		if (node instanceof INodeSymlink)
