@@ -1114,6 +1114,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       FileNotFoundException, ParentNotDirectoryException, IOException {
     writeLock();
     try {
+    	System.err.println("\n\n$$$$$ clientMachine: " + clientMachine);
       startFileInternal(src, permissions, holder, clientMachine, flag,
           createParent, replication, blockSize);
       
@@ -1639,6 +1640,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                                        "Holder " + holder + 
                                        " does not have any open files."));
     }
+    System.err.println("\n\n%%%%%%%%% holder: " + holder);
     INodeFileUnderConstruction pendingFile = (INodeFileUnderConstruction)file;
     if (holder != null && !pendingFile.getClientName().equals(holder)) {
       throw new LeaseExpiredException("Lease mismatch on " + src + " owned by "
