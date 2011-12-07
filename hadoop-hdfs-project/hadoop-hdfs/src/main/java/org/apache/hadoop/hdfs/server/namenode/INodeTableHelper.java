@@ -133,6 +133,7 @@ public class INodeTableHelper {
 				inode.setClientName(null);
 				inode.setClientMachine(null);
 				inode.setClientNode(null);
+				KthFsHelper.printKTH("&&&&&&&   null pointer in addChild");
 			}
 		}
 		if (node instanceof INodeSymlink)

@@ -1115,6 +1115,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     writeLock();
     try {
     	System.err.println("\n\n$$$$$ clientMachine: " + clientMachine);
+    	System.err.println("$$$$$ holder: " + holder);
       startFileInternal(src, permissions, holder, clientMachine, flag,
           createParent, replication, blockSize);
       
