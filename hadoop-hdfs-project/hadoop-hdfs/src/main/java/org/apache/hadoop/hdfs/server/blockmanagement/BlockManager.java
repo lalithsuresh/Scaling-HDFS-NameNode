@@ -57,6 +57,7 @@ import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.INodeFileUnderConstruction;
+import org.apache.hadoop.hdfs.server.namenode.KthFsHelper;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.hdfs.server.namenode.Namesystem;
 import org.apache.hadoop.hdfs.server.protocol.BlockCommand;
@@ -415,21 +416,27 @@ public class BlockManager {
   public boolean commitOrCompleteLastBlock(INodeFileUnderConstruction fileINode, 
       Block commitBlock) throws IOException {
 
+	 ;
     if(commitBlock == null)
       return false; // not committing, this is a block allocation retry
     
     //KTHFSBLOCKS
     BlockInfo lastBlock = fileINode.getLastBlock();
         
-    if(lastBlock == null)
+    if(lastBlock == null) {
       return false; // no blocks in file yet
-    if(lastBlock.isComplete())
-      return false; // already completed (e.g. by syncBlock)
+      
+    }
+    if(lastBlock.isComplete()) {
+    	return false; // already completed (e.g. by syncBlock) 
+    }
     
     //KTHFSBLOCKS
     final boolean b = commitBlock((BlockInfoUnderConstruction)lastBlock, commitBlock);
-    if(countNodes(lastBlock).liveReplicas() >= minReplication)
+    if(countNodes(lastBlock).liveReplicas() >= minReplication) {
       completeBlock(fileINode,fileINode.numBlocks()-1);
+    }
+    
     return b;
   }
 
@@ -442,9 +449,11 @@ public class BlockManager {
    */
   private BlockInfo completeBlock(final INodeFile fileINode,
       final int blkIndex) throws IOException {
+	  
     if(blkIndex < 0)
       return null;
     BlockInfo curBlock = fileINode.getBlocks()[blkIndex];
+    KthFsHelper.printKTH("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\t completeBlock Called with blockId: " + curBlock.getBlockId());
     if(curBlock.isComplete())
       return curBlock;
     BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction)curBlock;
@@ -2183,6 +2192,12 @@ public class BlockManager {
     int live = 0;
     int corrupt = 0;
     int excess = 0;
+    
+    
+    //TODO: W: Resume from here
+    KthFsHelper.printKTH("\n\n\n\n\n");
+    KthFsHelper.printKTH("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     countNodes in BlockManager called");
+    
     Iterator<DatanodeDescriptor> nodeIter = blocksMap.nodeIterator(b);
     Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(b);
     while (nodeIter.hasNext()) {

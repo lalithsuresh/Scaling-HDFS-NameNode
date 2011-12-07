@@ -3,6 +3,8 @@ package org.apache.hadoop.hdfs.server.namenode;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.hadoop.hdfs.protocol.Block;
@@ -19,6 +21,7 @@ import com.mysql.clusterj.Query;
 import com.mysql.clusterj.SessionFactory;
 import com.mysql.clusterj.Session;
 import com.mysql.clusterj.Transaction;
+import com.mysql.clusterj.query.Predicate;
 import com.mysql.clusterj.query.QueryBuilder;
 import com.mysql.clusterj.query.QueryDomainType;
 
@@ -28,7 +31,6 @@ import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 public class BlocksHelper {
 
 	public static FSNamesystem ns = null;
-	public static Session session= DBConnector.sessionFactory.getSession() ;
 	static final int RETRY_COUNT = 3; 
 
 	/**
@@ -38,6 +40,8 @@ public class BlocksHelper {
 	public static void appendBlocks(INodeFile thisNode, INodeFile [] inodes, int totalAddedBlocks) {
 		int tries=RETRY_COUNT;
 		boolean done = false;
+		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0 ){
 			try{	
@@ -51,9 +55,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("InodeTableHelper.addChild() threw error " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 		
@@ -107,8 +108,10 @@ public class BlocksHelper {
 	public static BlockInfo getBlockInfo(long blockId)  {
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
+				
 		while (done == false && tries > 0) {
 			try {
 				tx.begin();
@@ -122,9 +125,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("getBlockInfo failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 		return null;
@@ -166,11 +166,13 @@ public class BlocksHelper {
 				if (node == null){
 					return null;
 				}
-				node.setBlocksList(getBlocksArray(node));
+				node.setBlocksList(getBlocksArrayInternal(node, session));
 
-				blockInfo.setINode(node);
+				blockInfo.setINodeWithoutTransaction(node);
+				updateINodeIDInternal(node.getID(), blockInfo, session);
 			}
 			blockInfo.setBlockIndex(bit.getBlockIndex()); 
+			blockInfo.setTimestamp(bit.getTimestamp());
 
 			return blockInfo;
 		}
@@ -180,8 +182,10 @@ public class BlocksHelper {
 	public static BlockInfo getBlockInfoSingle(long blockId) throws IOException {
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
+				
 		while (done == false && tries > 0) {
 			try {
 				tx.begin();
@@ -193,11 +197,8 @@ public class BlocksHelper {
 			}
 			catch (ClusterJException e){
 				tx.rollback();
-				System.err.println("getBlockInfo failed " + e.getMessage());
+				System.err.println("getBlockInfoSingle failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 		return null;
@@ -206,7 +207,8 @@ public class BlocksHelper {
 	public static void putBlockInfo(BlockInfo binfo) {
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -221,9 +223,6 @@ public class BlocksHelper {
 				System.err.println("putBlockInfo failed " + e.getMessage());
 				tries--;
 			}
-			finally {
-				session.close ();
-			}
 		}
 	}
 	private static void putBlockInfoInternal(BlockInfo binfo, Session s){
@@ -231,6 +230,7 @@ public class BlocksHelper {
 		bit.setBlockId(binfo.getBlockId());
 		bit.setGenerationStamp(binfo.getGenerationStamp());
 		bit.setBlockUCState(binfo.getBlockUCState().ordinal());
+		bit.setTimestamp(System.currentTimeMillis()); //added by W - for sorting the blocks properly
 
 		if(binfo.isComplete()) {
 			INodeFile ifile = binfo.getINode();
@@ -241,7 +241,7 @@ public class BlocksHelper {
 		bit.setNumBytes(binfo.getNumBytes());
 		//FIXME: KTHFS: Ying and Wasif: replication is null at the moment - remove the column if not required later on
 		
-		List<TripletsTable> results = getTripletsListUsingField ("blockId", binfo.getBlockId());
+		List<TripletsTable> results = getTripletsListUsingFieldInternal ("blockId", binfo.getBlockId(), s);
 		if (results.isEmpty())
 		{
 			//Getting triplets from Memory, before saving to DB
@@ -289,8 +289,10 @@ public class BlocksHelper {
 	public static void updateIndex(int idx, BlockInfo binfo) {
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
+		
 		while (done == false && tries > 0) {
 			try {
 				tx.begin();
@@ -304,9 +306,6 @@ public class BlocksHelper {
 				System.err.println("updateIndex failed " + e.getMessage());
 				tries--;
 			}
-			finally {
-				session.close ();
-			}
 		}
 	}
 	private static void updateIndexInternal(int idx, BlockInfo binfo, Session s){
@@ -317,14 +316,16 @@ public class BlocksHelper {
 		bit.setBlockIndex(idx); //setting the index in the table
 		bit.setNumBytes(binfo.getNumBytes());
 		bit.setBlockUCState(binfo.getBlockUCState().ordinal());
-		s.savePersistent(bit);
+		s.updatePersistent(bit);
 		
 	}
 	public static void updateINodeID(long iNodeID, BlockInfo binfo){
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
+						
 		while (done == false && tries > 0) {
 			try {
 				tx.begin();
@@ -338,11 +339,9 @@ public class BlocksHelper {
 				System.err.println("updateINodeID failed " + e.getMessage());
 				tries--;
 			}
-			finally {
-				session.close ();
-			}
 		}
 	}
+	
 	private static void updateINodeIDInternal(long iNodeID, BlockInfo binfo, Session s) {
 		BlockInfoTable bit =  s.newInstance(BlockInfoTable.class);
 		bit.setBlockId(binfo.getBlockId());
@@ -354,7 +353,44 @@ public class BlocksHelper {
 		s.updatePersistent(bit);		
 	}
 
+	/*
+	 * Not in use now to avoid using a transaction within a transaction (Inception moment? hehe)
+	 */
 	public static List<BlockInfoTable> getResultListUsingField(String field, long value){
+		int tries = RETRY_COUNT;
+		boolean done = false;
+		
+		Session session = DBConnector.obtainSession();
+		Transaction tx = session.currentTransaction();
+		while (done == false && tries > 0) {
+			try {
+				tx.begin();
+				List <BlockInfoTable> ret = getResultListUsingFieldInternal(field, value, session);
+				tx.commit();
+				session.flush();
+				done=true;
+				return ret;
+			}
+			catch (ClusterJException e){
+				tx.rollback();
+				System.err.println("getResultListUsingField failed " + e.getMessage());
+				tries--;
+			}
+		}
+		return null;
+	}
+
+	private static List<BlockInfoTable> getResultListUsingFieldInternal(String field, long value, Session session){
+		QueryBuilder qb = session.getQueryBuilder();
+		QueryDomainType<BlockInfoTable> dobj = qb.createQueryDefinition(BlockInfoTable.class);
+		dobj.where(dobj.get(field).equal(dobj.param("param")));
+		Query<BlockInfoTable> query = session.createQuery(dobj);
+		query.setParameter("param", value);
+		return 	query.getResultList();
+
+	}
+	
+	public static List<TripletsTable> getTripletsByFields(String datanodeName, String nextBlockId, String hostNameValue, long nextValue){
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		Session session = DBConnector.sessionFactory.getSession();
@@ -362,7 +398,7 @@ public class BlocksHelper {
 		while (done == false && tries > 0) {
 			try {
 				tx.begin();
-				List <BlockInfoTable> ret = getResultListUsingFieldInternal(field, value, session);
+				List <TripletsTable> ret = getTripletsByFieldsInternal(datanodeName, nextBlockId, hostNameValue,nextValue, session);
 				tx.commit();
 				session.flush();
 				done=true;
@@ -379,20 +415,27 @@ public class BlocksHelper {
 		}
 		return null;
 	}
-
-	private static List<BlockInfoTable> getResultListUsingFieldInternal(String field, long value, Session session){
+	
+	private static List<TripletsTable> getTripletsByFieldsInternal(String datanodeName, String nextBlockId, String hostNameValue, long nextValue, Session session){
 		QueryBuilder qb = session.getQueryBuilder();
-		QueryDomainType<BlockInfoTable> dobj = qb.createQueryDefinition(BlockInfoTable.class);
-		dobj.where(dobj.get(field).equal(dobj.param("param")));
-		Query<BlockInfoTable> query = session.createQuery(dobj);
-		query.setParameter("param", value);
+		QueryDomainType<TripletsTable> dobj = qb.createQueryDefinition(TripletsTable.class);
+		
+		Predicate pred = dobj.get(datanodeName).equal(dobj.param("param1"));
+		Predicate pred2 = dobj.get(nextBlockId).equal(dobj.param("param2"));
+		Predicate and = pred.and(pred2);
+		dobj.where(and);
+		Query<TripletsTable> query = session.createQuery(dobj);
+		query.setParameter("param1", hostNameValue); //the WHERE clause of SQL
+		query.setParameter("param2", nextValue);
 		return 	query.getResultList();
 
 	}
+	
 	public static BlockInfo[] getBlocksArray(INodeFile inode) {
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -408,17 +451,15 @@ public class BlocksHelper {
 				System.err.println("getBlocksArray failed " + e.getMessage());
 				tries--;
 			}
-			finally {
-				session.close ();
-			}
 		}
 		return null;
 	}
-	private static BlockInfo[] getBlocksArrayInternal(INodeFile inode, Session session){
+	
+	public static BlockInfo[] getBlocksArrayInternal(INodeFile inode, Session session){
 		if(inode==null)
 			return null;
 		
-		List<BlockInfoTable> blocksList = getResultListUsingField("iNodeID", inode.getID());
+		List<BlockInfoTable> blocksList = getResultListUsingFieldInternal("iNodeID", inode.getID(), session);
 
 		if(blocksList.size() == 0 || blocksList == null) {
 			return null;
@@ -426,28 +467,35 @@ public class BlocksHelper {
 		
 		BlockInfo[] blocksArray = new BlockInfo[blocksList.size()];
 		
-		try {
-			for(int i=0; i<blocksArray.length; i++) {
-				blocksArray[i] = getBlockInfoSingle(blocksList.get(i).getBlockId());
-				blocksArray[i].setINode(inode);
-			}
-			//sorting the array in descending order w.r.t blockIndex
-			Arrays.sort(blocksArray); 
-			return blocksArray;
-			
-		} catch (IOException e) {
-			e.printStackTrace();
+		for(int i=0; i<blocksArray.length; i++) {
+			// Now we're effectively calling getBlockInfoSingle()
+			blocksArray[i] = getBlockInfoInternal(blocksList.get(i).getBlockId(), session, true);
+			blocksArray[i].setINodeWithoutTransaction(inode);
+			updateINodeIDInternal(inode.getID(), blocksArray[i], session);
 		}
-
+		//sorting the array in descending order w.r.t blockIndex
+		Arrays.sort(blocksArray, new BlockInfoComparator());
 		return blocksArray;
 	}
+	
+	
+	public static class BlockInfoComparator implements Comparator<BlockInfo> {
+
+		@Override
+		public int compare(BlockInfo o1, BlockInfo o2) {
+			return o1.getTimestamp() < o2.getTimestamp() ? -1 : 1;
+		}
+		
+	}
+	
 
 	/** Update Previous or next block in the triplets table for a given BlockId.
 	 *  next=true: update nextBlockId, false: updatePrevious */
 	public static void setNextPrevious(long blockid, int idx, BlockInfo nextBlock, boolean next){
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -461,9 +509,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("setNextPrevious failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 	}
@@ -489,7 +534,8 @@ public class BlocksHelper {
 	public static void setDatanode(long blockId, int index, String name) {
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -503,9 +549,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("setDataNode failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 	}	
@@ -534,7 +577,8 @@ public class BlocksHelper {
 	public static DatanodeDescriptor getDatanode (long blockId, int index){
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -550,9 +594,6 @@ public class BlocksHelper {
 				System.err.println("setDataNode failed " + e.getMessage());
 				tries--;
 			}
-			finally {
-				session.close ();
-			}
 		}
 		return null;
 	}	
@@ -564,8 +605,7 @@ public class BlocksHelper {
 		TripletsTable triplet = session.find(TripletsTable.class, pKey);
 		
 		if (triplet != null && triplet.getDatanodeName() != null) {
-			String hostname = triplet.getDatanodeName().split(":")[0];
-			DatanodeDescriptor ret = ns.getBlockManager().getDatanodeManager().getDatanodeByHost(hostname);
+			DatanodeDescriptor ret = ns.getBlockManager().getDatanodeManager().getDatanodeByName(triplet.getDatanodeName());
 			return ret;
 		}
 		
@@ -575,7 +615,8 @@ public class BlocksHelper {
 	public static BlockInfo getNextPrevious (long blockId, int index, boolean next) throws IOException{
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -591,9 +632,6 @@ public class BlocksHelper {
 				System.err.println("setDataNode failed " + e.getMessage());
 				tries--;
 			}
-			finally {
-				session.close ();
-			}
 		}
 		return null;
 	}	
@@ -603,18 +641,27 @@ public class BlocksHelper {
 		pKey[0]=blockId;
 		pKey[1]=index;
 		TripletsTable triplet = session.find(TripletsTable.class, pKey);
-	
+		//TODO getBlockInfoSingle should call internal function
 		if (next == true)
-			return getBlockInfoSingle(triplet.getNextBlockId());
+		{
+			if(triplet.getNextBlockId()==-1)
+				return null;
+			else
+				return getBlockInfoInternal(triplet.getNextBlockId(),session, true);
+		}
 		else
-			return getBlockInfoSingle(triplet.getPreviousBlockId());
+			if(triplet.getPreviousBlockId()==-1)
+				return null;
+			else
+				return getBlockInfoInternal(triplet.getPreviousBlockId(),session,true);
 	}
 
 	
 	public static DatanodeDescriptor[] getDataNodesFromBlock (long blockId){
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -630,16 +677,13 @@ public class BlocksHelper {
 				System.err.println("getDataNodesFromBlock failed " + e.getMessage());
 				tries--;
 			}
-			finally {
-				session.close ();
-			}
 		}
 		return null;
 	}
 	
 	
 	private static DatanodeDescriptor[] getDataNodesFromBlockInternal (long blockId, Session session){
-		List<TripletsTable> result = getTripletsListUsingField("blockId", blockId);
+		List<TripletsTable> result = getTripletsListUsingFieldInternal("blockId", blockId, session);
 		DatanodeDescriptor[] nodeDescriptor = new DatanodeDescriptor[result.size()];
 		int i = 0;
 		for (TripletsTable t: result){
@@ -653,7 +697,8 @@ public class BlocksHelper {
 	public static List<TripletsTable> getTripletsListUsingField(String field, long value){
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -666,11 +711,8 @@ public class BlocksHelper {
 			}
 			catch (ClusterJException e){
 				tx.rollback();
-				System.err.println("getDataNodesFromBlock failed " + e.getMessage());
+				System.err.println("getTripletsListUsingField failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 		return null;
@@ -691,7 +733,8 @@ public class BlocksHelper {
 	public static BlockInfo removeBlocks(Block key){
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -706,9 +749,6 @@ public class BlocksHelper {
 				tx.rollback();
 				System.err.println("removeBlocks failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 		return null;
@@ -729,7 +769,7 @@ public class BlocksHelper {
 	
 	public static void removeTriplets(BlockInfo blockInfo, int index)
 	{
-		Session session = DBConnector.sessionFactory.getSession();
+		Session session = DBConnector.obtainSession();	
 		Transaction tx = session.currentTransaction();
 		tx.begin();
 		
@@ -738,13 +778,14 @@ public class BlocksHelper {
 		pKey[1]=index;
 		TripletsTable triplet = session.find(TripletsTable.class, pKey);
 		session.deletePersistent(triplet);
-		session.flush();
 		
 		// The triplets entries in the DB for a block have an ordered list of
 		// indices. Removal of an entry of an index X means that all entries
 		// with index greater than X needs to be corrected (decremented by 1
 		// basically).
 		List<TripletsTable> results = getTripletsListUsingFieldInternal ("blockId", blockInfo.getBlockId(), session);
+		
+		Collections.sort(results, new TripletsTableComparator());
 		
 		for (TripletsTable t: results)	{
 			long oldIndex = t.getIndex();
@@ -772,11 +813,23 @@ public class BlocksHelper {
 	}
 	
 	
+	
+	public static class TripletsTableComparator implements Comparator<TripletsTable> {
+
+		@Override
+		public int compare(TripletsTable o1, TripletsTable o2) {
+			return o1.getIndex() < o2.getIndex() ? -1 : 1;
+		}
+		
+	}
+	
+	
 	/** Given a BlockInfo object, fetch the rows of the Triplets table as a Triplets object  */
 	public static Object[] getTripletsForBlock (BlockInfo blockinfo) {
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
+		
+		Session session = DBConnector.obtainSession();
 		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
@@ -792,21 +845,19 @@ public class BlocksHelper {
 				System.err.println("removeBlocks failed " + e.getMessage());
 				tries--;
 			}
-			finally {
-				session.close ();
-			}
 		}
 		return null;
 	}
 	
 	
 	private static Object[] getTripletsForBlockInternal (BlockInfo blockinfo, Session session) {
-		List<TripletsTable> results = getTripletsListUsingField ("blockId", blockinfo.getBlockId());
+		List<TripletsTable> results = getTripletsListUsingFieldInternal ("blockId", blockinfo.getBlockId(), session);
 		
 		Object[] triplets = new Object[3 * results.size()];
 		
-		for (TripletsTable t:results){			
-			triplets[3 * t.getIndex()] = ns.getBlockManager().getDatanodeManager().getDatanodeByHost(t.getDatanodeName());
+		for (TripletsTable t:results){
+			
+			triplets[3 * t.getIndex()] = ns.getBlockManager().getDatanodeManager().getDatanodeByName(t.getDatanodeName());
 			triplets[3 * t.getIndex() + 1] = t.getPreviousBlockId();
 			triplets[3 * t.getIndex() + 2] = t.getNextBlockId();
 		}
@@ -816,13 +867,94 @@ public class BlocksHelper {
 	
 	
 	public static INode getInodeFromBlockId (long blockId) {
-		Session session = DBConnector.sessionFactory.getSession();
+		
+		Session session = DBConnector.obtainSession();
 		BlockInfoTable blockInfoTable = session.find(BlockInfoTable.class, blockId);
 
 		long inodeId = blockInfoTable.getINodeID();
 		
 		return INodeTableHelper.getINode(inodeId);
 	}
+	
+	public static BlockInfo getLastRecord(DatanodeDescriptor node, long blockId)
+	{
+		BlockInfo blockInfo;
+		int tries = RETRY_COUNT;
+		boolean done = false;
+		while (done == false && tries > 0) {
+			try {
+
+				List<TripletsTable> triplets = getTripletsByFields("datanodeName","nextBlockId",node.getName(), blockId);
+				if(triplets != null && triplets.size()==1)
+				{
+					blockInfo = getBlockInfoInternal(triplets.get(0).getBlockId(), DBConnector.obtainSession(), true);
+					done=true;
+					return blockInfo;
+				}
+				else
+					return null;
+			}
+			catch (ClusterJException e){
+				System.err.println("getLastRecord failed " + e.getMessage());
+				tries--;
+			}
+		}
+		return null;
+	}	
+	public static int getLastRecordIndex(DatanodeDescriptor node, long blockId)
+	{
+		int blockIndex;
+		int tries = RETRY_COUNT;
+		boolean done = false;
+		while (done == false && tries > 0) {
+			try {
+				List<TripletsTable> triplets = getTripletsByFields("datanodeName","nextBlockId",node.getName(), blockId);
+				if(triplets!=null && triplets.size()==1)
+				{	
+					blockIndex = triplets.get(0).getIndex();
+					done=true;
+					return blockIndex;
+				}
+				else
+					return -1;
+			}
+			catch (ClusterJException e){
+				System.err.println("getLastRecord failed " + e.getMessage());
+				tries--;
+			}
+			finally {
+			}
+		}
+		return -1;
+	}
+	
+	public static int getTripletsIndex(DatanodeDescriptor node, long blockId)
+	{
+		int blockIndex;
+		int tries = RETRY_COUNT;
+		boolean done = false;
+		while (done == false && tries > 0) {
+			try {
+				List<TripletsTable> triplets = getTripletsByFields("datanodeName","blockId",node.getName(), blockId);
+				if(triplets!=null && triplets.size()==1)
+				{	
+					blockIndex = triplets.get(0).getIndex();
+					done=true;
+					return blockIndex;
+				}
+				else
+					return -1;
+			}
+			catch (ClusterJException e){
+				System.err.println("getLastRecord failed " + e.getMessage());
+				tries--;
+			}
+			finally {
+			}
+		}
+		return -1;
+	}
+	
 }
 
 /*

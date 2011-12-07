@@ -325,12 +325,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     setConfigurationParameters(conf);
     dtSecretManager = createDelegationTokenSecretManager(conf);
     this.registerMBean(); // register the MBean for the FSNamesystemState
-    INodeTableHelper.ns = this;
-    BlocksHelper.ns = this;
     
     if(fsImage == null) {
-      this.dir = new FSDirectory(this, conf);
+      DBConnector.setConfiguration(conf);
+      INodeTableHelper.ns = this;
+      BlocksHelper.ns = this;
 
+      this.dir = new FSDirectory(this, conf);
       // [STATELESS] Add rootDir to DBMS
       this.dir.rootDir.setFullPathName(Path.SEPARATOR);
   	  INodeTableHelper.addChild(this.dir.rootDir);
@@ -342,8 +343,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       NameNode.getNameNodeMetrics().setFsImageLoadTime(
                                 (int) timeTakenToLoadFSImage);
     } else {
-      this.dir = new FSDirectory(fsImage, this, conf);
+      DBConnector.setConfiguration(conf);
+      INodeTableHelper.ns = this;
+      BlocksHelper.ns = this;
 
+      this.dir = new FSDirectory(fsImage, this, conf);
       // [STATELESS] Add rootDir to DBMS
       this.dir.rootDir.setFullPathName(Path.SEPARATOR);
   	  INodeTableHelper.addChild(this.dir.rootDir);
@@ -466,7 +470,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     
     LOG.info("fsOwner=" + fsOwner);
 
-    DBConnector.setConfiguration(conf);
     this.supergroup = conf.get(DFS_PERMISSIONS_SUPERUSERGROUP_KEY, 
                                DFS_PERMISSIONS_SUPERUSERGROUP_DEFAULT);
     this.isPermissionEnabled = conf.getBoolean(DFS_PERMISSIONS_ENABLED_KEY,
@@ -2006,13 +2009,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     readLock();
     try {
       
-    	/*FIXME: W: Commented out for the time being
-    	 * if (!DFSUtil.isValidName(src)) {
+    	/*FIXME: W: Commented out for the time being*/
+      if (!DFSUtil.isValidName(src)) {
         throw new InvalidPathException("Invalid file name: " + src);
       }
       if (isPermissionEnabled) {
         checkTraverse(src);
-      }*/
+      }
 
       return dir.getFileInfo(src, resolveLink);
     } finally {
