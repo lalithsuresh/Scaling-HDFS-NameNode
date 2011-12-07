@@ -101,7 +101,7 @@ public class TestBlockUnderConstruction {
       assertTrue("Block is not complete: " + curBlock,
           curBlock.isComplete());
       assertTrue("Block is not in BlocksMap: " + curBlock,
-          ns.getBlockManager().getStoredBlock(curBlock) == curBlock);
+          ns.getBlockManager().getStoredBlock(curBlock).equals(curBlock));
     }
 
     // the penultimate block is either complete or
@@ -116,7 +116,7 @@ public class TestBlockUnderConstruction {
             (curBlock.getBlockUCState() ==
               BlockUCState.COMMITTED)));
       assertTrue("Block is not in BlocksMap: " + curBlock,
-          ns.getBlockManager().getStoredBlock(curBlock) == curBlock);
+          ns.getBlockManager().getStoredBlock(curBlock).equals(curBlock));
     }
 
     // The last block is complete if the file is closed.
@@ -127,7 +127,7 @@ public class TestBlockUnderConstruction {
           curBlock.isComplete());
     }
     assertTrue("Block is not in BlocksMap: " + curBlock,
-        ns.getBlockManager().getStoredBlock(curBlock) == curBlock);
+        ns.getBlockManager().getStoredBlock(curBlock).equals(curBlock));
   }
 
   @Test
