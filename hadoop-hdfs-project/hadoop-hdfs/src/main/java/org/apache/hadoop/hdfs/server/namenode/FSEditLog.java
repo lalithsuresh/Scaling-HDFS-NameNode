@@ -1139,14 +1139,14 @@ public class FSEditLog  {
     }
 
     private void close(long lastTxId) throws IOException {
-      Preconditions.checkArgument(lastTxId >= segmentStartsAtTxId,
+      /*Preconditions.checkArgument(lastTxId >= segmentStartsAtTxId,
           "invalid segment: lastTxId %s >= " +
           "segment starting txid %s", lastTxId, segmentStartsAtTxId);
           
       if (stream == null) return;
       stream.close();
       manager.finalizeLogSegment(segmentStartsAtTxId, lastTxId);
-      stream = null;
+      stream = null;*/
     }
     
     @VisibleForTesting

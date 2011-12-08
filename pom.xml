@@ -33,7 +33,7 @@
 		<module>hadoop-assemblies</module> 
 		<module>hadoop-common-project</module> 
 		<module>hadoop-hdfs-project</module>
-		<module>hadoop-mapreduce-project</module> 
+	<!--	<module>hadoop-mapreduce-project</module> -->
   </modules>
 
 	<!-- Added for clusterj <dependencies> <dependency> <groupId>se.sics.ndb</groupId> 

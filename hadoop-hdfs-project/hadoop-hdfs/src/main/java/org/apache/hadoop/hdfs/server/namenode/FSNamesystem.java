@@ -171,6 +171,9 @@ import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.VersionInfo;
 import org.mortbay.util.ajax.JSON;
 
+import se.sics.clusterj.InodeTable;
+import se.sics.clusterj.TripletsTable;
+
 import com.mysql.clusterj.Session;
 import com.mysql.clusterj.Transaction;
 
@@ -619,9 +622,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       UnresolvedLinkException, IOException {
     HdfsFileStatus resultingStat = null;
     writeLock();
-	Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+	boolean internal = DBConnector.startTransaction();
 	
     try {
       if (isInSafeMode()) {
@@ -633,8 +634,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         resultingStat = dir.getFileInfo(src, false);
       }
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();
@@ -654,9 +655,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       UnresolvedLinkException, IOException {
     HdfsFileStatus resultingStat = null;
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    boolean internal = DBConnector.startTransaction();
 	
     try {
       if (isInSafeMode()) {
@@ -677,8 +676,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         resultingStat = dir.getFileInfo(src, false);
       }
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();
@@ -751,9 +750,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }  else { // second attempt is with  write lock
         writeLock(); // writelock is needed to set accesstime
       }
-      Session session = DBConnector.obtainSession();
-  	  Transaction tx = session.currentTransaction();
-  	  tx.begin();
+      boolean internal = DBConnector.startTransaction();
       // if the namenode is in safemode, then do not update access time
       if (isInSafeMode()) {
         doAccessTime = false;
@@ -781,7 +778,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             inode.isUnderConstruction(),
             offset, length, needBlockToken);
       } finally {
-    	tx.commit();
+    	DBConnector.closeTransaction(internal);
         if (attempt == 0) {
           readUnlock();
         } else {
@@ -828,9 +825,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
     HdfsFileStatus resultingStat = null;
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    boolean internal = DBConnector.startTransaction();
 	
     try {
       if (isInSafeMode()) {
@@ -841,8 +836,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         resultingStat = dir.getFileInfo(target, false);
       }
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();
@@ -965,9 +960,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                             " Please set dfs.support.accessTime configuration parameter.");
     }
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    boolean internal = DBConnector.startTransaction();
     try {
       // Write access is required to set access and modification times
       if (isPermissionEnabled) {
@@ -986,8 +979,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         throw new FileNotFoundException("File " + src + " does not exist.");
       }
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
   }
@@ -1000,9 +993,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws IOException, UnresolvedLinkException {
     HdfsFileStatus resultingStat = null;
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    boolean internal = DBConnector.startTransaction();
     try {
       if (!createParent) {
         verifyParentDir(link);
@@ -1012,8 +1003,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         resultingStat = dir.getFileInfo(link, false);
       }
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();
@@ -1074,9 +1065,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
     final boolean isFile;
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    boolean internal = DBConnector.startTransaction();
     try {
       if (isInSafeMode()) {
         throw new SafeModeException("Cannot set replication for " + src, safeMode);
@@ -1092,8 +1081,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         blockManager.setReplication(oldReplication[0], replication, src, blocks);
       }
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
 
@@ -1109,17 +1098,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   long getPreferredBlockSize(String filename) 
       throws IOException, UnresolvedLinkException {
     readLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    boolean internal = DBConnector.startTransaction();
     try {
       if (isPermissionEnabled) {
         checkTraverse(filename);
       }
       return dir.getPreferredBlockSize(filename);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       readUnlock();
     }
   }
@@ -1156,9 +1143,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       SafeModeException, FileAlreadyExistsException, UnresolvedLinkException,
       FileNotFoundException, ParentNotDirectoryException, IOException {
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    boolean internal = DBConnector.startTransaction();
     try {
       startFileInternal(src, permissions, holder, clientMachine, flag,
           createParent, replication, blockSize);
@@ -1169,8 +1154,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       
       
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();
@@ -1334,9 +1319,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   boolean recoverLease(String src, String holder, String clientMachine)
       throws IOException {
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    boolean internal = DBConnector.startTransaction();
     try {
       if (isInSafeMode()) {
         throw new SafeModeException(
@@ -1360,8 +1343,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   
       recoverLeaseInternal(inode, src, holder, clientMachine, true);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     return false;
@@ -1458,16 +1441,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
     LocatedBlock lb = null;
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    boolean internal = DBConnector.startTransaction();
     try {
       lb = startFileInternal(src, null, holder, clientMachine, 
                         EnumSet.of(CreateFlag.APPEND), 
                         false, blockManager.maxReplication, (long)0);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();
@@ -1527,9 +1508,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
 
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    boolean internal = DBConnector.startTransaction();
     try {
       if (isInSafeMode()) {
         throw new SafeModeException("Cannot add block to " + src, safeMode);
@@ -1554,8 +1533,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       clientNode = pendingFile.getClientNode();
       replication = (int)pendingFile.getReplication();
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
 
@@ -1565,8 +1544,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
     // Allocate a new block and record it in the INode. 
     writeLock();
-	Transaction tx_allocate = session.currentTransaction();
-	tx.begin();
+    internal = DBConnector.startTransaction();
     try {
       if (isInSafeMode()) {
         throw new SafeModeException("Cannot add block to " + src, safeMode);
@@ -1588,8 +1566,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         dn.incBlocksScheduled();
       }      
     } finally {
-      tx_allocate.commit();
-      session.flush();
+    	DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
 
@@ -1611,9 +1589,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     final long preferredblocksize;
     final List<DatanodeDescriptor> chosen;
     readLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    boolean internal = DBConnector.startTransaction();
     try {
       //check safe mode
       if (isInSafeMode()) {
@@ -1636,8 +1612,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         }
       }
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       readUnlock();
     }
 
@@ -1657,9 +1633,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws LeaseExpiredException, FileNotFoundException,
       UnresolvedLinkException, IOException {
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       //
       // Remove the block from the pending creates list
@@ -1680,8 +1656,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
       return true;
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
   }
@@ -1734,15 +1710,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     checkBlock(last);
     boolean success = false;
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    boolean internal = DBConnector.startTransaction();
     try {
       success = completeFileInternal(src, holder, 
         ExtendedBlock.getLocalBlock(last));
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();
@@ -1876,17 +1850,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           " to " + dst);
     }
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    boolean internal = DBConnector.startTransaction();
     try {
       status = renameToInternal(src, dst);
       if (status && auditLog.isInfoEnabled() && isExternalInvocation()) {
         resultingStat = dir.getFileInfo(dst, false);
       }
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();
@@ -1936,17 +1908,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           + src + " to " + dst);
     }
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    boolean internal = DBConnector.startTransaction();
     try {
       renameToInternal(src, dst, options);
       if (auditLog.isInfoEnabled() && isExternalInvocation()) {
         resultingStat = dir.getFileInfo(dst, false); 
       }
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();
@@ -2019,9 +1989,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     ArrayList<Block> collectedBlocks = new ArrayList<Block>();
 
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    boolean internal = DBConnector.startTransaction();
     try {
       if (isInSafeMode()) {
         throw new SafeModeException("Cannot delete " + src, safeMode);
@@ -2042,23 +2010,21 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       	removeBlocks(collectedBlocks);
       }
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
 
     //getEditLog().logSync();
 
     writeLock();
-	Transaction tx_del = session.currentTransaction();
-	tx_del.begin();
+    internal = DBConnector.startTransaction();
     try {
       if (!deleteNow) {
         removeBlocks(collectedBlocks); // Incremental deletion of blocks
       }
     } finally {
-      tx_del.commit();
-      session.flush();
+    	DBConnector.closeTransaction(internal);
       writeUnlock();
     }
     collectedBlocks.clear();
@@ -2109,9 +2075,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   HdfsFileStatus getFileInfo(String src, boolean resolveLink) 
     throws AccessControlException, UnresolvedLinkException {
     readLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    boolean internal = DBConnector.startTransaction();
     try {
       
     	/*FIXME: W: Commented out for the time being*/
@@ -2124,8 +2088,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       return dir.getFileInfo(src, resolveLink);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       readUnlock();
     }
   }
@@ -2140,14 +2104,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       NameNode.stateChangeLog.debug("DIR* NameSystem.mkdirs: " + src);
     }
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    boolean internal = DBConnector.startTransaction();
     try {
       status = mkdirsInternal(src, permissions, createParent);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();
@@ -2202,17 +2164,17 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   ContentSummary getContentSummary(String src) throws AccessControlException,
       FileNotFoundException, UnresolvedLinkException {
     readLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       if (isPermissionEnabled) {
         checkPermission(src, false, null, null, null, FsAction.READ_EXECUTE);
       }
       return dir.getContentSummary(src);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       readUnlock();
     }
   }
@@ -2225,9 +2187,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   void setQuota(String path, long nsQuota, long dsQuota) 
       throws IOException, UnresolvedLinkException {
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       if (isInSafeMode()) {
         throw new SafeModeException("Cannot set quota on " + path, safeMode);
@@ -2237,8 +2199,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
       dir.setQuota(path, nsQuota, dsQuota);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();
@@ -2254,9 +2216,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     NameNode.stateChangeLog.info("BLOCK* NameSystem.fsync: file "
                                   + src + " for " + clientName);
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       if (isInSafeMode()) {
         throw new SafeModeException("Cannot fsync file " + src, safeMode);
@@ -2264,8 +2226,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       INodeFileUnderConstruction pendingFile  = checkLease(src, clientName);
       dir.persistBlocks(src, pendingFile);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();
@@ -2467,9 +2429,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws IOException, UnresolvedLinkException {
     String src = "";
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       if (isInSafeMode()) {
         throw new SafeModeException(
@@ -2550,8 +2512,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         dir.persistBlocks(src, pendingFile);
       }
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();
@@ -2572,17 +2534,17 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   void renewLease(String holder) throws IOException {
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       if (isInSafeMode()) {
         throw new SafeModeException("Cannot renew lease for " + holder, safeMode);
       }
       leaseManager.renewLease(holder);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
   }
@@ -2606,9 +2568,31 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     throws AccessControlException, UnresolvedLinkException, IOException {
     DirectoryListing dl;
     readLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
+	/*long blockId = 123;
+	Session session = DBConnector.obtainSession();
+	TripletsTable newTriplet = session.newInstance(TripletsTable.class);
+	newTriplet.setBlockId(blockId);
+	newTriplet.setDatanodeName("ying liu");
+	newTriplet.setIndex(0);
+	newTriplet.setPreviousBlockId(-1);
+	newTriplet.setNextBlockId(-1);
+	session.makePersistent(newTriplet);
+	session.flush();
+	session = DBConnector.obtainSession();
+	Object[] pKey = new Object[2];
+	pKey[0]=blockId;
+	pKey[1]=0;
+	TripletsTable trip1 = session.find(TripletsTable.class,pKey);
+	System.out.println("the data node name should be "+ trip1.getDatanodeName());
+	DBConnector.closeTransaction(false);
+	DBConnector.startTransaction();
+	session = DBConnector.obtainSession();
+	TripletsTable trip2 = session.find(TripletsTable.class,pKey);
+	System.out.println("the data node name should be "+ trip2.getDatanodeName());*/
+	
     try {
     	//W: Not required at the moment
     	if (auditLog.isInfoEnabled() && isExternalInvocation()) {
@@ -2618,8 +2602,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     	}
     	dl = dir.getListing(src, startAfter, needLocation); 
     } finally {
-    	tx.commit();
-    	session.flush();
+    	DBConnector.closeTransaction(internal);
+    	
     	readUnlock();
     }
     
@@ -2662,15 +2646,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   void registerDatanode(DatanodeRegistration nodeReg) throws IOException {
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       getBlockManager().getDatanodeManager().registerDatanode(nodeReg);
       checkSafeMode();
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
   }
@@ -2701,9 +2685,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       int xceiverCount, int xmitsInProgress, int failedVolumes) 
         throws IOException {
     readLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       final int maxTransfer = blockManager.getMaxReplicationStreams()
           - xmitsInProgress;
@@ -2721,8 +2705,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
       return null;
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       readUnlock();
     }
   }
@@ -2860,15 +2844,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   int getNumberOfDatanodes(DatanodeReportType type) {
     readLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       return getBlockManager().getDatanodeManager().getDatanodeListForReport(
           type).size(); 
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       readUnlock();
     }
   }
@@ -2877,9 +2861,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       ) throws AccessControlException {
     checkSuperuserPrivilege();
     readLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       final DatanodeManager dm = getBlockManager().getDatanodeManager();      
       final List<DatanodeDescriptor> results = dm.getDatanodeListForReport(type);
@@ -2890,8 +2874,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
       return arr;
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       readUnlock();
     }
   }
@@ -2906,9 +2890,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   void saveNamespace() throws AccessControlException, IOException {
     readLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       checkSuperuserPrivilege();
       if (!isInSafeMode()) {
@@ -2918,8 +2902,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       getFSImage().saveNamespace();
       LOG.info("New namespace image has been created.");
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       readUnlock();
     }
   }
@@ -2932,9 +2916,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   boolean restoreFailedStorage(String arg) throws AccessControlException {
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       checkSuperuserPrivilege();
       
@@ -2947,8 +2931,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       
       return val;
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
   }
@@ -3514,9 +3498,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     // Calculate number of blocks under construction
     long numUCBlocks = 0;
     readLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       for (Lease lease : leaseManager.getSortedLeases()) {
         for (String path : lease.getPaths()) {
@@ -3542,8 +3526,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       LOG.info("Number of blocks under construction: " + numUCBlocks);
       return getBlocksTotal() - numUCBlocks;
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       readUnlock();
     }
   }
@@ -3554,9 +3538,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   void enterSafeMode(boolean resourcesLow) throws IOException {
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
     // Ensure that any concurrent operations have been fully synced
     // before entering safe mode. This ensures that the FSImage
@@ -3574,8 +3558,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     NameNode.stateChangeLog.info("STATE* Safe mode is ON. " 
                                 + safeMode.getTurnOffTip());
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
   }
@@ -3586,9 +3570,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   void leaveSafeMode(boolean checkForUpgrades) throws SafeModeException {
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       if (!isInSafeMode()) {
         NameNode.stateChangeLog.info("STATE* Safe mode is already OFF."); 
@@ -3599,25 +3583,25 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                                     safeMode);
       safeMode.leave(checkForUpgrades);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
   }
     
   String getSafeModeTip() {
     readLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       if (!isInSafeMode()) {
         return "";
       }
       return safeMode.getTurnOffTip();
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       readUnlock();
     }
   }
@@ -3690,15 +3674,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     if (!pc.isSuper) { /*FIXME: [KTHFS] used for checking if the user is a super user*/
       dir.waitForReady();
       readLock();
-      Session session = DBConnector.obtainSession();
-  	  Transaction tx = session.currentTransaction();
-  	  tx.begin();
+      
+  	  
+  	  boolean internal = DBConnector.startTransaction();
       try {
         pc.checkPermission(path, dir.rootDir, doCheckOwner,
             ancestorAccess, parentAccess, access, subAccess);
       } finally {
-    	tx.commit();
-    	session.flush();
+    	DBConnector.closeTransaction(internal);
+    	
         readUnlock();
       } 
     }
@@ -3728,14 +3712,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   @Metric
   public long getFilesTotal() {
     readLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       return this.dir.totalInodes();
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       readUnlock();
     }
   }
@@ -3898,9 +3882,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       String clientName) throws IOException {
     LocatedBlock locatedBlock;
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       // check vadility of parameters
       checkUCBlock(block, clientName);
@@ -3910,8 +3894,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       locatedBlock = new LocatedBlock(block, new DatanodeInfo[0]);
       blockManager.setBlockToken(locatedBlock, AccessMode.WRITE);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     // Ensure we record the new generation stamp
@@ -3932,9 +3916,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       ExtendedBlock newBlock, DatanodeID[] newNodes)
       throws IOException {
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       if (isInSafeMode()) {
         throw new SafeModeException("Pipeline not updated", safeMode);
@@ -3949,8 +3933,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                + ")");
       updatePipelineInternal(clientName, oldBlock, newBlock, newNodes);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     if (supportAppends) {
@@ -4071,9 +4055,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   void registerBackupNode(NamenodeRegistration bnReg,
       NamenodeRegistration nnReg) throws IOException {
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       if(getFSImage().getStorage().getNamespaceID() 
          != bnReg.getNamespaceID())
@@ -4086,8 +4070,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         
       }
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
   }
@@ -4102,9 +4086,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   void releaseBackupNode(NamenodeRegistration registration)
     throws IOException {
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       if(getFSImage().getStorage().getNamespaceID()
          != registration.getNamespaceID())
@@ -4115,8 +4099,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             " node namespaceID = " + registration.getNamespaceID());
       //getEditLog().releaseBackupStream(registration);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
   }
@@ -4146,9 +4130,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       String startBlockAfter) throws IOException {
 
     readLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       if (!isPopulatingReplQueues()) {
         throw new IOException("Cannot run listCorruptFileBlocks because " +
@@ -4182,8 +4166,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       LOG.info("list corrupt file blocks returned: " + count);
       return corruptFiles;
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       readUnlock();
     }
   }
@@ -4220,9 +4204,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws IOException {
     Token<DelegationTokenIdentifier> token;
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       if (isInSafeMode()) {
         throw new SafeModeException("Cannot issue delegation token", safeMode);
@@ -4250,8 +4234,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       long expiryTime = dtSecretManager.getTokenExpiryTime(dtId);
       //getEditLog().logGetDelegationToken(dtId, expiryTime);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();
@@ -4269,9 +4253,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws InvalidToken, IOException {
     long expiryTime;
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       if (isInSafeMode()) {
         throw new SafeModeException("Cannot renew delegation token", safeMode);
@@ -4288,8 +4272,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       id.readFields(in);
       //getEditLog().logRenewDelegationToken(id, expiryTime);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();
@@ -4304,9 +4288,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   void cancelDelegationToken(Token<DelegationTokenIdentifier> token)
       throws IOException {
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       if (isInSafeMode()) {
         throw new SafeModeException("Cannot cancel delegation token", safeMode);
@@ -4316,8 +4300,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         .cancelToken(token, canceller);
       //getEditLog().logCancelDelegationToken(id);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();
@@ -4344,9 +4328,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   public void logUpdateMasterKey(DelegationKey key) throws IOException {
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       if (isInSafeMode()) {
         throw new SafeModeException(
@@ -4354,8 +4338,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
       //getEditLog().logUpdateMasterKey(key);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();
@@ -4364,14 +4348,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   private void logReassignLease(String leaseHolder, String src,
       String newHolder) throws IOException {
     writeLock();
-    Session session = DBConnector.obtainSession();
-	Transaction tx = session.currentTransaction();
-	tx.begin();
+    
+	
+	boolean internal = DBConnector.startTransaction();
     try {
       //getEditLog().logReassignLease(leaseHolder, src, newHolder);
     } finally {
-      tx.commit();
-      session.flush();
+      DBConnector.closeTransaction(internal);
+      
       writeUnlock();
     }
     //getEditLog().logSync();

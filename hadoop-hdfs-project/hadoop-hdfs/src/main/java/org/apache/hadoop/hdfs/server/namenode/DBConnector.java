@@ -11,6 +11,8 @@ import org.apache.hadoop.conf.Configuration;
 import com.mysql.clusterj.ClusterJHelper;
 import com.mysql.clusterj.Session;
 import com.mysql.clusterj.SessionFactory;
+import com.mysql.clusterj.Transaction;
+
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DB_CONNECTOR_STRING_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DB_DATABASE_KEY;
 
@@ -18,7 +20,8 @@ import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DB_DATABASE_KEY;
  * DB Connector with static block, to be executed
  * every time
  * */
-public class DBConnector {
+	
+	public class DBConnector {
 	static SessionFactory sessionFactory;
 	static Map<Long, Session> sessionPool = new ConcurrentHashMap<Long, Session>();
 	
@@ -50,4 +53,28 @@ public class DBConnector {
 			return session;
 		}
 	}
+	public static boolean startTransaction()
+	{
+		Session session = DBConnector.obtainSession();
+		Transaction tx = session.currentTransaction();
+		boolean internal = true;
+		if(!tx.isActive())
+		{
+			tx.begin();
+			internal = false;
+		}
+		return internal;
+	}
+	
+	public static void closeTransaction(boolean internal)
+	{
+		Session session = DBConnector.obtainSession();
+		Transaction tx = session.currentTransaction();
+		if(!internal)
+		{
+			tx.commit();
+    		session.flush();
+		}
+	}
+	
 }
