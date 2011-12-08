@@ -38,20 +38,13 @@ public class INodeTableHelper {
 		int tries = RETRY_COUNT;
 
 		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
 		
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
-				
 				addChildInternal(node, session);
 				done = true;
-				
-				tx.commit();
-				session.flush();
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("InodeTableHelper.addChild() threw error " + e.getMessage());
 				tries--;
 			}
@@ -150,22 +143,15 @@ public class INodeTableHelper {
 		int tries = RETRY_COUNT;
 
 		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
 		List<INode> ret = null;
 		
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
-				
 				ret = getChildrenInternal(parentDir, session);
 				done = true;
-				
-				tx.commit();
-				session.flush();
 				return ret;
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("InodeTableHelper.getChildren() threw error " + e.getMessage());
 				tries--;
 			}
@@ -196,21 +182,13 @@ public class INodeTableHelper {
 		int tries = RETRY_COUNT;
 
 		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
-		
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
-				
 				INode ret = removeChildInternal(node, session);
 				done = true;
-				
-				tx.commit();
-				session.flush();
 				return ret;
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("InodeTableHelper.removeChild() threw error " + e.getMessage());
 				tries--;
 			}
@@ -239,20 +217,13 @@ public class INodeTableHelper {
 		int tries = RETRY_COUNT;
 
 		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
-		
+
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
-				
 				updateParentAcrossSubTreeInternal(oldFullPathOfParent, newFullPathOfParent, session);
 				done = true;
-				
-				tx.commit();
-				session.flush();
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("InodeTableHelper.updateParentAcrossSubTreeInternal() threw error " + e.getMessage());
 				tries--;
 			}
@@ -305,20 +276,12 @@ public class INodeTableHelper {
 		int tries = RETRY_COUNT;
 
 		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
-		
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
-				
 				replaceChildInternal(thisInode, newChild, session);
 				done = true;
-				
-				tx.commit();
-				session.flush();
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("InodeTableHelper.replaceChild() threw error " + e.getMessage());
 				tries--;
 			}
@@ -373,20 +336,14 @@ public class INodeTableHelper {
 		int tries = RETRY_COUNT;
 
 		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
-		
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
+
 				INodeFile nodeToBeReturned = completeFileUnderConstructionInternal(thisInode, newChild, session);
 				done = true;
-				
-				tx.commit();
-				session.flush();
 				return nodeToBeReturned;
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("InodeTableHelper.replaceChild() threw error " + e.getMessage());
 				tries--;
 				return null;
@@ -493,21 +450,14 @@ public class INodeTableHelper {
 		int tries = RETRY_COUNT;
 
 		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
 		
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
-				
 				INode ret = getChildDirectoryInternal(parentDir, searchDir, session);
 				done = true;
-				
-				tx.commit();
-				session.flush();
 				return ret;
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("InodeTableHelper.removeChild() threw error " + e.getMessage());
 				tries--;
 			}
@@ -748,21 +698,13 @@ public class INodeTableHelper {
 		int tries = RETRY_COUNT;
 
 		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
-		
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
-				
 				INode ret = updateSrcDstInternal(src, dst, session);
 				done = true;
-				
-				tx.commit();
-				session.flush();
 				return ret;
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("InodeTableHelper.addChild() threw error " + e.getMessage());
 				tries--;
 			}
@@ -804,18 +746,13 @@ public class INodeTableHelper {
 		assert list != null : "InodeTable object not found";
 		InodeTable inode = list.get(0); 
 		//InodeTable inode = session.find(InodeTable.class, id);
-		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
 				updateHeaderInternal(inode, header, session);
-				tx.commit();
 				done = true;
-				session.flush();
 				return done;
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("InodeTableHelper.addChild() threw error " + e.getMessage());
 				tries--;
 			}
