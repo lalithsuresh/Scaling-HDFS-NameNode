@@ -11,6 +11,8 @@ import org.apache.hadoop.conf.Configuration;
 import com.mysql.clusterj.ClusterJHelper;
 import com.mysql.clusterj.Session;
 import com.mysql.clusterj.SessionFactory;
+import com.mysql.clusterj.Transaction;
+
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DB_CONNECTOR_STRING_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DB_DATABASE_KEY;
 
@@ -21,7 +23,7 @@ import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DB_DATABASE_KEY;
 public class DBConnector {
 	static SessionFactory sessionFactory;
 	static Map<Long, Session> sessionPool = new ConcurrentHashMap<Long, Session>();
-	
+	static Map<Long, Transaction> txMap = new ConcurrentHashMap<Long, Transaction>();
 	
 	public static void setConfiguration (Configuration conf){
 		 // [STATELESS]
@@ -48,6 +50,27 @@ public class DBConnector {
 			Session session = sessionFactory.getSession();
 			sessionPool.put(threadId, session);
 			return session;
+		}
+	}
+	
+	// We should have only one Tx per session per thread,
+	// so check if there is any tx active within the session
+	// to protect against calling a tx.begin() within another.
+	public static void startTransaction (){
+		Transaction tx = obtainSession().currentTransaction();
+		
+		if (!tx.isActive())
+		{
+			tx.begin();
+			txMap.put(Thread.currentThread().getId(), tx);
+		}
+	}
+	
+	public static void endTransaction (){
+		Transaction tx = txMap.get(Thread.currentThread().getId());
+		if (tx.isActive())
+		{
+			tx.commit();
 		}
 	}
 }
