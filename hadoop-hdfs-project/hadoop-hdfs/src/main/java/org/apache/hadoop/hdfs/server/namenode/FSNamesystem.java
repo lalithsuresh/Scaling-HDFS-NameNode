@@ -437,8 +437,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
   @Override
   public void writeUnlock() {
+	DBConnector.endTransaction();
     this.fsLock.writeLock().unlock();
-    DBConnector.endTransaction();
   }
   @Override
   public boolean hasWriteLock() {
