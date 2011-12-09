@@ -1202,7 +1202,7 @@ public class FSDirectory implements Closeable {
   
   public void replaceNode(String path, INodeFile oldnode, INodeFile newnode)
 	      throws IOException, UnresolvedLinkException {    
-	    writeLock();
+	    //writeLock();
 	    try {
 	      //
 	      // Remove the node from the namespace 
@@ -1231,7 +1231,7 @@ public class FSDirectory implements Closeable {
 	        index++;
 	      }
 	    } finally {
-	      writeUnlock();
+	      //writeUnlock();
 	    }
 	  }
 
@@ -1560,7 +1560,7 @@ public class FSDirectory implements Closeable {
     byte[][] components = INode.getPathComponents(names);
     INode[] inodes = new INode[components.length];
 
-    writeLock();
+    //writeLock();
     try {
       rootDir.getExistingPathINodes(components, inodes, false);
 
@@ -1595,7 +1595,7 @@ public class FSDirectory implements Closeable {
         }
       }
     } finally {
-      writeUnlock();
+      //writeUnlock();
     }
     return true;
   }
@@ -1640,13 +1640,13 @@ public class FSDirectory implements Closeable {
     child.setLocalName(path);
     cacheName(child);
     INode[] inodes = new INode[components.length];
-    writeLock();
+    //writeLock();
     try {
       rootDir.getExistingPathINodes(components, inodes, false);
       return addChild(inodes, inodes.length-1, child, childDiskspace,
                       inheritPermission);
     } finally {
-      writeUnlock();
+      //writeUnlock();
     }
   }
 
