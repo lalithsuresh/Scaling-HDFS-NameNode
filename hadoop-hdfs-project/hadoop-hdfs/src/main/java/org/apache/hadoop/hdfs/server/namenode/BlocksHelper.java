@@ -110,19 +110,13 @@ public class BlocksHelper {
 		boolean done = false;
 		
 		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
-				
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
 				BlockInfo ret = getBlockInfoInternal(blockId, session, false);
-				tx.commit();
-				session.flush();
 				done=true;
 				return ret;
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("getBlockInfo failed " + e.getMessage());
 				tries--;
 			}
@@ -184,19 +178,13 @@ public class BlocksHelper {
 		boolean done = false;
 		
 		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
-				
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
 				BlockInfo ret = getBlockInfoInternal(blockId, session, true);
-				tx.commit();
-				session.flush();
 				done=true;
 				return ret;
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("getBlockInfoSingle failed " + e.getMessage());
 				tries--;
 			}
@@ -361,18 +349,13 @@ public class BlocksHelper {
 		boolean done = false;
 		
 		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
 				List <BlockInfoTable> ret = getResultListUsingFieldInternal(field, value, session);
-				tx.commit();
-				session.flush();
 				done=true;
 				return ret;
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("getResultListUsingField failed " + e.getMessage());
 				tries--;
 			}
@@ -393,24 +376,16 @@ public class BlocksHelper {
 	public static List<TripletsTable> getTripletsByFields(String datanodeName, String nextBlockId, String hostNameValue, long nextValue){
 		int tries = RETRY_COUNT;
 		boolean done = false;
-		Session session = DBConnector.sessionFactory.getSession();
-		Transaction tx = session.currentTransaction();
+		Session session = DBConnector.obtainSession();
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
 				List <TripletsTable> ret = getTripletsByFieldsInternal(datanodeName, nextBlockId, hostNameValue,nextValue, session);
-				tx.commit();
-				session.flush();
 				done=true;
 				return ret;
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("updateIndex failed " + e.getMessage());
 				tries--;
-			}
-			finally {
-				session.close ();
 			}
 		}
 		return null;
@@ -436,18 +411,13 @@ public class BlocksHelper {
 		boolean done = false;
 		
 		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
 				BlockInfo[] ret = getBlocksArrayInternal(inode, session);
-				tx.commit();
-				session.flush();
 				done=true;
 				return ret;
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("getBlocksArray failed " + e.getMessage());
 				tries--;
 			}
@@ -579,18 +549,13 @@ public class BlocksHelper {
 		boolean done = false;
 		
 		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
 				DatanodeDescriptor ret = getDataDescriptorInternal(blockId, index, session);
-				tx.commit();
-				session.flush();
 				done=true;
 				return ret;
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("setDataNode failed " + e.getMessage());
 				tries--;
 			}
@@ -617,18 +582,13 @@ public class BlocksHelper {
 		boolean done = false;
 		
 		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
 				BlockInfo ret = getNextPreviousInternal(blockId, index, next, session);
-				tx.commit();
-				session.flush();
 				done=true;
 				return ret;
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("setDataNode failed " + e.getMessage());
 				tries--;
 			}
@@ -662,18 +622,13 @@ public class BlocksHelper {
 		boolean done = false;
 		
 		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
 				DatanodeDescriptor[] ret = getDataNodesFromBlockInternal(blockId, session);
-				tx.commit();
-				session.flush();
 				done=true;
 				return ret;
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("getDataNodesFromBlock failed " + e.getMessage());
 				tries--;
 			}
@@ -699,18 +654,13 @@ public class BlocksHelper {
 		boolean done = false;
 		
 		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
 				List<TripletsTable> ret = getTripletsListUsingFieldInternal(field, value, session);
-				tx.commit();
-				session.flush();
 				done=true;
 				return ret;
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("getTripletsListUsingField failed " + e.getMessage());
 				tries--;
 			}
@@ -830,18 +780,13 @@ public class BlocksHelper {
 		boolean done = false;
 		
 		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
 		while (done == false && tries > 0) {
 			try {
-				tx.begin();
 				Object[] ret = getTripletsForBlockInternal(blockinfo, session);
-				tx.commit();
-				session.flush();
 				done=true;
 				return ret;
 			}
 			catch (ClusterJException e){
-				tx.rollback();
 				System.err.println("removeBlocks failed " + e.getMessage());
 				tries--;
 			}
