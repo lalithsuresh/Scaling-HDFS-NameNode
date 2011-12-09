@@ -86,6 +86,6 @@ public class DBConnector {
 		{
 			lockCountMap.put(threadId, currentLockCount - 1);
 		}
-		obtainSession().flush();		
+		obtainSession().flush();	
 	}
 }

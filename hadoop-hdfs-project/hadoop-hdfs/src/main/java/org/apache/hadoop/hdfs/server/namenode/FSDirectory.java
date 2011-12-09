@@ -88,17 +88,21 @@ public class FSDirectory implements Closeable {
   // utility methods to acquire and release read lock and write lock
   void readLock() {
     this.dirLock.readLock().lock();
+    DBConnector.startTransaction();
   }
 
   void readUnlock() {
-    this.dirLock.readLock().unlock();
+	DBConnector.endTransaction();
+    this.dirLock.readLock().unlock();    
   }
 
   void writeLock() {
     this.dirLock.writeLock().lock();
+    DBConnector.startTransaction();
   }
 
   void writeUnlock() {
+	DBConnector.endTransaction();
     this.dirLock.writeLock().unlock();
   }
 
