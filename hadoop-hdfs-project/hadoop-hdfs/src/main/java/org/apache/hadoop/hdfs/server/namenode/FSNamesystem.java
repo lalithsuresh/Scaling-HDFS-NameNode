@@ -423,12 +423,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   @Override
   public void readLock() {
     this.fsLock.readLock().lock();
-    //DBConnector.startTransaction();
+    DBConnector.startTransaction();
   }
   @Override
   public void readUnlock() {
+	DBConnector.endTransaction();
     this.fsLock.readLock().unlock();
-    //DBConnector.endTransaction();
   }
   @Override
   public void writeLock() {

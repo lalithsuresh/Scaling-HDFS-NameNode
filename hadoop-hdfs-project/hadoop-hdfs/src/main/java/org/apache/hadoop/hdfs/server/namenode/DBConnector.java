@@ -24,7 +24,8 @@ public class DBConnector {
 	static SessionFactory sessionFactory;
 	static Map<Long, Session> sessionPool = new ConcurrentHashMap<Long, Session>();
 	static Map<Long, Transaction> txMap = new ConcurrentHashMap<Long, Transaction>();
-	
+	static Map<Long, Integer> lockCountMap = new ConcurrentHashMap<Long, Integer>();	
+
 	public static void setConfiguration (Configuration conf){
 		 // [STATELESS]
 	    Properties p = new Properties();
@@ -58,20 +59,33 @@ public class DBConnector {
 	// to protect against calling a tx.begin() within another.
 	public static void startTransaction (){
 		Transaction tx = obtainSession().currentTransaction();
+		long threadId = Thread.currentThread().getId();
 		
 		if (!tx.isActive())
 		{
 			tx.begin();
-			txMap.put(Thread.currentThread().getId(), tx);
+			txMap.put(threadId, tx);
+			lockCountMap.put(threadId, 1);
+		}
+		else
+		{
+			lockCountMap.put(threadId, lockCountMap.get(threadId) + 1);
 		}
 	}
 	
 	public static void endTransaction (){
 		Transaction tx = txMap.get(Thread.currentThread().getId());
-		if (tx.isActive())
+		long threadId = Thread.currentThread().getId();
+		int currentLockCount = lockCountMap.get(threadId);
+		
+		if (currentLockCount == 1)
 		{
 			tx.commit();
-			obtainSession().flush();
 		}
+		else
+		{
+			lockCountMap.put(threadId, currentLockCount - 1);
+		}
+		obtainSession().flush();		
 	}
 }
