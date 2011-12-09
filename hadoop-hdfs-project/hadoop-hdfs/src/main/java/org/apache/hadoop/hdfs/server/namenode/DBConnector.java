@@ -71,6 +71,7 @@ public class DBConnector {
 		if (tx.isActive())
 		{
 			tx.commit();
+			obtainSession().flush();
 		}
 	}
 }
