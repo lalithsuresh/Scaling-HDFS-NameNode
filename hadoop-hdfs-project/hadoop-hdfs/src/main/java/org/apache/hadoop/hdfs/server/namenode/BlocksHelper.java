@@ -152,6 +152,8 @@ public class BlocksHelper {
 			else if (bit.getBlockUCState() == HdfsServerConstants.BlockUCState.UNDER_RECOVERY.ordinal())
 			{
 				// FIXME: Handle me
+				blockInfo = new BlockInfoUnderConstruction(b, bit.getReplication());
+				((BlockInfoUnderConstruction) blockInfo).setBlockUCState(HdfsServerConstants.BlockUCState.UNDER_RECOVERY);
 			}
 
 			//W: assuming that this function will only be called on an INodeFile
@@ -391,17 +393,24 @@ public class BlocksHelper {
 		return null;
 	}
 	
-	private static List<TripletsTable> getTripletsByFieldsInternal(String datanodeName, String nextBlockId, String hostNameValue, long nextValue, Session session){
+	/*
+	 * Internal method: use this to perform queries of the type, where field1 is
+	 * a string and field2 is of type long:
+	 * 
+	 * SELECT * FROM triplets WHERE field1=fieldValue1 AND field2=fieldValue2;
+	 * 
+	 */
+	private static List<TripletsTable> getTripletsByFieldsInternal(String fieldName1, String fieldName2, String fieldValue1, long fieldValue2, Session session){
 		QueryBuilder qb = session.getQueryBuilder();
 		QueryDomainType<TripletsTable> dobj = qb.createQueryDefinition(TripletsTable.class);
 		
-		Predicate pred = dobj.get(datanodeName).equal(dobj.param("param1"));
-		Predicate pred2 = dobj.get(nextBlockId).equal(dobj.param("param2"));
+		Predicate pred = dobj.get(fieldName1).equal(dobj.param("param1"));
+		Predicate pred2 = dobj.get(fieldName2).equal(dobj.param("param2"));
 		Predicate and = pred.and(pred2);
 		dobj.where(and);
 		Query<TripletsTable> query = session.createQuery(dobj);
-		query.setParameter("param1", hostNameValue); //the WHERE clause of SQL
-		query.setParameter("param2", nextValue);
+		query.setParameter("param1", fieldValue1); //the WHERE clause of SQL
+		query.setParameter("param2", fieldValue2);
 		return 	query.getResultList();
 
 	}
@@ -900,11 +909,52 @@ public class BlocksHelper {
 		return -1;
 	}
 	
-}
+	/*
+	 * This replaces BlockInfo.findDatanode().
+	 * It finds the rows corresponding to a (blockId, datanode) tuple,
+	 * and returns the lowest value of index among the
+	 * returned results. 
+	 */
+	public static int findDatanodeForBlock(DatanodeDescriptor node, long blockId)
+	{
+		Session session = DBConnector.obtainSession();
+		List<TripletsTable> results = getTripletsByFieldsInternal("datanodeName", "blockId", node.name, blockId, session);
+		System.err.println("Calling findDatanodeForBlock: " + node.name + " " + blockId);
+		if (results != null && results.size() > 0)
+		{
+			Collections.sort(results, new TripletsTableComparator());
+			System.err.println("FOUND! returning: " + results.get(0).getIndex());
+			return results.get(0).getIndex();
+		}
+		return -1;
+	}
 
-/*
- * change commitOrCompleteLastBlock //gets called by datanode and the client both
- * change commitBlockSynchronization //this gets called by the datanode
- * change NameNodeRpcServer.blockReport //this gets called when datanode comes up and then every heartbeat
- *  * 
- * */
+	/*
+	 * Find the number of datanodes to which a block of blockId belongs to.
+	 * 
+	 * This replaces BlockInfo.numNodes().
+	 * It iterates through all the triplet rows for a particular
+	 * block, finds the highest index such that the datanode
+	 * entry is not null, and returns that index+1.
+	 */
+	public static int numDatanodesForBlock(long blockId)
+	{
+		Session session = DBConnector.obtainSession();
+		List<TripletsTable> results = getTripletsListUsingFieldInternal ("blockId", blockId, session);
+		int count = 0;
+		
+		if (results != null && results.size() > 0)
+		{
+			// Sort by index, so the highest index is last.
+			
+			for (TripletsTable t: results)
+			{
+				if (t.getDatanodeName() != null)
+				{
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+}

@@ -158,8 +158,9 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	}
 	/** Checks the size of the triplets and how many more, we can add (in theory) */
 	int getCapacity() {
-		assert BlocksHelper.getTripletsForBlock(this).length % 3 == 0 : "Malformed BlockInfo";
-		return BlocksHelper.getTripletsForBlock(this).length / 3;
+		int length = BlocksHelper.getTripletsForBlock(this).length;
+		assert length % 3 == 0 : "Malformed BlockInfo";
+		return length / 3;
 	}
 
 	/**
@@ -168,16 +169,6 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	 */
 	private int ensureCapacity(int num) {
 		int last = numNodes();
-		Object [] temptriplets = BlocksHelper.getTripletsForBlock(this);
-		if(temptriplets.length >= (last+num)*3)
-			return last;
-		/* Not enough space left. Create a new array. Should normally 
-		 * happen only when replication is manually increased by the user. */
-		/*Object[] old = triplets;
-		triplets = new Object[(last+num)*3];
-		for(int i=0; i < last*3; i++) {
-			triplets[i] = old[i];
-		}*/
 		return last;
 	}
 
@@ -185,13 +176,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	 * Count the number of data-nodes the block belongs to.
 	 */
 	int numNodes() {
-		//assert this.triplets != null : "BlockInfo is not initialized";
-		assert BlocksHelper.getTripletsForBlock(this).length % 3 == 0 : "Malformed BlockInfo";
-		for(int idx = getCapacity()-1; idx >= 0; idx--) {
-			if(getDatanode(idx) != null)
-				return idx+1;
-		}
-		return 0;
+		return BlocksHelper.numDatanodesForBlock(this.getBlockId());
 	}
 
 
@@ -204,20 +189,20 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 
 	    // find the last available datanode index
 	    int lastNode = ensureCapacity(1);
-	    BlockInfo lastBlock = BlocksHelper.getLastRecord(node,this.getBlockId());
-	    int lastBlockIndex = BlocksHelper.getLastRecordIndex(node,this.getBlockId());
-	    if(lastBlock==null)
-	    {
-	     lastBlock = BlocksHelper.getLastRecord(node,-1);
-	        lastBlockIndex = BlocksHelper.getLastRecordIndex(node,-1);
-	    }
+	   
 	    setDatanode(lastNode, node);
+	    
+    	BlockInfo lastBlock = BlocksHelper.getLastRecord(node,-1);
+	    
 	    if(lastBlock!=null)
 	    {
-	     //set the previous pointer to the last block just found
-	     setPrevious(lastNode, lastBlock);
-	     //reset the last block next pointer to me
-	     lastBlock.setNext(lastBlockIndex, this);
+	    	//set the previous pointer to the last block just found
+	    	setPrevious(lastNode, lastBlock);
+	    	//reset the last block next pointer to me
+	    	int lastBlockIndex = BlocksHelper.getLastRecordIndex(node,-1);
+	    	assert lastBlockIndex == lastBlock.getBlockIndex();
+	    	
+	    	lastBlock.setNext(lastBlockIndex, this);
 	    }
 	    return true;
 	  }
@@ -279,17 +264,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	 * @return index or -1 if not found.
 	 */
 	int findDatanode(DatanodeDescriptor dn) {
-		int len = getCapacity();
-		for(int idx = 0; idx < len; idx++) {
-			DatanodeDescriptor cur = getDatanode(idx);
-			if(cur == dn){
-				return idx;
-			}
-			if(cur == null){
-				break;
-			}
-		}
-		return -1;
+		return BlocksHelper.findDatanodeForBlock(dn, this.getBlockId());
 	}
 
 	/**
