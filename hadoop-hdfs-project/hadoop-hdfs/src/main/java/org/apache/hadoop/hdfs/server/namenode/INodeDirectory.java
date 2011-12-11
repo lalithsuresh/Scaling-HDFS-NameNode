@@ -380,7 +380,7 @@ class INodeDirectory extends INode {
 		}
 		node.parent = this;
 		
-		Session session = DBConnector.sessionFactory.getSession();    
+		Session session = DBConnector.obtainSession();    
 		Transaction tx = session.currentTransaction();
 		tx.begin();
 		

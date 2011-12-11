@@ -2480,11 +2480,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
     	readUnlock();
     }
-    
+    /*
     for (int i = 0; i < dl.getPartialListing().length; i++) {
 		HdfsFileStatus hfs = dl.getPartialListing()[i];
 	}
-    
+    */
     return dl;
   }
   
