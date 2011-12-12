@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+<!-- In: conf/hdfs-site.xml -->
+<property>
+  <name>dfs.replication</name>
+  <value>1</value>
+  <description>Default block replication.
+  The actual number of replications can be specified when the file is created.
+  The default is used if replication is not specified in create time.
+  </description>
+</property>
+<property>
+<name>dfs.http.address</name>
+<value>cloud6:60070</value>
+  <description> default port is 50070 but had to change it because it already in use
+  </description>
+
+</property>
+
+<property>
+<name>dfs.datanode.address</name>
+<value>cloud2:60011</value>
+  <description> default port is 50070 but had to change it because it already in use
+  </description>
+
+</property>
+
+<property>
+<name>dfs.datanode.http.address</name>
+<value>cloud2:60076</value>
+  <description> default port is 50070 but had to change it because it already in use
+  </description>
+
+</property>
+
+<property>
+<name>dfs.datanode.ipc.address</name>
+<value>cloud2:60021</value>
+  <description> default port is 50070 but had to change it because it already in use
+  </description>
+
+</property>
+
+<property>
+<name>dfs.datanode.https.address</name>
+<value>cloud2:60476</value>
+  <description> default port is 50070 but had to change it because it already in use
+  </description>
+
+</property>
+
+
+<property>
+<name>dfs.datanode.handler.count</name>
+<value>20</value>
+  <description> 
+  </description>
+</property>
+
+<property>
+<name>dfs.namenode.handler.count</name>
+<value>20</value>
+  <description> 
+  </description>
+</property>
+<property>
+<name>ipc.server.read.threadpool.size
+</name>
+<value>10</value>
+  <description>
+  </description>
+</property>
+
+<property>
+<name>dfs.permissions
+</name>
+<value>true</value>
+  <description>
+  </description>
+</property>
+
+<property>
+  <name>dfs.dbconnector.string</name>
+  <value>cloud3.sics.se</value>
+  <description>Default block replication.
+  </description>
+</property>
+<property>
+  <name>dfs.dbconnector.database</name>
+  <value>kthfs</value>
+  <description>Default block replication.
+  </description>
+</property>
+ 
+
+</configuration>
