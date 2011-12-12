@@ -230,43 +230,6 @@ public class BlocksHelper {
 
 		bit.setNumBytes(binfo.getNumBytes());
 		//FIXME: KTHFS: Ying and Wasif: replication is null at the moment - remove the column if not required later on
-		
-		List<TripletsTable> results = getTripletsListUsingFieldInternal ("blockId", binfo.getBlockId(), s);
-		if (results.isEmpty())
-		{
-			//Getting triplets from Memory, before saving to DB
-			Object[] tripletsKTH = binfo.getTriplets();
-			
-			//For as many triplets as there are in mem
-			for(int i=0;i<(tripletsKTH.length/3);i++) {
-				DatanodeDescriptor dd = (DatanodeDescriptor)tripletsKTH[3*i];
-				long prevBlockId, nextBlockId;
-				
-				if (tripletsKTH[(3*i)+1]==null)
-					prevBlockId = -1;
-				else
-					prevBlockId = ((Long)tripletsKTH[(3*i)+1]).longValue();
-				if (tripletsKTH[(3*i)+2]==null)
-					nextBlockId = -1;
-				else
-					nextBlockId = ((Long)tripletsKTH[(3*i)+2]).longValue();
-				
-				//Save the triplets
-				TripletsTable t = s.newInstance(TripletsTable.class);
-				t.setBlockId(binfo.getBlockId());
-
-				if (dd==null)
-					t.setDatanodeName(null);
-				else {
-					t.setDatanodeName(dd.getHostName());
-				}
-				t.setIndex(i);
-				t.setPreviousBlockId(prevBlockId);
-				t.setNextBlockId(nextBlockId);
-				s.savePersistent(t);
-			}
-
-		}
 
 		s.savePersistent(bit);
 	}
@@ -466,48 +429,6 @@ public class BlocksHelper {
 		}
 		
 	}
-	
-
-	/** Update Previous or next block in the triplets table for a given BlockId.
-	 *  next=true: update nextBlockId, false: updatePrevious */
-	public static void setNextPrevious(long blockid, int idx, BlockInfo nextBlock, boolean next){
-		int tries = RETRY_COUNT;
-		boolean done = false;
-		
-		Session session = DBConnector.obtainSession();
-		Transaction tx = session.currentTransaction();
-		while (done == false && tries > 0) {
-			try {
-				tx.begin();
-				setNextPreviousInternal(blockid, idx, nextBlock, next, session);
-				tx.commit();
-				session.flush();
-				done=true;
-			}
-			catch (ClusterJException e){
-				tx.rollback();
-				System.err.println("setNextPrevious failed " + e.getMessage());
-				tries--;
-			}
-		}
-	}
-	
-	private static void setNextPreviousInternal(long blockid, int idx, BlockInfo nextBlock, boolean next, Session session){
-		Object[] pKey = new Object[2];
-		pKey[0]=blockid;
-		pKey[1]=idx;
-		TripletsTable triplet = session.find(TripletsTable.class, pKey);
-		if (triplet != null)
-		{
-			if(next)
-				triplet.setNextBlockId(nextBlock.getBlockId());
-			else
-				triplet.setPreviousBlockId(nextBlock.getBlockId());
-
-			triplet.setIndex(idx);
-			session.savePersistent(triplet);
-		}
-	}
 
 	/** Update the DataNode in the triplets table.*/
 	public static void setDatanode(long blockId, int index, String name) {
@@ -547,8 +468,6 @@ public class BlocksHelper {
 				newTriplet.setBlockId(blockId);
 				newTriplet.setDatanodeName(name);
 				newTriplet.setIndex(index);
-				newTriplet.setPreviousBlockId(-1);
-				newTriplet.setNextBlockId(-1);
 				session.savePersistent(newTriplet);
 			}
 		}
@@ -585,46 +504,6 @@ public class BlocksHelper {
 		
 		return null;
 	}
-	
-	public static BlockInfo getNextPrevious (long blockId, int index, boolean next) throws IOException{
-		int tries = RETRY_COUNT;
-		boolean done = false;
-		
-		Session session = DBConnector.obtainSession();
-		while (done == false && tries > 0) {
-			try {
-				BlockInfo ret = getNextPreviousInternal(blockId, index, next, session);
-				done=true;
-				return ret;
-			}
-			catch (ClusterJException e){
-				System.err.println("setDataNode failed " + e.getMessage());
-				tries--;
-			}
-		}
-		return null;
-	}	
-	
-	private static BlockInfo getNextPreviousInternal (long blockId, int index, boolean next, Session session) throws IOException{
-		Object[] pKey = new Object[2];
-		pKey[0]=blockId;
-		pKey[1]=index;
-		TripletsTable triplet = session.find(TripletsTable.class, pKey);
-		//TODO getBlockInfoSingle should call internal function
-		if (next == true)
-		{
-			if(triplet.getNextBlockId()==-1)
-				return null;
-			else
-				return getBlockInfoInternal(triplet.getNextBlockId(),session, true);
-		}
-		else
-			if(triplet.getPreviousBlockId()==-1)
-				return null;
-			else
-				return getBlockInfoInternal(triplet.getPreviousBlockId(),session,true);
-	}
-
 	
 	public static DatanodeDescriptor[] getDataNodesFromBlock (long blockId){
 		int tries = RETRY_COUNT;
@@ -687,7 +566,15 @@ public class BlocksHelper {
 		return query.getResultList();
 
 	}
-	
+
+	private static List<TripletsTable> getTripletsListUsingFieldInternal(String field, String value, Session s){
+		QueryBuilder qb = s.getQueryBuilder();
+		QueryDomainType<TripletsTable> dobj = qb.createQueryDefinition(TripletsTable.class);
+		dobj.where(dobj.get(field).equal(dobj.param("param")));
+		Query<TripletsTable> query = s.createQuery(dobj);
+		query.setParameter("param", value);
+		return query.getResultList();
+	}
 	
 	public static BlockInfo removeBlocks(Block key){
 		int tries = RETRY_COUNT;
@@ -761,8 +648,6 @@ public class BlocksHelper {
 				replacementEntry.setBlockId(t.getBlockId());
 				replacementEntry.setDatanodeName(t.getDatanodeName());
 				replacementEntry.setIndex(t.getIndex() - 1); // Correct the index
-				replacementEntry.setNextBlockId(t.getNextBlockId());
-				replacementEntry.setPreviousBlockId(t.getPreviousBlockId());
 				
 				session.deletePersistent(t); // Delete old entry
 				session.makePersistent(replacementEntry); // Add new one
@@ -807,13 +692,11 @@ public class BlocksHelper {
 	private static Object[] getTripletsForBlockInternal (BlockInfo blockinfo, Session session) {
 		List<TripletsTable> results = getTripletsListUsingFieldInternal ("blockId", blockinfo.getBlockId(), session);
 		
-		Object[] triplets = new Object[3 * results.size()];
+		Object[] triplets = new Object[results.size()];
 		
 		for (TripletsTable t:results){
 			
 			triplets[3 * t.getIndex()] = ns.getBlockManager().getDatanodeManager().getDatanodeByName(t.getDatanodeName());
-			triplets[3 * t.getIndex() + 1] = t.getPreviousBlockId();
-			triplets[3 * t.getIndex() + 2] = t.getNextBlockId();
 		}
 		
 		return triplets;
@@ -829,59 +712,7 @@ public class BlocksHelper {
 		
 		return INodeTableHelper.getINode(inodeId);
 	}
-	
-	public static BlockInfo getLastRecord(DatanodeDescriptor node, long blockId)
-	{
-		BlockInfo blockInfo;
-		int tries = RETRY_COUNT;
-		boolean done = false;
-		while (done == false && tries > 0) {
-			try {
-
-				List<TripletsTable> triplets = getTripletsByFields("datanodeName","nextBlockId",node.getName(), blockId);
-				if(triplets != null && triplets.size()==1)
-				{
-					blockInfo = getBlockInfoInternal(triplets.get(0).getBlockId(), DBConnector.obtainSession(), true);
-					done=true;
-					return blockInfo;
-				}
-				else
-					return null;
-			}
-			catch (ClusterJException e){
-				System.err.println("getLastRecord failed " + e.getMessage());
-				tries--;
-			}
-		}
-		return null;
-	}	
-	public static int getLastRecordIndex(DatanodeDescriptor node, long blockId)
-	{
-		int blockIndex;
-		int tries = RETRY_COUNT;
-		boolean done = false;
-		while (done == false && tries > 0) {
-			try {
-				List<TripletsTable> triplets = getTripletsByFields("datanodeName","nextBlockId",node.getName(), blockId);
-				if(triplets!=null && triplets.size()==1)
-				{	
-					blockIndex = triplets.get(0).getIndex();
-					done=true;
-					return blockIndex;
-				}
-				else
-					return -1;
-			}
-			catch (ClusterJException e){
-				System.err.println("getLastRecord failed " + e.getMessage());
-				tries--;
-			}
-			finally {
-			}
-		}
-		return -1;
-	}
-	
+		
 	public static int getTripletsIndex(DatanodeDescriptor node, long blockId)
 	{
 		int blockIndex;
@@ -919,11 +750,9 @@ public class BlocksHelper {
 	{
 		Session session = DBConnector.obtainSession();
 		List<TripletsTable> results = getTripletsByFieldsInternal("datanodeName", "blockId", node.name, blockId, session);
-		System.err.println("Calling findDatanodeForBlock: " + node.name + " " + blockId);
 		if (results != null && results.size() > 0)
 		{
 			Collections.sort(results, new TripletsTableComparator());
-			System.err.println("FOUND! returning: " + results.get(0).getIndex());
 			return results.get(0).getIndex();
 		}
 		return -1;
@@ -956,5 +785,26 @@ public class BlocksHelper {
 			}
 		}
 		return count;
+	}
+	
+	/*
+	 * Find all BlockInfo objects associated with a particular DataNode.
+	 * 
+	 * This is used by DatanodeDescriptor.BlockIterator
+	 */
+	public static List<BlockInfo> getBlockListForDatanode (String dataNodeName)
+	{
+		List<BlockInfo> ret = new ArrayList<BlockInfo>();
+		Session session = DBConnector.obtainSession();
+
+		List<TripletsTable> tripletsForDatanode = getTripletsListUsingFieldInternal("datanodeName", dataNodeName, session);
+		
+		for (TripletsTable t: tripletsForDatanode)
+		{
+			System.err.println("Adding blockid: " + t.getBlockId());
+			ret.add(getBlockInfoInternal(t.getBlockId(), session, false));
+		}
+		
+		return ret;
 	}
 }

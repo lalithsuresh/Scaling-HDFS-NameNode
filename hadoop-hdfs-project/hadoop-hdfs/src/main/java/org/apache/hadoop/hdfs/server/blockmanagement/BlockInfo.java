@@ -38,16 +38,6 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	/** For implementing {@link LightWeightGSet.LinkedElement} interface */
 	private LightWeightGSet.LinkedElement nextLinkedElement;
 
-	/**
-	 * This array contains triplets of references.
-	 * For each i-th datanode the block belongs to
-	 * triplets[3*i] is the reference to the DatanodeDescriptor
-	 * and triplets[3*i+1] and triplets[3*i+2] are references 
-	 * to the previous and the next blocks, respectively, in the 
-	 * list of blocks belonging to this data-node.
-	 */
-	private Object[] triplets;
-
 	private int blockIndex = -1; //added for KTHFS
 	private long timestamp = 1;
 
@@ -56,13 +46,11 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	 * @param replication the block's replication factor
 	 */
 	public BlockInfo(int replication) {
-		this.triplets = new Object[3*replication];
 		this.inode = null;
 	}
 
 	public BlockInfo(Block blk, int replication) {
 		super(blk);
-		this.triplets = new Object[3*replication];
 		this.inode = null;
 
 		this.getBlockId(); 
@@ -104,63 +92,16 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 				return node;
 	}
 
-	BlockInfo getPrevious(int index) {
-		assert index >= 0;
-		BlockInfo info = null;
-		try {
-			info = BlocksHelper.getNextPrevious(this.getBlockId(), index, false);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		assert info == null || 
-				info.getClass().getName().startsWith(BlockInfo.class.getName()) : 
-					"BlockInfo is expected at " + index*3;
-				return info;
-	}
-
-
-	BlockInfo getNext(int index) {
-		//assert this.triplets != null : "BlockInfo is not initialized";
-		assert index >= 0;
-		BlockInfo info = null;
-		try {
-			info = BlocksHelper.getNextPrevious(this.getBlockId(), index, true);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		assert info == null || 
-				info.getClass().getName().startsWith(BlockInfo.class.getName()) : 
-					"BlockInfo is expected at " + index*3;
-				return info;
-	}
-
 	void setDatanode(int index, DatanodeDescriptor node) {
 		assert index >= 0;
 		if(node != null)
 			BlocksHelper.setDatanode(this.getBlockId(), index, node.name);
 	}
 
-	void setPrevious(int index, BlockInfo to) {
-		assert index >= 0;
-		if(to != null)
-			BlocksHelper.setNextPrevious(this.getBlockId(), index, to, false);
-
-	}
-
-	void setNext(int index, BlockInfo to) {
-		assert index >= 0;
-		if(to != null)
-			BlocksHelper.setNextPrevious( this.getBlockId(), index, to, true);
-	}
 	/** Checks the size of the triplets and how many more, we can add (in theory) */
 	int getCapacity() {
 		int length = BlocksHelper.getTripletsForBlock(this).length;
-		assert length % 3 == 0 : "Malformed BlockInfo";
-		return length / 3;
+		return length;
 	}
 
 	/**
@@ -189,21 +130,8 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 
 	    // find the last available datanode index
 	    int lastNode = ensureCapacity(1);
-	   
 	    setDatanode(lastNode, node);
 	    
-    	BlockInfo lastBlock = BlocksHelper.getLastRecord(node,-1);
-	    
-	    if(lastBlock!=null)
-	    {
-	    	//set the previous pointer to the last block just found
-	    	setPrevious(lastNode, lastBlock);
-	    	//reset the last block next pointer to me
-	    	int lastBlockIndex = BlocksHelper.getLastRecordIndex(node,-1);
-	    	assert lastBlockIndex == lastBlock.getBlockIndex();
-	    	
-	    	lastBlock.setNext(lastBlockIndex, this);
-	    }
 	    return true;
 	  }
 
@@ -214,45 +142,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	    int dnIndex = findDatanode(node);
 	    if(dnIndex < 0) // the node is not found
 	      return false;
-	    //assert getPrevious(dnIndex) == null && getNext(dnIndex) == null :
-	    //  "Block is still in the list and must be removed first.";
-	    // find the last not null node
-	    //int lastNode = numNodes()-1;
-	    // replace current node triplet by the lastNode one
-	    /*setDatanode(dnIndex, getDatanode(lastNode));
-	setNext(dnIndex, getNext(lastNode));
-	setPrevious(dnIndex, getPrevious(lastNode));
-	// set the last triplet to null
-	setDatanode(lastNode, null);
-	setNext(lastNode, null);
-	setPrevious(lastNode, null); */
-	    BlockInfo previous = getPrevious(dnIndex);
-	    BlockInfo next = getNext(dnIndex);
-	    if(next == null && previous != null)
-	    {
-	     int previousIndex = BlocksHelper.getTripletsIndex(node,previous.getBlockId());
-	     System.err.println("remove tail!!!!!!!!!!!!!!!!!");
-	     // mock blockInfo object, we only need its id
-	     BlockInfo nextBlockInfo = new BlockInfo(1);
-	     nextBlockInfo.setBlockId(-1);
-	     previous.setNext(previousIndex, nextBlockInfo);
-	    }
-	    else if (previous == null && next != null)
-	    {
-	     System.err.println("remove head!!!!!!!!!!!!!!!!!");
-	     int nextIndex = BlocksHelper.getTripletsIndex(node,next.getBlockId());
-	     BlockInfo previousBlockInfo = new BlockInfo(1);
-	     previousBlockInfo.setBlockId(-1);
-	     next.setPrevious(nextIndex, previousBlockInfo);
-	    }
-	    else if (previous != null && next != null)
-	    {
-	     System.err.println("remove in the middle!!!!!!!!!!!!!!!!!");
-	     int previousIndex = BlocksHelper.getTripletsIndex(node,previous.getBlockId());
-	     int nextIndex = BlocksHelper.getTripletsIndex(node,next.getBlockId());
-	     previous.setNext(previousIndex, next);
-	     next.setPrevious(nextIndex, previous);
-	    }
+
 	    BlocksHelper.removeTriplets(this,dnIndex);
 	    return true;
 	  }
@@ -265,55 +155,6 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	 */
 	int findDatanode(DatanodeDescriptor dn) {
 		return BlocksHelper.findDatanodeForBlock(dn, this.getBlockId());
-	}
-
-	/**
-	 * Insert this block into the head of the list of blocks 
-	 * related to the specified DatanodeDescriptor.
-	 * If the head is null then form a new list.
-	 * @return current block as the new head of the list.
-	 */
-	public BlockInfo listInsert(BlockInfo head, DatanodeDescriptor dn) {
-		int dnIndex = this.findDatanode(dn);
-		assert dnIndex >= 0 : "Data node is not found: current";
-		assert getPrevious(dnIndex) == null && getNext(dnIndex) == null : 
-			"Block is already in the list and cannot be inserted.";
-		this.setPrevious(dnIndex, null);
-		this.setNext(dnIndex, head);
-		if(head != null)
-			head.setPrevious(head.findDatanode(dn), this);
-		return this;
-	}
-
-	/**
-	 * Remove this block from the list of blocks 
-	 * related to the specified DatanodeDescriptor.
-	 * If this block is the head of the list then return the next block as 
-	 * the new head.
-	 * @return the new head of the list or null if the list becomes
-	 * empty after deletion.
-	 */
-	public BlockInfo listRemove(BlockInfo head, DatanodeDescriptor dn) {
-		if(head == null)
-			return null;
-		int dnIndex = this.findDatanode(dn);
-		if(dnIndex < 0) // this block is not on the data-node list
-			return head;
-
-		BlockInfo next = this.getNext(dnIndex);
-		BlockInfo prev = this.getPrevious(dnIndex);
-
-		this.setNext(dnIndex, null);
-		this.setPrevious(dnIndex, null);
-
-
-		if(prev != null)
-			prev.setNext(prev.findDatanode(dn), next);
-		if(next != null)
-			next.setPrevious(next.findDatanode(dn), prev);
-		if(this == head)  // removing the head
-			head = next;
-		return head;
 	}
 
 	/**
@@ -373,10 +214,6 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 	@Override
 	public void setNext(LightWeightGSet.LinkedElement next) {
 		this.nextLinkedElement = next;
-	}
-	
-	public Object[] getTriplets() {
-		return this.triplets;
 	}
 
 	/*added for KTHFS*/
