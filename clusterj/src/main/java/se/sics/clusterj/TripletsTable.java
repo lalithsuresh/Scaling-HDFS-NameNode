@@ -7,6 +7,7 @@ package se.sics.clusterj;
 import com.mysql.clusterj.annotation.Column;
 import com.mysql.clusterj.annotation.PersistenceCapable;
 import com.mysql.clusterj.annotation.PrimaryKey;
+import com.mysql.clusterj.annotation.Index;
 
 /**
  *
@@ -27,7 +28,8 @@ public interface TripletsTable {
     void setIndex(int index);
     
       
-     @Column(name = "datanodeName")
+    @Column(name = "datanodeName")
+    @Index(name="idx_datanodeName")
     String getDatanodeName();
     void setDatanodeName(String name);
     

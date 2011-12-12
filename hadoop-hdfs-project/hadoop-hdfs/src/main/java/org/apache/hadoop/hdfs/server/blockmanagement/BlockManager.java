@@ -453,7 +453,6 @@ public class BlockManager {
     if(blkIndex < 0)
       return null;
     BlockInfo curBlock = fileINode.getBlocks()[blkIndex];
-    KthFsHelper.printKTH("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\t completeBlock Called with blockId: " + curBlock.getBlockId());
     if(curBlock.isComplete())
       return curBlock;
     BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction)curBlock;
@@ -2193,10 +2192,6 @@ public class BlockManager {
     int corrupt = 0;
     int excess = 0;
     
-    
-    //TODO: W: Resume from here
-    KthFsHelper.printKTH("\n\n\n\n\n");
-    KthFsHelper.printKTH("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     countNodes in BlockManager called");
     
     Iterator<DatanodeDescriptor> nodeIter = blocksMap.nodeIterator(b);
     Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(b);

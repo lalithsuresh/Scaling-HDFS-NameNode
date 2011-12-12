@@ -8,6 +8,7 @@ import com.mysql.clusterj.annotation.Column;
 import com.mysql.clusterj.annotation.PersistenceCapable;
 import com.mysql.clusterj.annotation.PrimaryKey;
 import com.mysql.clusterj.annotation.Lob;
+import com.mysql.clusterj.annotation.Index;
 
 /**
  * 
@@ -42,6 +43,7 @@ public interface InodeTable {
 	
     // Inode
     @Column(name = "name")
+    @Index(name="idx_name")
     String getName ();     // id of the file system
     void setName (String name);
 
@@ -125,6 +127,7 @@ public interface InodeTable {
     // Inode
     // point to another entry in the InodeTable
     @Column(name = "parent")
+    @Index(name="idx_parent")
     String getParent ();
     void setParent (String parent);
     

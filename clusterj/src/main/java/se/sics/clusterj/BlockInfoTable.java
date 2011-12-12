@@ -7,6 +7,7 @@ package se.sics.clusterj;
 import com.mysql.clusterj.annotation.Column;
 import com.mysql.clusterj.annotation.PersistenceCapable;
 import com.mysql.clusterj.annotation.PrimaryKey;
+import com.mysql.clusterj.annotation.Index;
 
 
 /**
@@ -18,18 +19,19 @@ public interface BlockInfoTable {
 
     
     @PrimaryKey
-    @Column(name = "iNodeID")
-    long getINodeID();
-    void setINodeID(long iNodeID);
+    @Column(name = "blockId")
+    long getBlockId();     
+    void setBlockId(long bid);
 
     @Column(name = "blockIndex")
     int getBlockIndex();     
     void setBlockIndex(int idx);
 
-    
-    @Column(name = "blockId")
-    long getBlockId();     
-    void setBlockId(long bid);
+
+    @Column(name = "iNodeID")
+    @Index(name="idx_iNodeID")
+    long getINodeID();
+    void setINodeID(long iNodeID);
     
     @Column(name = "numBytes")
     long getNumBytes();
