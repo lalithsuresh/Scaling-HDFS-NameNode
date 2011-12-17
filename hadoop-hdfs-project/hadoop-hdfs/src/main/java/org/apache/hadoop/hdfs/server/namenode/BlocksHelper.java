@@ -668,15 +668,15 @@ public class BlocksHelper {
 	}
 	
 	
-	/** Given a BlockInfo object, fetch the rows of the Triplets table as a Triplets object  */
-	public static Object[] getTripletsForBlock (BlockInfo blockinfo) {
+	/** Given a BlockInfo object, find the number of triplets that exist  */
+	public static int getTripletsForBlockLength (BlockInfo blockinfo) {
 		int tries = RETRY_COUNT;
 		boolean done = false;
 		
 		Session session = DBConnector.obtainSession();
 		while (done == false && tries > 0) {
 			try {
-				Object[] ret = getTripletsForBlockInternal(blockinfo, session);
+				int ret = getTripletsForBlockLengthInternal(blockinfo, session);
 				done=true;
 				return ret;
 			}
@@ -685,21 +685,13 @@ public class BlocksHelper {
 				tries--;
 			}
 		}
-		return null;
+		return -1;
 	}
 	
 	
-	private static Object[] getTripletsForBlockInternal (BlockInfo blockinfo, Session session) {
+	private static int getTripletsForBlockLengthInternal (BlockInfo blockinfo, Session session) {
 		List<TripletsTable> results = getTripletsListUsingFieldInternal ("blockId", blockinfo.getBlockId(), session);
-		
-		Object[] triplets = new Object[results.size()];
-		
-		for (TripletsTable t:results){
-			
-			triplets[3 * t.getIndex()] = ns.getBlockManager().getDatanodeManager().getDatanodeByName(t.getDatanodeName());
-		}
-		
-		return triplets;
+		return results.size();
 	}
 	
 	

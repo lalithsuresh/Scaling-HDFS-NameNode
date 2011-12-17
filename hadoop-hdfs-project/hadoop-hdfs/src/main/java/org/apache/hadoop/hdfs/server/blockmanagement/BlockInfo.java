@@ -100,7 +100,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 
 	/** Checks the size of the triplets and how many more, we can add (in theory) */
 	int getCapacity() {
-		int length = BlocksHelper.getTripletsForBlock(this).length;
+		int length = BlocksHelper.getTripletsForBlockLength(this);
 		return length;
 	}
 
