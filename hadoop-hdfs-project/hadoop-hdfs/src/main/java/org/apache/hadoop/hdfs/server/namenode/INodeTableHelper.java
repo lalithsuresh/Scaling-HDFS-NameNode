@@ -815,4 +815,42 @@ public class INodeTableHelper {
 			inode.setHeader(header);
 			session.updatePersistent(inode);
 	}
+	
+	/** Update the mod time of a file. 
+	 *  Usually called when a parent's child is about to be added.
+	 *  
+	 * @param name: name of the file to update
+	 */
+	public static void updateModificationTime(String name, long modTime){
+		boolean done = false;
+		int tries = RETRY_COUNT;
+		
+		Session session = DBConnector.obtainSession();
+		Transaction tx = session.currentTransaction();
+		while (done == false && tries > 0) {
+			try {
+				tx.begin();
+				updateModificationTimeInternal(name, modTime, session);
+				tx.commit();
+				done = true;
+				session.flush();
+			}
+			catch (ClusterJException e){
+				tx.rollback();
+				System.err.println("updateModificationTime threw error " + e.getMessage());
+				tries--;
+			}
+		}
+		
+	}
+	private static void updateModificationTimeInternal(String name, long modTime, Session session){
+		
+		List<InodeTable> results = INodeTableHelper.getResultListUsingField ("name", name, session);
+		assert ! results.isEmpty(): "updateModicationTime : Inode" + name +" doesn't exist in DB";
+		InodeTable inode = results.get(0);
+		
+		inode.setModificationTime(modTime);
+		session.updatePersistent(inode);
+		
+	}	
 }
