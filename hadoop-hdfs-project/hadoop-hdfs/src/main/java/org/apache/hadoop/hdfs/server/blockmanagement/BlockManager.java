@@ -53,6 +53,7 @@ import org.apache.hadoop.hdfs.security.token.block.ExportedBlockKeys;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.ReplicaState;
 import org.apache.hadoop.hdfs.server.common.Util;
+import org.apache.hadoop.hdfs.server.namenode.BlocksHelper;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
@@ -453,7 +454,6 @@ public class BlockManager {
     if(blkIndex < 0)
       return null;
     BlockInfo curBlock = fileINode.getBlocks()[blkIndex];
-    KthFsHelper.printKTH("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\t completeBlock Called with blockId: " + curBlock.getBlockId());
     if(curBlock.isComplete())
       return curBlock;
     BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction)curBlock;
@@ -1451,29 +1451,37 @@ public class BlockManager {
       Collection<StatefulBlockInfo> toUC) { // add to under-construction list
     // place a delimiter in the list which separates blocks 
     // that have been reported from those that have not
-    BlockInfo delimiter = new BlockInfo(new Block(), 1);
-    boolean added = dn.addBlock(delimiter);
-    assert added : "Delimiting block cannot be present in the node";
+    //BlockInfo delimiter = new BlockInfo(new Block(), 1);
+    //boolean added = dn.addBlock(delimiter);
+    //assert added : "Delimiting block cannot be present in the node";
     if(newReport == null)
       newReport = new BlockListAsLongs();
     // scan the report and process newly reported blocks
     BlockReportIterator itBR = newReport.getBlockReportIterator();
+    System.err.println("HI I AM HERE HERHEERE: " + dn.name);
+    List<BlockInfo> existingBlocks = BlocksHelper.getBlockListForDatanode(dn.name);
+
     while(itBR.hasNext()) {
       Block iblk = itBR.next();
       ReplicaState iState = itBR.getCurrentReplicaState();
       BlockInfo storedBlock = processReportedBlock(dn, iblk, iState,
                                   toAdd, toInvalidate, toCorrupt, toUC);
+      
       // move block to the head of the list
       if(storedBlock != null && storedBlock.findDatanode(dn) >= 0)
-        dn.moveBlockToHead(storedBlock);
+          existingBlocks.remove(storedBlock);
     }
     // collect blocks that have not been reported
     // all of them are next to the delimiter
-    Iterator<? extends Block> it = new DatanodeDescriptor.BlockIterator(
-        delimiter.getNext(0), dn);
-    while(it.hasNext())
-      toRemove.add(it.next());
-    dn.removeBlock(delimiter);
+//    Iterator<? extends Block> it = new DatanodeDescriptor.BlockIterator(
+//        delimiter.getNext(0), dn);
+//    while(it.hasNext())
+//      toRemove.add(it.next());
+    for (BlockInfo b: existingBlocks)
+    {
+    	toRemove.add(b);
+    }
+    //dn.removeBlock(delimiter);
   }
 
   /**
@@ -2192,11 +2200,6 @@ public class BlockManager {
     int live = 0;
     int corrupt = 0;
     int excess = 0;
-    
-    
-    //TODO: W: Resume from here
-    KthFsHelper.printKTH("\n\n\n\n\n");
-    KthFsHelper.printKTH("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     countNodes in BlockManager called");
     
     Iterator<DatanodeDescriptor> nodeIter = blocksMap.nodeIterator(b);
     Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(b);
