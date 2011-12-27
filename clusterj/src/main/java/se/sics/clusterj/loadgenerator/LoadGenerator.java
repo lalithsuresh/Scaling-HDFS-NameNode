@@ -4,6 +4,7 @@ package se.sics.clusterj.loadgenerator;
 import com.mysql.clusterj.Session;
 import com.mysql.clusterj.Transaction;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,10 +13,9 @@ import java.util.Random;
 import se.sics.clusterj.InodeTable;
 
 
-
 /**
  * 
- * This executable class:
+ * This class: 
  *  1) generates workloads for MySQL Cluster datanodes
  *  2) prints a summary of the average select/insert times after completion
  * 
@@ -34,18 +34,25 @@ public class LoadGenerator
 	static int NUM_FACTORIES;
 	static String CONNECT_STR = "";
 	static String DATABASE = "";
+	static DecimalFormat df = new DecimalFormat("#.##");
 
 
+	
+	/**
+	 * Internal thread class for reading/writing to database
+	 *
+	 */
 	private static class ClientThread extends Thread {
 
 		private int id;
 		private int num_rows;
 		private List<Long> idList = new ArrayList<Long>();
-		private long insertTimeTotal = 0;
-		private long insertCount = 0;
-		private long selectTimeTotal = 0;
-		private long selectCount = 0;
-		
+		DecimalFormat df = new DecimalFormat("#.##");
+		private double insertTimeTotal = 0;
+		private double insertCount = 0;
+		private double selectTimeTotal = 0;
+		private double selectCount = 0;
+
 		private ClientThread(int id, int num_rows) {
 			this.id = id;
 			this.num_rows = num_rows;
@@ -67,7 +74,7 @@ public class LoadGenerator
 				long randLong = r.nextLong();
 				idList.add(randLong);
 
-				long startTime = System.currentTimeMillis();
+				double startTime = System.nanoTime();
 				Transaction tx = session.currentTransaction();
 				tx.begin();
 				InodeTable inode = session.newInstance(InodeTable.class);
@@ -82,57 +89,57 @@ public class LoadGenerator
 				session.makePersistent(inode);
 				tx.commit();
 
-				insertTimeTotal +=  System.currentTimeMillis() - startTime;
+				insertTimeTotal +=  System.nanoTime() - startTime;
 				insertCount++;
-
 			}
-
-			
 		}
 
 
+		@SuppressWarnings("unused")
 		private void select() {
 
 			Session session = DBConnector.obtainSession();
 			for (Long iNodeID: idList) {
 
-				System.out.print("."); //progress bar
+				System.out.print("."); //old-school progress bar :)
 
-				//start counting
-				long startTime = System.currentTimeMillis();
-
+				//start timer
+				double startTime = System.nanoTime();
+				
+				//do primary key lookup
 				InodeTable inodetable = session.find(InodeTable.class, iNodeID);
-
-				//stop counting
-				selectTimeTotal +=  System.currentTimeMillis() - startTime;
+		
+				//stop timer
+				selectTimeTotal +=  System.nanoTime() - startTime;
 				selectCount++;
 			}
+		}
 
-
+		public void printSummary() {
+			System.out.println("\n\n## Summary for tid " + this.id);
+			System.out.println("Average insert time: " + df.format((insertTimeTotal/insertCount)/1000000) + " ms");
+			System.out.println("Average select time: " + df.format((selectTimeTotal/selectCount)/1000000) + " ms");
 		}
 		
-		public void printSummary() {
-			
-			System.out.println("\n\n## Summary for tid " + this.id);
-			System.out.println("Number of rows inserted: " + insertCount++);
-			System.out.println("Total time taken: " + insertTimeTotal + " ms");
-			System.out.println("Average insert time: " + insertTimeTotal/insertCount + " ms");
-			
-			System.out.println("Number of rows selected: " + selectCount++);
-			System.out.println("Total time taken: " + selectTimeTotal + " ms");
-			System.out.println("Average select time: " + selectTimeTotal/selectCount + " ms");
-			
+		public double getInsertTime() {
+			return (insertTimeTotal/insertCount)/1000000;
 		}
+		
+		public double getSelectTime() {
+			return (selectTimeTotal/selectCount)/1000000;
+		}
+		
 	}
 
 
 	/**
 	 * @param args
 	 * 
-	 * arg[0] num_rows
-	 * arg[1] num_threads
-	 * arg[2] num_factories
-	 * 
+	 * args[0] num_rows
+	 * args[1] num_threads
+	 * args[2] num_factories
+	 * args[3] connect_str
+	 * args[4] database
 	 */
 	public static void main(String[] args) {
 
@@ -140,15 +147,15 @@ public class LoadGenerator
 			System.out.println("\n\nUsage: \nLoadGenerator [num_rows] [num_threads] [num_factories] [connect_str] [database]\n\n");
 			System.exit(-1);
 		}
-		
+
 		NUM_ROWS = args[0] != null ? Integer.valueOf(args[0]) : 100;
 		NUM_THREADS = args[1] != null ? Integer.valueOf(args[1]) : 1;
 		NUM_FACTORIES = args[2] != null ? Integer.valueOf(args[2]) : 1;
 		CONNECT_STR = args[3];
 		DATABASE = args[4];
-		
+
 		DBConnector.setConfiguration(CONNECT_STR, DATABASE, NUM_FACTORIES);
-		
+
 		System.out.println("Number of rows to be inserted: " + NUM_ROWS);
 		System.out.println("Number of threads: " + NUM_THREADS);
 		System.out.println("Number of cluster session factories: " + NUM_FACTORIES);
@@ -160,20 +167,25 @@ public class LoadGenerator
 			clientThreads[i] = new ClientThread(i, NUM_ROWS);
 			clientThreads[i].start();
 		}
-		
+
+		double totalInsertTime = 0;
+		double totalSelectTime = 0;
 		
 		// Wait for all threads to terminate and print summary for each 
 		for (int i = 0; i < NUM_THREADS; i++) {
 			try {
 				clientThreads[i].join();
 				clientThreads[i].printSummary();
+				totalInsertTime += clientThreads[i].getInsertTime();
+				totalSelectTime += clientThreads[i].getSelectTime();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
 		
-		//insert(num_rows);
-		//select();
+		System.out.println("\n## Overall Summary of all threads ##");
+		System.out.println("Average insert time: " + df.format(totalInsertTime/NUM_THREADS) + " ms");
+		System.out.println("Average select time: " + df.format(totalSelectTime/NUM_THREADS) + " ms");
 
 	}
 }
