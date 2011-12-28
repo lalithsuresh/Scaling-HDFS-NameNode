@@ -47,8 +47,8 @@ public class DBConnector {
 		for (int i = 0; i < NUM_SESSION_FACTORIES; i++)
 		{
 			Properties p = new Properties();
-			p.setProperty("com.mysql.clusterj.connectstring", conf.get(DFS_DB_CONNECTOR_STRING_KEY, "cloud3.sics.se"));
-			p.setProperty("com.mysql.clusterj.database", conf.get(DFS_DB_DATABASE_KEY, "test"));
+			p.setProperty("com.mysql.clusterj.connectstring", conf.get(DFS_DB_CONNECTOR_STRING_KEY, "localhost"));
+			p.setProperty("com.mysql.clusterj.database", conf.get(DFS_DB_DATABASE_KEY, "kthfs"));
 			p.setProperty("com.mysql.clusterj.connection.pool.size", String.valueOf(NUM_SESSION_FACTORIES));
 			sessionFactory[i] = ClusterJHelper.getSessionFactory(p);
 		}

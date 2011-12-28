@@ -34,6 +34,7 @@ import org.apache.hadoop.hdfs.DeprecatedUTF8;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
+import org.apache.hadoop.hdfs.server.namenode.BlocksHelper;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableUtils;
 
@@ -299,21 +300,23 @@ public class DatanodeDescriptor extends DatanodeInfo {
    * Iterates over the list of blocks belonging to the datanode.
    */
   public static class BlockIterator implements Iterator<BlockInfo> {
-    private BlockInfo current;
+    private List<BlockInfo> list;
     private DatanodeDescriptor node;
+    private int iteratorIndex;
       
-    BlockIterator(BlockInfo head, DatanodeDescriptor dn) {
-      this.current = head;
+    BlockIterator(List<BlockInfo> l, DatanodeDescriptor dn) {
+      this.list = l;
       this.node = dn;
+      this.iteratorIndex = 0;
     }
 
     public boolean hasNext() {
-      return current != null;
+      return list.get(iteratorIndex) != null;
     }
 
     public BlockInfo next() {
-      BlockInfo res = current;
-      current = current.getNext(current.findDatanode(node));
+      BlockInfo res = list.get(iteratorIndex);
+      iteratorIndex++;
       return res;
     }
 
@@ -323,8 +326,8 @@ public class DatanodeDescriptor extends DatanodeInfo {
   }
 
   public Iterator<BlockInfo> getBlockIterator() {
-    //return new BlockIterator(this.blockList, this);
-	return new BlockIterator(null, this);
+    List<BlockInfo> listOfBlocks = BlocksHelper.getBlockListForDatanode(this.name); 
+	return new BlockIterator(listOfBlocks, this);
   }
   
   /**

@@ -16,7 +16,6 @@ import com.mysql.clusterj.annotation.Index;
 @PersistenceCapable(table="triplets")
 public interface TripletsTable {
 
-    // Inode
     @PrimaryKey
     @Column(name = "blockId")
     long getBlockId();     
@@ -32,15 +31,4 @@ public interface TripletsTable {
     @Index(name="idx_datanodeName")
     String getDatanodeName();
     void setDatanodeName(String name);
-    
-   @Column(name = "previousBlockId")
-    long getPreviousBlockId();     
-    void setPreviousBlockId(long bid);
-    
-      @Column(name = "nextBlockId")
-    long getNextBlockId();     
-    void setNextBlockId(long bid);
-    
-  
-    
 }
