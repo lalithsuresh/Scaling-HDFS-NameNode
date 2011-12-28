@@ -13,13 +13,18 @@ CREATE TABLE `BlockInfo` (
   `generationStamp` bigint(20) DEFAULT NULL,
   `replication` int(11) DEFAULT NULL,
   `BlockUCState` int(11) DEFAULT NULL,
-  PRIMARY KEY (`blockId`)
+  `timestamp` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`blockId`),
+  INDEX `idx_iNodeID` (`iNodeID` ASC) ;
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
 
 
 
 
 delimiter $$
+
+delimiter $$
+
 
 CREATE TABLE `InodeTable` (
   `id` bigint(20) NOT NULL,
@@ -43,7 +48,9 @@ CREATE TABLE `InodeTable` (
   `dscount` bigint(20) DEFAULT NULL,
   `localName` varchar(200) DEFAULT NULL,
   `symlink` blob,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  INDEX `idx_name` (`name` ASC),
+  INDEX `idx_parent` (`parent` ASC)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1
 /*!50100 PARTITION BY KEY (id)
 PARTITIONS 1 */$$
@@ -60,7 +67,8 @@ CREATE TABLE `triplets` (
   `datanodeName` varchar(128) DEFAULT NULL,
   `previousBlockId` bigint(20) DEFAULT NULL,
   `nextBlockId` bigint(20) DEFAULT NULL,
-  PRIMARY KEY (`blockId`,`index`)
+  PRIMARY KEY (`blockId`,`index`),
+  INDEX `idx_datanodeName` (`datanodeName` ASC)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
 
 
